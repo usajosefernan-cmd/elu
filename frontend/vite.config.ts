@@ -15,6 +15,10 @@ export default defineConfig(({ mode }) => {
           target: process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001',
           changeOrigin: true,
         },
+        '/functions/v1/admin-actions': {
+            target: 'http://localhost:8001/api',
+            changeOrigin: true
+        },
         '/functions/v1': {
             target: 'http://localhost:8001/api', // Bridge Supabase Functions -> Python
             changeOrigin: true,
