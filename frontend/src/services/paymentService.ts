@@ -29,12 +29,12 @@ export const spendTokens = async (amount: number, description: string): Promise<
     // Check if admin first to bypass payment logic
     const { data: profile } = await supabase
         .from('user_profiles')
-        .select('is_admin')
+        .select('user_mode')
         .eq('id', user.id)
         .single();
 
-    // ADMIN GOD MODE: Bypass payment, always return success
-    if (profile?.is_admin) {
+    // ADMIN GOD MODE: Bypass payment, always return success (prolux = admin)
+    if (profile?.user_mode === 'prolux') {
         console.log("Admin Bypass: Payment skipped for", description);
         return true;
     }
