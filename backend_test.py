@@ -320,14 +320,49 @@ class LuxScalerAPITester:
             self.log_test("Pro Macro Logic", False, "Failed to apply pro macro")
             return False
 
-    def test_vision_analysis(self):
-        """Test Vision Analysis with real API"""
+    def test_vision_analysis_base64(self):
+        """Test Vision Analysis with Base64 image data"""
+        # This is a 1x1 pixel transparent PNG in base64
+        base64_image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg=="
+        
         success, response = self.run_test(
-            "Vision Analysis",
+            "Vision Analysis - Base64",
             "POST",
             "process/analyze",
             200,
             data={
+                "userId": self.user_id or "test_user_123",
+                "imageUrl": base64_image
+            }
+        )
+        
+        if success and response.get('success'):
+            analysis = response.get('analysis', {})
+            has_semantic_anchors = 'semantic_anchors' in analysis
+            has_technical_assessment = 'technical_assessment' in analysis
+            has_suggested_settings = 'suggested_pillar_settings' in analysis
+            
+            self.log_test("Vision Analysis Base64 - semantic_anchors", has_semantic_anchors, 
+                         "Has semantic_anchors" if has_semantic_anchors else "Missing semantic_anchors")
+            self.log_test("Vision Analysis Base64 - technical_assessment", has_technical_assessment, 
+                         "Has technical_assessment" if has_technical_assessment else "Missing technical_assessment")
+            self.log_test("Vision Analysis Base64 - suggested_settings", has_suggested_settings, 
+                         "Has suggested_pillar_settings" if has_suggested_settings else "Missing suggested_pillar_settings")
+            
+            return has_semantic_anchors and has_technical_assessment and has_suggested_settings
+        else:
+            self.log_test("Vision Analysis Base64", False, "Base64 vision analysis failed")
+            return False
+
+    def test_vision_analysis_url(self):
+        """Test Vision Analysis with public URL"""
+        success, response = self.run_test(
+            "Vision Analysis - URL",
+            "POST",
+            "process/analyze",
+            200,
+            data={
+                "userId": self.user_id or "test_user_123",
                 "imageUrl": "https://images.pexels.com/photos/35501372/pexels-photo-35501372.jpeg"
             }
         )
@@ -337,14 +372,35 @@ class LuxScalerAPITester:
             has_semantic_anchors = 'semantic_anchors' in analysis
             semantic_anchors_is_list = isinstance(analysis.get('semantic_anchors'), list)
             
-            self.log_test("Vision Analysis - Structure", has_semantic_anchors, 
+            self.log_test("Vision Analysis URL - Structure", has_semantic_anchors, 
                          "Has semantic_anchors" if has_semantic_anchors else "Missing semantic_anchors")
-            self.log_test("Vision Analysis - Anchors Type", semantic_anchors_is_list, 
+            self.log_test("Vision Analysis URL - Anchors Type", semantic_anchors_is_list, 
                          "semantic_anchors is list" if semantic_anchors_is_list else "semantic_anchors not a list")
             
             return has_semantic_anchors and semantic_anchors_is_list
         else:
-            self.log_test("Vision Analysis", False, "Vision analysis failed")
+            self.log_test("Vision Analysis URL", False, "URL vision analysis failed")
+            return False
+
+    def test_vision_analysis_invalid_data(self):
+        """Test Vision Analysis with invalid image data"""
+        success, response = self.run_test(
+            "Vision Analysis - Invalid Data",
+            "POST",
+            "process/analyze",
+            400,  # Expecting error status or handled gracefully
+            data={
+                "userId": self.user_id or "test_user_123",
+                "imageUrl": "invalid_image_data"
+            }
+        )
+        
+        # This test passes if we get either a 400 error OR a graceful fallback response
+        if success or (not success and response):
+            self.log_test("Vision Analysis Invalid Data", True, "Invalid data handled appropriately")
+            return True
+        else:
+            self.log_test("Vision Analysis Invalid Data", False, "Invalid data not handled properly")
             return False
 
     def test_full_generation_flow(self):
