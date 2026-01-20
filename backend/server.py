@@ -25,7 +25,7 @@ app = FastAPI(title="LuxScaler v27 API")
 # Router Setup
 api_router = APIRouter(prefix="/api")
 
-from backend.routes import auth, pillars, process
+from routes import auth, pillars, process
 
 api_router.include_router(auth.router)
 api_router.include_router(pillars.router)
