@@ -1,4 +1,4 @@
-from backend.data.snippets import SNIPPET_DICTIONARY
+from data.snippets import SNIPPET_DICTIONARY
 
 def build_universal_prompt(config: dict, vision_summary: dict = None) -> str:
     """
