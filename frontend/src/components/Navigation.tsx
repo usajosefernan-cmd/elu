@@ -52,9 +52,18 @@ export const Navigation: React.FC<NavigationProps> = ({
 
   useEffect(() => {
     if (userProfile) {
-      getBalance().then(setBalance);
-      const interval = setInterval(() => getBalance().then(setBalance), 5000);
+      console.log('Navigation: userProfile detected, fetching balance...');
+      getBalance().then(b => {
+        console.log('Navigation: balance received:', b);
+        setBalance(b);
+      }).catch(e => console.error('Navigation: balance error:', e));
+      
+      const interval = setInterval(() => {
+        getBalance().then(b => setBalance(b)).catch(console.error);
+      }, 5000);
       return () => clearInterval(interval);
+    } else {
+      setBalance(0);
     }
   }, [userProfile]);
 
