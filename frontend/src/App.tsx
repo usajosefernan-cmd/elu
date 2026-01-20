@@ -913,6 +913,19 @@ const App: React.FC = () => {
             />
 
             {/* SHARED MODALS */}
+            
+            {/* NEW: Profile Config Modal v28 */}
+            <ProfileConfigModal
+                isVisible={showProfileSelector}
+                currentProfile={userProfile?.profile_type || 'auto'}
+                availableTokens={userProfile?.tokens || 0}
+                totalTokensPurchased={userProfile?.total_tokens_purchased || 0}
+                imageUrl={inputImageUrl || ''}
+                onConfirm={handleProfileConfigConfirm}
+                onCancel={handleProfileConfigCancel}
+                onUpgrade={() => navigate('/pricing')}
+            />
+
             <MobileConfigWizard
                 imageUrl={inputImageUrl || ''}
                 onConfirm={handleWizardConfirm}
