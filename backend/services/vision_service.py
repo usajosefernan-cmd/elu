@@ -2,7 +2,7 @@ import google.generativeai as genai
 import os
 import json
 import base64
-from backend.services.key_manager import key_manager
+from services.key_manager import key_manager
 
 class VisionService:
     def __init__(self):
