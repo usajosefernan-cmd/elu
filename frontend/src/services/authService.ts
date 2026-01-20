@@ -212,3 +212,67 @@ export const getCurrentUserProfile = async (): Promise<UserProfile | null> => {
 };
 
 export const getSupabaseClient = () => supabase as any;
+
+
+// =====================================================
+// TOKEN MANAGEMENT FUNCTIONS
+// =====================================================
+
+export const spendTokens = async (actionKey: string, description?: string): Promise<boolean> => {
+    const { data: { user } } = await (supabase as any).auth.getUser();
+    if (!user) return false;
+
+    // Call the RPC function to spend tokens
+    const { data, error } = await supabase.rpc('spend_tokens', {
+        p_user_id: user.id,
+        p_action_key: actionKey,
+        p_description: description || actionKey
+    });
+
+    if (error) {
+        console.error('Error spending tokens:', error);
+        return false;
+    }
+
+    return data === true;
+};
+
+export const getTokenBalance = async (): Promise<number> => {
+    const { data: { user } } = await (supabase as any).auth.getUser();
+    if (!user) return 0;
+
+    const { data, error } = await supabase
+        .from('user_profiles')
+        .select('tokens_balance')
+        .eq('id', user.id)
+        .single();
+
+    if (error || !data) return 0;
+    return (data as any).tokens_balance || 0;
+};
+
+export const getBillingTiers = async () => {
+    const { data, error } = await supabase
+        .from('billing_tiers')
+        .select('*')
+        .eq('is_active', true)
+        .order('price_eur', { ascending: true });
+
+    if (error) {
+        console.error('Error fetching billing tiers:', error);
+        return [];
+    }
+    return data || [];
+};
+
+export const getTokenCosts = async () => {
+    const { data, error } = await supabase
+        .from('token_costs')
+        .select('*');
+
+    if (error) {
+        console.error('Error fetching token costs:', error);
+        return [];
+    }
+    return data || [];
+};
