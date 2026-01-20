@@ -33,6 +33,6 @@ async def admin_actions(body: dict = Body(...)):
         }
         
     elif action == 'get_session_details':
-        return {"data": null} # Empty for now
+        return {"data": None} # Empty for now
 
     return {"success": True}
