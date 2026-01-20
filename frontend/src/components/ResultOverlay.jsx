@@ -8,33 +8,53 @@ import { toast } from 'sonner';
 export default function ResultOverlay({ open, onClose, resultData, onSave, onRefine }) {
   const [refineInput, setRefineInput] = useState('');
   
-  // Parse result if it's a JSON string, otherwise use as raw text
+  // Logic to handle Text or Image+Text result
   let parsedResult = null;
   let rawText = "";
-  
-  if (typeof resultData === 'string') {
-      rawText = resultData;
-      try {
-          // Try to find JSON block
-          if (resultData.includes('{')) {
-             const jsonStr = resultData.substring(resultData.indexOf('{'), resultData.lastIndexOf('}') + 1);
-             parsedResult = JSON.parse(jsonStr);
-          }
-      } catch (e) {
-          console.log("Not JSON");
+  let imageUrl = null;
+
+  if (resultData) {
+      // If resultData is object (from new backend)
+      if (typeof resultData === 'object') {
+          rawText = resultData.text || "";
+          imageUrl = resultData.image; // Base64 from backend
+          
+          // Try to parse text as JSON if structure
+          try {
+             if (rawText.includes('{')) {
+                 const jsonStr = rawText.substring(rawText.indexOf('{'), rawText.lastIndexOf('}') + 1);
+                 parsedResult = JSON.parse(jsonStr);
+             }
+          } catch (e) {}
+      } 
+      // Legacy text string
+      else if (typeof resultData === 'string') {
+          rawText = resultData;
       }
-  } else if (typeof resultData === 'object') {
-      parsedResult = resultData;
   }
 
-  // Placeholder "Generated Image" - In real app, this comes from the generation API
-  const generatedImage = "https://images.pexels.com/photos/34840277/pexels-photo-34840277.jpeg"; 
+  // Fallback placeholder if no image generated (e.g. text only mode)
+  const displayImage = imageUrl || "https://images.pexels.com/photos/34840277/pexels-photo-34840277.jpeg"; 
 
   const handleRefine = () => {
       if (!refineInput) return;
       onRefine(refineInput);
       setRefineInput('');
-      toast.info("Sending refinement request to Gemini 1.5...");
+      toast.info("Sending refinement request...");
+  };
+
+  const handleDownload = () => {
+      if (imageUrl) {
+          const link = document.createElement('a');
+          link.href = imageUrl;
+          link.download = 'luxscaler_output.png';
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          toast.success("Image Downloaded");
+      } else {
+          toast.error("No generated image to download yet");
+      }
   };
 
   return (
@@ -56,20 +76,22 @@ export default function ResultOverlay({ open, onClose, resultData, onSave, onRef
                 <div className="lg:col-span-8 flex flex-col h-full relative group">
                     <div className="flex-1 relative rounded-sm overflow-hidden border border-white/10 bg-black">
                         <img 
-                            src={generatedImage} 
+                            src={displayImage} 
                             alt="Generated Result" 
                             className="w-full h-full object-contain"
                         />
-                        <div className="absolute top-4 left-4">
-                            <span className="px-3 py-1 bg-black/60 backdrop-blur-md border border-white/10 text-[10px] uppercase tracking-widest text-primary font-mono">
-                                Gemini 3 Pro Output
-                            </span>
-                        </div>
+                        {imageUrl && (
+                            <div className="absolute top-4 left-4">
+                                <span className="px-3 py-1 bg-black/60 backdrop-blur-md border border-white/10 text-[10px] uppercase tracking-widest text-primary font-mono">
+                                    Gemini Generated
+                                </span>
+                            </div>
+                        )}
                     </div>
 
                     <div className="h-20 flex items-center justify-between mt-6">
                         <div className="flex gap-4">
-                            <Button variant="outline" className="border-white/10 hover:bg-white/5 text-white gap-2 uppercase tracking-widest text-xs h-12 px-6" onClick={() => toast.success("Downloaded 8K TIFF")}>
+                            <Button variant="outline" className="border-white/10 hover:bg-white/5 text-white gap-2 uppercase tracking-widest text-xs h-12 px-6" onClick={handleDownload}>
                                 <Download size={16} /> Download
                             </Button>
                             <Button variant="outline" className="border-white/10 hover:bg-white/5 text-white gap-2 uppercase tracking-widest text-xs h-12 px-6" onClick={() => toast.success("Link copied")}>
@@ -85,35 +107,14 @@ export default function ResultOverlay({ open, onClose, resultData, onSave, onRef
                 {/* DATA & REFINE (4 Cols) */}
                 <div className="lg:col-span-4 flex flex-col h-full bg-[#0D0D10] border border-white/10 rounded-sm overflow-hidden">
                     <div className="p-6 border-b border-white/10">
-                        <h2 className="text-2xl font-serif text-white mb-1">Analysis & Forensics</h2>
-                        <p className="text-xs text-muted-foreground uppercase tracking-widest">System Report v27.0</p>
+                        <h2 className="text-2xl font-serif text-white mb-1">Process Report</h2>
+                        <p className="text-xs text-muted-foreground uppercase tracking-widest">Nano Banana Pro</p>
                     </div>
 
                     <ScrollArea className="flex-1 p-6">
-                        {parsedResult ? (
-                            <div className="space-y-6">
-                                <div>
-                                    <h3 className="text-[10px] uppercase tracking-widest text-primary mb-2">Processing Steps</h3>
-                                    <div className="space-y-1">
-                                        {parsedResult.processing?.map((step, i) => (
-                                            <div key={i} className="text-xs font-mono text-white/70 border-l border-white/10 pl-2">
-                                                {step}
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-                                <div>
-                                    <h3 className="text-[10px] uppercase tracking-widest text-primary mb-2">Reconstruction Prompt</h3>
-                                    <p className="text-sm font-serif text-white/90 italic leading-relaxed">
-                                        "{parsedResult.prompt}"
-                                    </p>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="text-xs font-mono text-white/60 whitespace-pre-wrap leading-relaxed">
-                                {rawText || "No data available."}
-                            </div>
-                        )}
+                        <div className="text-xs font-mono text-white/60 whitespace-pre-wrap leading-relaxed">
+                            {rawText || "Processing..."}
+                        </div>
                     </ScrollArea>
 
                     <div className="p-6 border-t border-white/10 bg-white/5">
@@ -126,7 +127,7 @@ export default function ResultOverlay({ open, onClose, resultData, onSave, onRef
                                 type="text" 
                                 value={refineInput}
                                 onChange={(e) => setRefineInput(e.target.value)}
-                                placeholder="Ask Gemini 1.5 to refine..."
+                                placeholder="Change lighting to blue..."
                                 className="w-full bg-black/50 border border-white/10 rounded-sm py-3 pl-4 pr-10 text-sm text-white focus:border-primary outline-none placeholder:text-white/20"
                                 onKeyDown={(e) => e.key === 'Enter' && handleRefine()}
                             />
