@@ -488,7 +488,9 @@ class LuxScalerAPITester:
             self.test_user_mode_update,
             self.test_user_macro_logic,
             self.test_pro_macro_logic,
-            self.test_vision_analysis,
+            self.test_vision_analysis_base64,
+            self.test_vision_analysis_url,
+            self.test_vision_analysis_invalid_data,
             self.test_full_generation_flow,
             self.test_generation
         ]
