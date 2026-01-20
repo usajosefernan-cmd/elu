@@ -1,10 +1,13 @@
 from fastapi import APIRouter, HTTPException, Body
-from backend.server import db
-from backend.services.gemini_service import gemini_service
-from backend.services.vision_service import vision_service
-from backend.services.prompt_factory import build_universal_prompt
-from backend.data.macro_mappings import apply_user_macro, apply_pro_macro
-from backend.data.snippets import SNIPPET_DICTIONARY, map_value_to_level
+import sys
+import os
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from server import db
+from services.gemini_service import gemini_service
+from services.vision_service import vision_service
+from services.prompt_factory import build_universal_prompt
+from data.macro_mappings import apply_user_macro, apply_pro_macro
+from data.snippets import SNIPPET_DICTIONARY, map_value_to_level
 import datetime
 
 router = APIRouter(prefix="/process", tags=["process"])
