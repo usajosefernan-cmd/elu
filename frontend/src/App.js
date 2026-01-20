@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { Toaster } from 'sonner';
 import Dashboard from './pages/Dashboard';
 import LoginPage from './pages/Login';
+import ModeSelection from './pages/ModeSelection';
 
 function App() {
   return (
@@ -11,8 +12,9 @@ function App() {
       <Router>
         <Routes>
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/modes" element={<ModeSelection />} />
           <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
       <Toaster position="bottom-right" theme="dark" />

@@ -1,6 +1,7 @@
 from fastapi import APIRouter, HTTPException, Body
-from server import db
-from data.snippets import SNIPPET_DICTIONARY, map_value_to_level
+from backend.server import db
+from backend.data.snippets import SNIPPET_DICTIONARY, map_value_to_level
+from backend.data.ui_meta import UI_META
 
 router = APIRouter(prefix="/pillars", tags=["pillars"])
 
@@ -9,6 +10,16 @@ async def get_config(userId: str):
     config = await db.pillars_config.find_one({"user_id": userId}, {"_id": 0})
     if not config:
         raise HTTPException(status_code=404, detail="Config not found")
+    
+    # Enrich config with UI Metadata
+    for p_name in ['photoscaler', 'stylescaler', 'lightscaler']:
+        if p_name in config:
+            for slider in config[p_name]['sliders']:
+                s_name = slider['name']
+                if s_name in UI_META[p_name]:
+                    slider['label'] = UI_META[p_name][s_name]['label']
+                    slider['description'] = UI_META[p_name][s_name]['description']
+    
     return config
 
 @router.post("/slider-update")

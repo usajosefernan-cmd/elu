@@ -13,7 +13,7 @@ export default function LoginPage() {
     e.preventDefault();
     const success = await login(email, password);
     if (success) {
-      navigate('/dashboard');
+      navigate('/modes'); // Changed redirect to Modes
     } else {
       alert('Login failed');
     }
