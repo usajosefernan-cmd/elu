@@ -1,8 +1,13 @@
 // LuxScaler v28 - Edge Functions Client
 // Centralizes all calls to Supabase Edge Functions
+// Falls back to FastAPI backend if Edge Functions are not deployed
 
 const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
 const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const API_BASE = import.meta.env.VITE_API_BASE || `${import.meta.env.REACT_APP_BACKEND_URL}/api`;
+
+// Flag to use Edge Functions or fallback to FastAPI
+const USE_EDGE_FUNCTIONS = false; // Set to true after deploying Edge Functions
 
 interface VisionAnalysisResult {
   success: boolean;
