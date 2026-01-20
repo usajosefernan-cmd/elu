@@ -19,6 +19,8 @@ export interface AgentMessage {
 export type SubscriptionTier = 'free' | 'beta_founder' | 'pro_monthly';
 export type SubscriptionStatus = 'active' | 'inactive' | 'past_due' | 'cancelled';
 
+export type UserProfileType = 'auto' | 'user' | 'pro' | 'prolux';
+
 export interface UserProfile {
   id: string;
   email: string;
@@ -29,6 +31,10 @@ export interface UserProfile {
   is_admin: boolean;
   subscription_tier: SubscriptionTier;
   subscription_status: SubscriptionStatus;
+  // v28 New Fields
+  profile_type: UserProfileType;
+  total_tokens_purchased: number;
+  total_generations: number;
 }
 
 // --- DB SCHEMA TYPES ---
