@@ -2,16 +2,18 @@ import google.generativeai as genai
 import os
 import json
 import base64
+from backend.services.key_manager import key_manager
 
 class VisionService:
     def __init__(self):
-        self.api_key = os.environ.get("GOOGLE_API_KEY")
-        if self.api_key:
-            genai.configure(api_key=self.api_key)
+        pass
         
     async def analyze_image(self, image_input: str) -> dict:
-        if not self.api_key:
+        current_key = key_manager.get_next_key()
+        if not current_key:
             return {"error": "No API Key"}
+            
+        genai.configure(api_key=current_key)
 
         prompt = """
 [TASK: VISION_ANALYSIS_PROTOCOL_V18]
@@ -39,52 +41,22 @@ JSON OUTPUT FORMAT:
 }
 """
         try:
-            model = genai.GenerativeModel('gemini-2.0-flash') # Using Flash for speed/vision
-            
+            model = genai.GenerativeModel('gemini-2.0-flash')
             content_parts = [prompt]
             
-            # Check if image_input is URL or Base64
             if image_input.startswith("data:image"):
-                # Base64 Data URI
                 try:
                     header, encoded = image_input.split(",", 1)
                     mime_type = header.split(":")[1].split(";")[0]
                     image_data = base64.b64decode(encoded)
-                    
-                    content_parts.append({
-                        "mime_type": mime_type,
-                        "data": image_data
-                    })
-                except Exception as e:
-                    print(f"Base64 decode error: {e}")
+                    content_parts.append({"mime_type": mime_type, "data": image_data})
+                except:
                     return {"error": "Invalid Image Data"}
             else:
-                # URL - Gemini API python client doesn't fetch URLs automatically.
-                # We should fetch it or ask user for base64. 
-                # For this MVP, if it's a URL, we'll try to use it as text description fallback
-                # OR we could fetch it here.
-                # Let's assume if it's http it's a URL, else it's a text description?
-                if image_input.startswith("http"):
-                    # Mock/Describe fallback since we can't easily fetch and pass to Gemini without requests
-                    # But we can try to fetch it.
-                    import requests
-                    try:
-                        resp = requests.get(image_input)
-                        if resp.status_code == 200:
-                            content_parts.append({
-                                "mime_type": resp.headers.get("Content-Type", "image/jpeg"),
-                                "data": resp.content
-                            })
-                        else:
-                             content_parts.append(f"Image URL: {image_input} (Could not fetch)")
-                    except:
-                        content_parts.append(f"Image URL: {image_input}")
-                else:
-                    content_parts.append(f"Image Description: {image_input}")
+                content_parts.append(f"Image URL: {image_input}")
 
             response = model.generate_content(content_parts)
             
-            # Clean response to get JSON
             text = response.text
             if "```json" in text:
                 text = text.split("```json")[1].split("```")[0]
@@ -94,6 +66,7 @@ JSON OUTPUT FORMAT:
             return json.loads(text)
             
         except Exception as e:
+            key_manager.report_error(current_key)
             print(f"Vision Analysis Failed: {e}")
             return {
                 "semantic_anchors": ["Detected Image Subject (Fallback)"],
