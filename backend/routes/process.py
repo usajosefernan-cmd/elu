@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException, Body
-from backend.server import db
-from backend.services.gemini_service import gemini_service
+from server import db
+from services.gemini_service import gemini_service
 import datetime
 
 router = APIRouter(prefix="/process", tags=["process"])
