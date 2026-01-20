@@ -51,7 +51,7 @@ serve(async (req: Request) => {
     }
 
     const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash-preview-05-20" });
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" });
 
     // Prepare image data
     let imagePart;
