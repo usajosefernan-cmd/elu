@@ -1,129 +1,123 @@
 {
-  "brand_identity": {
-    "name": "LuxScaler v27",
-    "archetype": "Jewel & Luxury (Archetype 5) + Performance Pro (Archetype 2)",
-    "core_values": ["Exclusivity", "Precision", "Infinite Scale", "Cinematic Depth"],
-    "emotional_tone": "Expensive, Dark, Mathematical, Serene",
-    "theme_strategy": "Dark Mode Only (The 'Midnight Vault' Aesthetic)"
+  "identity": {
+    "name": "E1",
+    "role": "Anti-AI Creative Designer",
+    "principles": [
+      "Fusion over Imitation",
+      "Emotion First",
+      "Content is King",
+      "Zoom In",
+      "Negative Space",
+      "Contrast"
+    ]
   },
   "typography": {
-    "headings": {
-      "font_family": "Playfair Display, serif",
-      "weights": ["400", "600", "700"],
-      "usage": "All H1-H3 headings. MUST use tracking-tight (-0.02em).",
-      "instructions": "Import from Google Fonts. Do NOT use Inter for headings."
+    "fonts": {
+      "heading": "Playfair Display",
+      "body": "Manrope",
+      "mono": "JetBrains Mono"
     },
-    "body": {
-      "font_family": "Manrope, sans-serif",
-      "weights": ["300", "400", "500"],
-      "usage": "Body text, UI elements, buttons.",
-      "instructions": "Use 'font-light' (300) for large paragraphs to create elegance."
-    },
-    "mono": {
-      "font_family": "JetBrains Mono, monospace",
-      "usage": "Data points, financial metrics, code snippets."
-    }
+    "rules": [
+      "Headings (Playfair Display): Use for all Section Titles, Hero Text, and Card Titles. Font weights: 600 or 700. Tracking: tight.",
+      "Body (Manrope): Use for descriptions, navigation, and general text. Font weights: 300 (light) or 400 (regular). Tracking: normal.",
+      "Data/Mono (JetBrains Mono): Use for Scores, Ranks, Dates, and Tags. Font weights: 400. Tracking: wide for uppercase labels."
+    ]
   },
   "colors": {
     "palette": {
-      "background": {
-        "default": "#020204",
-        "subtle": "#08080A",
-        "card": "#0D0D10"
+      "background": "#020204",
+      "foreground": "#EDEDED",
+      "card": "#0D0D10",
+      "card_border": "rgba(255, 255, 255, 0.08)",
+      "primary": "#D4AF37",
+      "primary_foreground": "#000000",
+      "secondary": "#102A20",
+      "secondary_foreground": "#FFFFFF",
+      "muted": "#52525B",
+      "muted_foreground": "#A1A1AA",
+      "accent": "#D4AF37"
+    },
+    "usage": {
+      "primary": "Use Gold (#D4AF37) sparingly for 'Winner' highlights, active states, and primary CTAs.",
+      "secondary": "Use Deep Green (#102A20) for subtle backgrounds or success states.",
+      "background": "Deep Black (#020204) is the canvas. Never use pure black #000000.",
+      "text": "Off-white (#EDEDED) for readability. Avoid pure white #FFFFFF on large areas."
+    }
+  },
+  "layout": {
+    "spacing": {
+      "container_padding": "p-6 md:p-12 lg:p-24",
+      "section_gap": "gap-16 md:gap-32",
+      "item_gap": "gap-6 md:gap-8"
+    },
+    "grid_systems": {
+      "results_leaderboard": "grid grid-cols-1 md:grid-cols-12 gap-4",
+      "gallery_masonry": "columns-1 md:columns-2 lg:columns-3 gap-8 space-y-8"
+    }
+  },
+  "components": {
+    "results_page": {
+      "hero": {
+        "style": "Minimalist, centered but massive typography.",
+        "content": "Title: 'Excellence 2025'. Subtitle: 'Celebrating the visionaries defining the future.'",
+        "visuals": "Subtle gold glow or particle effect in background."
       },
-      "primary": {
-        "main": "#D4AF37",
-        "hover": "#E5C158",
-        "foreground": "#000000"
+      "podium": {
+        "description": "Top 3 winners displayed prominently.",
+        "layout": "Flex row, center aligned. 1st place larger and center. 2nd and 3rd slightly smaller and to sides.",
+        "card_style": "Vertical, large avatar/image, gold border for 1st place."
       },
-      "secondary": {
-        "main": "#102A20",
-        "accent": "#10B981"
-      },
-      "text": {
-        "primary": "#EDEDED",
-        "secondary": "#A1A1AA",
-        "muted": "#52525B"
-      },
-      "border": {
-        "default": "rgba(255, 255, 255, 0.08)",
-        "active": "rgba(212, 175, 55, 0.3)"
+      "leaderboard_list": {
+        "description": "List of remaining winners.",
+        "layout": "Vertical stack of horizontal cards.",
+        "card_style": "Glassmorphism (bg-white/5), hover effect (border-gold/50), mono font for rank."
       }
     },
-    "gradients": {
-      "gold_glow": "linear-gradient(135deg, #D4AF37 0%, #8A6E2F 100%)",
-      "dark_glass": "linear-gradient(180deg, rgba(13,13,16,0.7) 0%, rgba(13,13,16,0.4) 100%)"
+    "gallery_page": {
+      "filters": {
+        "style": "Minimalist text tabs. No background pills unless active.",
+        "active_state": "Text color Gold, small dot indicator below.",
+        "inactive_state": "Text color Muted."
+      },
+      "grid": {
+        "style": "Masonry layout (Pinterest style).",
+        "item_style": "No border, sharp edges or minimal rounded-md. Hover: Zoom image slightly, show overlay with title/author."
+      },
+      "lightbox": {
+        "style": "Full screen, backdrop-blur-xl. Image centered. Metadata on the side or bottom."
+      }
     }
   },
-  "layout_system": {
-    "spacing_scale": "Generous. Use p-8, p-12, p-24. Avoid cramped p-4.",
-    "grid_strategy": {
-      "marketing": "The Tetris Grid (Mode A). Asymmetrical. 12-col grid. Mix col-span-4, col-span-8.",
-      "dashboard": "High Density Grid (Mode B). 4-col grid. Tight gaps (gap-4)."
-    },
-    "container_style": "Max-width 1400px. Center aligned."
-  },
-  "component_styles": {
-    "buttons": {
-      "primary": "bg-[#D4AF37] text-black font-semibold rounded-none hover:bg-[#E5C158] transition-all uppercase tracking-widest text-xs px-8 py-4",
-      "secondary": "bg-transparent border border-white/20 text-white rounded-none hover:border-[#D4AF37] hover:text-[#D4AF37] transition-all uppercase tracking-widest text-xs px-8 py-4"
-    },
-    "cards": {
-      "base": "bg-[#0D0D10]/80 backdrop-blur-md border border-white/10 rounded-sm",
-      "hover": "hover:border-[#D4AF37]/50 transition-colors duration-300"
-    },
-    "inputs": {
-      "style": "bg-transparent border-b border-white/20 rounded-none px-0 py-4 focus:border-[#D4AF37] focus:ring-0 transition-all placeholder:text-white/20"
+  "assets": {
+    "images": {
+      "portraits": [
+        "https://images.pexels.com/photos/34472753/pexels-photo-34472753.jpeg",
+        "https://images.pexels.com/photos/33018574/pexels-photo-33018574.jpeg"
+      ],
+      "architecture": [
+        "https://images.pexels.com/photos/18435276/pexels-photo-18435276.jpeg",
+        "https://images.pexels.com/photos/34840277/pexels-photo-34840277.jpeg"
+      ],
+      "awards": [
+        "https://images.pexels.com/photos/7005050/pexels-photo-7005050.jpeg",
+        "https://images.pexels.com/photos/6532369/pexels-photo-6532369.jpeg"
+      ]
     }
-  },
-  "visual_enhancers": {
-    "texture": "Add a fixed 'noise' overlay at 3% opacity to the entire body background.",
-    "glassmorphism": "Use backdrop-blur-xl for sticky headers and modals.",
-    "borders": "Use 1px borders with low opacity (10%) for structure. Do not rely on shadows.",
-    "glow_effects": "Use 'Tracing Beam' effect on key feature cards."
-  },
-  "motion": {
-    "library": "framer-motion",
-    "scroll": "lenis (Smooth Scrolling) - MANDATORY.",
-    "transitions": "All hover states must be duration-300 ease-out.",
-    "entrance": "Staggered fade-in-up for all grid items."
-  },
-  "image_assets": {
-    "hero_background": {
-      "url": "https://images.pexels.com/photos/30895543/pexels-photo-30895543.jpeg",
-      "alt": "Abstract Gold Texture",
-      "usage": "Hero section background with heavy dark overlay (opacity 80%)"
-    },
-    "feature_1": {
-      "url": "https://images.pexels.com/photos/35501372/pexels-photo-35501372.jpeg",
-      "alt": "Futuristic City",
-      "usage": "Scaling/Growth section"
-    },
-    "feature_2": {
-      "url": "https://images.pexels.com/photos/33607882/pexels-photo-33607882.jpeg",
-      "alt": "Modern Architecture",
-      "usage": "Architecture/Structure section"
-    }
-  },
-  "tech_stack_instructions": {
-    "framework": "React (Create React App structure)",
-    "styling": "Tailwind CSS",
-    "components": "Shadcn UI (located in src/components/ui)",
-    "file_extension": "Use .js and .jsx ONLY. Do NOT use .ts or .tsx.",
-    "icons": "lucide-react (default), @phosphor-icons/react (for luxury feel)"
   },
   "universal_guidelines": [
-    "Do NOT use gradients for text.",
-    "Do NOT use rounded-xl or rounded-2xl. Keep radii small (rounded-sm or rounded-md) for a 'sharp' premium feel.",
-    "Ensure all text has sufficient contrast. Use #EDEDED for primary text, not #FFFFFF (too harsh).",
-    "Add 'data-testid' to all interactive elements.",
-    "Use 'sonner' for toasts."
+    "Do not use 'Inter' for headings. Use 'Playfair Display'.",
+    "Do not use gradients for text unless it is a very subtle gold shimmer.",
+    "Ensure all interactive elements have hover states (text color change, scale, or border glow).",
+    "Use 'sonner' for toasts.",
+    "Use 'lucide-react' for icons.",
+    "All interactive elements must have data-testid attributes."
   ],
-  "implementation_steps": [
-    "1. Install dependencies: lenis, framer-motion, @phosphor-icons/react.",
-    "2. Update tailwind.config.js with the new color palette.",
-    "3. Create a 'Layout' component that includes the Lenis scroll wrapper and Noise overlay.",
-    "4. Build the Landing Page using the 'Tetris Grid'.",
-    "5. Build the Dashboard View using the 'High Density Grid'."
+  "instructions_to_main_agent": [
+    "1. Read this JSON carefully.",
+    "2. Create the 'Results' page using the Podium and Leaderboard components.",
+    "3. Create the 'Gallery' page using the Masonry layout.",
+    "4. Use the provided image URLs for placeholders.",
+    "5. Ensure the Dark Mode theme is applied globally.",
+    "6. Use Tailwind CSS for all styling, extending the config provided in the codebase."
   ]
 }
