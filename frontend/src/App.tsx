@@ -121,7 +121,10 @@ const App: React.FC = () => {
     // Config Wizard State
     const [showConfigWizard, setShowConfigWizard] = useState(false);
     const [showProfileSelector, setShowProfileSelector] = useState(false); // NEW: Profile selector
+    const [showVisionConfirm, setShowVisionConfirm] = useState(false); // NEW: Vision confirm modal
     const [analysisResult, setAnalysisResult] = useState<SemanticAnalysis | null>(null);
+    const [visionAnalysis, setVisionAnalysis] = useState<any>(null); // NEW: Edge function vision result
+    const [userTokenBalance, setUserTokenBalance] = useState(0); // NEW: Current token balance
 
     // PWA State
     const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
