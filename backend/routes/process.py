@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Body
 from services.supabase_service import supabase_db
 from services.gemini_service import gemini_service
 from services.vision_service import vision_service
-from services.prompt_factory import build_universal_prompt
+from services.prompt_compiler_service import prompt_compiler
 from data.macro_mappings import apply_user_macro, apply_pro_macro
 from data.snippets import SNIPPET_DICTIONARY, map_value_to_level
 import datetime
@@ -47,7 +47,8 @@ async def generate(body: dict = Body(...)):
         model_name = 'gemini-3-pro-image-preview'
         
     # Build Prompt
-    master_prompt = build_universal_prompt(config, analysis_result)
+    # master_prompt = build_universal_prompt(config, analysis_result)
+    master_prompt = await prompt_compiler.compile_prompt(config, analysis_result)
     
     # Generate (Now supporting Image Return)
     result = await gemini_service.generate_content(model_name, master_prompt, user_input_text, image_url)
