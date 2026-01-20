@@ -13,31 +13,47 @@ class GeminiService:
         if not self.api_key:
             return "Error: API Key not configured."
         
-        # Map internal names to actual Google GenAI model names
-        # PRD asked for 2.5/3.0 which might not exist publicly yet. 
-        # Mapping to latest stable/preview equivalents.
-        
-        target_model = "gemini-2.0-flash" # Default fallback
-        
-        if "flash" in model_name:
-            target_model = "gemini-2.0-flash"
-        elif "pro" in model_name or model_name == "gemini":
-            target_model = "gemini-1.5-pro" # Strong stable pro model
-        elif "gemini-3" in model_name:
-             target_model = "gemini-1.5-pro" # Fallback for '3' to best avail
+        target_model = "gemini-2.0-flash" 
+        if "pro" in model_name or model_name == "gemini":
+            target_model = "gemini-1.5-pro"
              
-        # Create model with system instruction
         try:
-            # System instructions are passed to GenerativeModel constructor in newer SDKs
-            # or we prepend to prompt if not supported.
-            # google-generativeai supports system_instruction
+            # Configure safety settings to BLOCK_NONE to allow creative/forensic prompts
+            safety_settings = [
+                {
+                    "category": "HARM_CATEGORY_HARASSMENT",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_HATE_SPEECH",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                    "threshold": "BLOCK_NONE"
+                },
+                {
+                    "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+                    "threshold": "BLOCK_NONE"
+                },
+            ]
+
             model = genai.GenerativeModel(
                 model_name=target_model,
                 system_instruction=master_prompt
             )
             
-            response = model.generate_content(user_input)
-            return response.text
+            response = model.generate_content(
+                user_input,
+                safety_settings=safety_settings
+            )
+            
+            if response.candidates:
+                return response.text
+            else:
+                # Log feedback for debugging
+                print(f"Gemini Blocked Response: {response.prompt_feedback}")
+                return f"⚠️ Generation Blocked by Safety Filters.\nReason: {response.prompt_feedback}"
             
         except Exception as e:
             print(f"Gemini generation error: {e}")
