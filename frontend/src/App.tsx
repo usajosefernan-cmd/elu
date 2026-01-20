@@ -450,6 +450,19 @@ const App: React.FC = () => {
         }
     };
 
+    // NEW: Handler for Profile Config Modal (v28)
+    const handleProfileConfigConfirm = async (config: LuxConfig) => {
+        setShowProfileSelector(false);
+        if (inputImageUrl) {
+            processFileGeneration(inputImageUrl, config, analysisResult);
+        }
+    };
+
+    const handleProfileConfigCancel = () => {
+        setShowProfileSelector(false);
+        resetFlow();
+    };
+
     const processFileGeneration = async (url: string, config: LuxConfig, analysis: SemanticAnalysis | null) => {
         try {
             setStatus(AgentStatus.ANALYZING);
