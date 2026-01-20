@@ -20,7 +20,6 @@
         -->
         <title>Emergent | Fullstack App</title>
         <script>
-        <script>
             // NUCLEAR OPTION: Immutable PostHog Block
             if (!window.posthog) {
                 Object.defineProperty(window, 'posthog', {
@@ -36,14 +35,6 @@
                     configurable: false
                 });
             }
-        </script>
-            // CRITICAL FIX: Block PostHog to prevent DataCloneError on PerformanceServerTiming
-            window.posthog = {
-                init: () => console.warn("PostHog disabled by LuxScaler protection"),
-                capture: () => {},
-                identify: () => {},
-                people: { set: () => {} }
-            };
         </script>
         <!-- <script src="https://assets.emergent.sh/scripts/emergent-main.js"></script> -->
         <!--
