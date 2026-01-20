@@ -9,14 +9,14 @@ export const getBalance = async (): Promise<number> => {
 
     const { data, error } = await supabase
         .from('user_profiles')
-        .select('tokens_balance, is_admin')
+        .select('tokens_balance, user_mode')
         .eq('id', user.id)
         .single();
 
     if (error) return 0;
 
-    // ADMIN GOD MODE: Infinite Resources
-    if (data.is_admin) return 999999;
+    // ADMIN GOD MODE: user_mode === 'prolux' means admin
+    if (data.user_mode === 'prolux') return 999999;
 
     return data.tokens_balance || 0;
 };
