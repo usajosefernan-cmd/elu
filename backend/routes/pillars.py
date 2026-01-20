@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Body
-from backend.server import db
-from backend.data.snippets import SNIPPET_DICTIONARY, map_value_to_level
-from backend.data.ui_meta import UI_META
+from server import db
+from data.snippets import SNIPPET_DICTIONARY, map_value_to_level
+from data.ui_meta import UI_META
 
 router = APIRouter(prefix="/pillars", tags=["pillars"])
 
