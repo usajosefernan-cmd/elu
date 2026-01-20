@@ -185,9 +185,25 @@ export const getCurrentUserProfile = async (): Promise<UserProfile | null> => {
 
     if (error || !profile) return null;
 
+    // Map database fields to frontend UserProfile type
+    const dbProfile = profile as any;
+    
+    // Determine admin status: check 'role' field OR 'user_mode' field
+    const isAdmin = 
+        dbProfile.role === 'ADMIN' || 
+        dbProfile.user_mode === 'prolux' ||
+        dbProfile.is_admin === true;
+
     return {
-        ...profile,
-        tokens: (profile as any).tokens_balance || 0
+        id: dbProfile.id,
+        email: dbProfile.email || user.email,
+        username: dbProfile.username || '',
+        full_name: dbProfile.full_name || user.user_metadata?.full_name || '',
+        tokens: dbProfile.tokens_balance || 0,
+        tokens_balance: dbProfile.tokens_balance || 0,
+        is_admin: isAdmin,
+        subscription_tier: dbProfile.subscription_tier || 'free',
+        subscription_status: dbProfile.subscription_status || 'active'
     } as UserProfile;
 };
 
