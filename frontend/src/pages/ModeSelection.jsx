@@ -7,20 +7,47 @@ import { Sparkles, Zap, Crown } from 'lucide-react';
 
 export default function ModeSelection() {
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
 
   const handleModeSelect = async (mode) => {
+    if (!user) {
+      console.error("No user available");
+      return;
+    }
+    
     try {
-        await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/pillars/update-user-mode`, {
+        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/pillars/update-user-mode`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ userId: user.id, mode })
         });
-        navigate('/dashboard');
+        
+        if (response.ok) {
+          navigate('/dashboard');
+        } else {
+          console.error("Failed to update user mode - server error");
+        }
     } catch (e) {
-        console.error("Failed to set mode");
+        console.error("Failed to set mode", e);
     }
   };
+
+  // Show loading state while auth is loading
+  if (loading) {
+    return (
+      <Layout>
+        <div className="h-screen flex items-center justify-center">
+          <div className="text-white">Loading...</div>
+        </div>
+      </Layout>
+    );
+  }
+
+  // Redirect to login if no user
+  if (!user) {
+    navigate('/login');
+    return null;
+  }
 
   const modes = [
     {
