@@ -237,23 +237,128 @@ interface PricingPlan {
 const getConsumerData = (cycle: 'once' | 'monthly' | 'annual'): PricingPlan[] => {
     if (cycle === 'once') {
         return [
-            { tier: 'Starter', price: '3', tokens: '30', description: 'Just trying things out.', features: ['3 AI Previews', 'Tokens never expire', 'Access to all styles'] },
-            { tier: 'Professional', price: '9', tokens: '100', description: 'Most popular for creators.', features: ['10 AI Previews', 'Or 2 Master 4K Exports', 'Priority processing'], featured: true },
-            { tier: 'Studio', price: '19', tokens: '250', description: 'Maximum project value.', features: ['25 AI Previews', 'Or 5 Master 4K Exports', 'Priority processing', 'Commercial usage'] },
+            { 
+                tier: 'Starter', 
+                price: '1.99', 
+                tokens: '200', 
+                description: 'Prueba el servicio.', 
+                features: [
+                    '6 Previews sin marca',
+                    '2 Masters 4K',
+                    'Tokens sin expiración',
+                    'Perfil AUTO'
+                ] 
+            },
+            { 
+                tier: 'Creator', 
+                price: '9.99', 
+                tokens: '1,200', 
+                description: 'Para creadores de contenido.', 
+                features: [
+                    '~40 Previews',
+                    '~10 Masters 4K',
+                    'Perfil USER desbloqueado',
+                    'Sin marcas de agua'
+                ], 
+                featured: true 
+            },
+            { 
+                tier: 'Pro', 
+                price: '29.99', 
+                tokens: '4,000', 
+                description: 'Control profesional.', 
+                features: [
+                    '~100 Previews',
+                    '~40 Masters 4K',
+                    'Perfil PRO desbloqueado',
+                    '9 Macros temáticos'
+                ] 
+            },
         ];
     }
     if (cycle === 'monthly') {
         return [
-            { tier: 'Lite', price: '12', period: '/mo', tokens: '150', description: 'Consistent content.', features: ['15 Previews / month', 'Priority queue', 'Email support'] },
-            { tier: 'Pro', price: '29', period: '/mo', tokens: '400', description: 'Power user access.', features: ['40 Previews / month', 'VIP queue', 'Priority support', 'Early access features'], featured: true },
-            { tier: 'Expert', price: '59', period: '/mo', tokens: '1000', description: 'Agency output.', features: ['100 Previews / month', 'Instant processing', 'Dedicated support', 'Commercial license'] },
+            { 
+                tier: 'Creator', 
+                price: '14.99', 
+                period: '/mes', 
+                tokens: '1,500', 
+                description: 'Contenido constante.', 
+                features: [
+                    '~50 Previews / mes',
+                    'Cola prioritaria',
+                    'Perfil USER',
+                    'Sin marcas de agua'
+                ] 
+            },
+            { 
+                tier: 'Pro', 
+                price: '39.99', 
+                period: '/mes', 
+                tokens: '5,000', 
+                description: 'Usuario avanzado.', 
+                features: [
+                    '~160 Previews / mes',
+                    'Cola VIP',
+                    'Perfil PRO',
+                    '9 Macros + Masters 8K'
+                ], 
+                featured: true 
+            },
+            { 
+                tier: 'Studio', 
+                price: '99.99', 
+                period: '/mes', 
+                tokens: '15,000', 
+                description: 'Producción ilimitada.', 
+                features: [
+                    'Uso ilimitado 30 días',
+                    'Perfil PROLUX',
+                    '27 Sliders + API',
+                    'Procesamiento batch'
+                ] 
+            },
         ];
     }
     // Annual
     return [
-        { tier: 'Lite', price: '99', period: '/yr', tokens: '150/mo', description: '2 months free.', features: ['15 Previews / month', 'Priority queue', 'Email support'] },
-        { tier: 'Pro', price: '249', period: '/yr', tokens: '400/mo', description: 'Best value year-round.', features: ['40 Previews / month', 'VIP queue', 'Priority support'], featured: true },
-        { tier: 'Expert', price: '499', period: '/yr', tokens: '1000/mo', description: 'Production ready.', features: ['100 Previews / month', 'Instant processing', 'Dedicated support'] },
+        { 
+            tier: 'Creator', 
+            price: '149', 
+            period: '/año', 
+            tokens: '1,500/mes', 
+            description: '2 meses gratis.', 
+            features: [
+                '~50 Previews / mes',
+                'Cola prioritaria',
+                'Perfil USER'
+            ] 
+        },
+        { 
+            tier: 'Pro', 
+            price: '399', 
+            period: '/año', 
+            tokens: '5,000/mes', 
+            description: 'Mejor valor anual.', 
+            features: [
+                '~160 Previews / mes',
+                'Cola VIP',
+                'Perfil PRO'
+            ], 
+            featured: true 
+        },
+        { 
+            tier: 'Studio', 
+            price: '999', 
+            period: '/año', 
+            tokens: '15,000/mes', 
+            description: 'Nivel agencia.', 
+            features: [
+                'Uso ilimitado',
+                'Perfil PROLUX',
+                'API + Batch'
+            ] 
+        },
     ];
 };
 
