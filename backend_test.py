@@ -430,6 +430,10 @@ class LuxScalerAPITester:
             self.test_slider_update,
             self.test_pillar_toggle,
             self.test_user_mode_update,
+            self.test_user_macro_logic,
+            self.test_pro_macro_logic,
+            self.test_vision_analysis,
+            self.test_full_generation_flow,
             self.test_generation
         ]
         
