@@ -155,8 +155,9 @@ export const Navigation: React.FC<NavigationProps> = ({
                 </button>
 
                 <div
-                  onClick={() => setShowPurchaseModal(true)}
+                  onClick={() => onNavigateToPricing?.()}
                   className="flex items-center gap-1.5 md:gap-2 bg-white/5 border border-white/10 px-2 md:px-3 py-1 md:py-1.5 rounded-full cursor-pointer hover:bg-white/10 hover:border-lumen-gold/50 transition-all group"
+                  data-testid="token-balance-btn"
                 >
                   <span className="text-xs md:text-sm font-bold text-white group-hover:text-lumen-gold">{balance}</span>
                   <span className="text-[8px] md:text-[10px] font-bold text-gray-400 group-hover:text-lumen-gold uppercase tracking-tighter font-mono">TKN</span>
