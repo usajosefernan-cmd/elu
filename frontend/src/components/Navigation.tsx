@@ -161,7 +161,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                     className="flex items-center gap-2 bg-white/10 hover:bg-white/20 text-white p-2 md:px-4 md:py-2 rounded-full transition-all border border-transparent hover:border-lumen-gold/30 shadow-lg"
                   >
                     <User className="w-4 h-4" />
-                    <span className="text-xs font-bold hidden md:block">{userProfile.full_name.split(' ')[0]}</span>
+                    <span className="text-xs font-bold hidden md:block">{(userProfile.full_name || 'User').split(' ')[0]}</span>
                     <ChevronDown className={`w-3 h-3 text-gray-400 transition-transform hidden md:block ${isUserMenuOpen ? 'rotate-180' : ''}`} />
                   </button>
 
