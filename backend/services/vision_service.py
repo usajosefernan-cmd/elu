@@ -8,7 +8,7 @@ from services.key_manager import key_manager
 class VisionService:
     def __init__(self):
         # Model for vision analysis - Gemini 2.5 Flash
-        self.model_name = 'gemini-2.5-flash-preview-05-20'
+        self.model_name = 'gemini-2.5-flash'
         
     async def analyze_image(self, image_input: str) -> dict:
         current_key = key_manager.get_next_key()
