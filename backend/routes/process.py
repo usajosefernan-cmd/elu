@@ -109,7 +109,7 @@ async def apply_user_macro_endpoint(body: dict = Body(...)):
     aesthetics = body.get('aesthetics', 5)
     light = body.get('light', 5)
     
-    config = await db.pillars_config.find_one({"user_id": user_id})
+    config = await db.pillars_config.find_one({"user_id": user_id}, {"_id": 0})
     if not config: return {"success": False}
     
     new_config = apply_user_macro(config, quality, aesthetics, light)
