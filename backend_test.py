@@ -88,7 +88,7 @@ class LuxScalerAPITester:
             "POST",
             "auth/login",
             200,
-            data={"email": "test@luxscaler.com", "password": "password"}
+            data={"email": "test_friendly@luxscaler.com", "password": "password"}
         )
         
         if success and 'userId' in response:
