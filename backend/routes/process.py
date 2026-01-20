@@ -1,7 +1,4 @@
 from fastapi import APIRouter, HTTPException, Body
-import sys
-import os
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from server import db
 from services.gemini_service import gemini_service
 from services.vision_service import vision_service
@@ -14,20 +11,10 @@ router = APIRouter(prefix="/process", tags=["process"])
 
 @router.post("/analyze")
 async def analyze_input(body: dict = Body(...)):
-    """
-    Step 1: Analyze image with Vision Service (Gemini 2.5 Flash).
-    Returns analysis for user confirmation (Pro/Prolux) or internal use (User).
-    """
     image_url = body.get('imageUrl')
-    if not image_url:
-         return {"success": False, "message": "No image URL provided"}
-         
+    if not image_url: return {"success": False, "message": "No image URL provided"}
     analysis = await vision_service.analyze_image(image_url)
-    
-    return {
-        "success": True,
-        "analysis": analysis
-    }
+    return {"success": True, "analysis": analysis}
 
 @router.post("/generate")
 async def generate(body: dict = Body(...)):
@@ -35,57 +22,37 @@ async def generate(body: dict = Body(...)):
     input_data = body.get('input', {})
     user_input_text = input_data.get('content', '')
     image_url = input_data.get('imageUrl')
-    analysis_result = body.get('analysisResult') # Optional, if passed from frontend confirmation
+    analysis_result = body.get('analysisResult')
     
-    # 1. Get Config
-    config = await db.pillars_config.find_one({"user_id": user_id}, {"_id": 0})
-    if not config:
-        raise HTTPException(status_code=404, detail="Config not found")
+    config = await db.pillars_config.find_one({"user_id": user_id})
+    if not config: raise HTTPException(status_code=404, detail="Config not found")
         
     user_mode = config.get('user_mode', 'user')
 
-    # 2. AUTO-ANALYSIS if not provided and not skipped
-    # User mode: Auto analyze invisible to user
-    # Pro/Prolux: Frontend should have called /analyze first, but if not we do it here.
     if not analysis_result and image_url:
         analysis_result = await vision_service.analyze_image(image_url)
 
-    # 3. Model Selection
-    model_name = 'gemini-2.5-flash'
+    # Model Selection Logic
+    model_name = 'gemini-2.5-flash-image'
     if user_mode == 'pro':
-        model_name = 'gemini' # Standard
+        model_name = 'gemini-3-pro-image-preview'
     elif user_mode == 'prolux':
-        model_name = 'gemini-3-pro'
+        model_name = 'gemini-3-pro-image-preview'
         
-    # 4. Build Universal Prompt
+    # Build Prompt
     master_prompt = build_universal_prompt(config, analysis_result)
     
-    # 5. Generate
-    # We pass the image_url to generation as well if it's an image task
-    # For now assuming text-to-text or text+image-to-text instructions. 
-    # Real image generation/edit needs an Image Generation/Edit model or multimodal capability.
-    # Given "Processing intelligent... Gemini", it implies Text/Multimodal processing describing the output or controlling a pipeline.
-    # If the output IS an image, we would need an Image Gen model.
-    # PRD "Propósito y Alcance" implies "Procesamiento inteligente". 
-    # If it's pure text output describing the process: OK.
-    # If it's Image-to-Image: Gemini 3 Pro is Multimodal but output is text/code usually, unless using Imagen 3?
-    # PRD Section 2 says "Solo 3 modelos IA: Gemini...". 
-    # We will assume we are generating the *Instruction* or the *Result* text for now. 
-    # If Image Generation is needed, we would need Imagen. 
-    # But let's stick to the prompt text generation as per "Ensamblaje del Prompt Maestro".
+    # Generate (Now supporting Image Return)
+    result = await gemini_service.generate_content(model_name, master_prompt, user_input_text, image_url)
     
-    final_input = f"USER REQUEST: {user_input_text}\nIMAGE URL: {image_url}"
-    
-    result_text = await gemini_service.generate_content(model_name, master_prompt, final_input)
-    
-    # 6. Log
+    # Log
     log_entry = {
         "user_id": user_id,
-        "model_used": model_name,
+        "model_used": result.get("model", model_name),
         "master_prompt": master_prompt,
         "input": input_data,
-        "output": result_text,
-        "analysis": analysis_result,
+        "output_text": result.get("text"),
+        "has_image": bool(result.get("image_base64")),
         "timestamp": datetime.datetime.now()
     }
     await db.process_logs.insert_one(log_entry)
@@ -93,15 +60,17 @@ async def generate(body: dict = Body(...)):
     return {
         "success": True,
         "output": {
-            "text": result_text,
+            "text": result.get("text", ""),
+            "image": result.get("image_base64"), # Pass base64 image to frontend
             "analysis": analysis_result
         },
         "metadata": {
-            "modelUsed": model_name,
+            "modelUsed": result.get("model", model_name),
             "universalPrompt": True
         }
     }
 
+# Keep existing macro endpoints...
 @router.post("/apply-user-macro")
 async def apply_user_macro_endpoint(body: dict = Body(...)):
     user_id = body.get('userId')
@@ -114,8 +83,6 @@ async def apply_user_macro_endpoint(body: dict = Body(...)):
     
     new_config = apply_user_macro(config, quality, aesthetics, light)
     
-    # Need to update snippets/levels for all modified sliders
-    # Simplified loop to refresh snippets based on new values
     for pillar_name in ['photoscaler', 'stylescaler', 'lightscaler']:
         for s in new_config[pillar_name]['sliders']:
             val = s['value']
@@ -135,7 +102,6 @@ async def apply_pro_macro_endpoint(body: dict = Body(...)):
     
     new_config = apply_pro_macro(config, macro_key)
     
-    # Refresh snippets
     for pillar_name in ['photoscaler', 'stylescaler', 'lightscaler']:
         if pillar_name in new_config:
             for s in new_config[pillar_name]['sliders']:
