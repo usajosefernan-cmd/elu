@@ -4,21 +4,42 @@ import { getSupabaseClient } from './authService';
 const supabase = getSupabaseClient();
 
 export const getBalance = async (): Promise<number> => {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) return 0;
+    try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser();
+        
+        if (authError) {
+            console.warn('Auth error in getBalance:', authError.message);
+            return 0;
+        }
+        
+        if (!user) {
+            console.log('No user in getBalance');
+            return 0;
+        }
 
-    const { data, error } = await supabase
-        .from('user_profiles')
-        .select('tokens_balance, user_mode')
-        .eq('id', user.id)
-        .single();
+        const { data, error } = await supabase
+            .from('user_profiles')
+            .select('tokens_balance, user_mode')
+            .eq('id', user.id)
+            .single();
 
-    if (error) return 0;
+        if (error) {
+            console.warn('DB error in getBalance:', error.message);
+            return 0;
+        }
 
-    // ADMIN GOD MODE: user_mode === 'prolux' means admin
-    if (data.user_mode === 'prolux') return 999999;
+        // ADMIN GOD MODE: user_mode === 'prolux' means admin
+        if (data.user_mode === 'prolux') {
+            console.log('Admin detected, returning 999999');
+            return 999999;
+        }
 
-    return data.tokens_balance || 0;
+        console.log('Balance fetched:', data.tokens_balance);
+        return data.tokens_balance || 0;
+    } catch (e) {
+        console.error('Exception in getBalance:', e);
+        return 0;
+    }
 };
 
 // RPC Call to deduct tokens atomically on the server
