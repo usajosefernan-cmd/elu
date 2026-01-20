@@ -6,41 +6,54 @@ class GeminiService:
         self.api_key = os.environ.get("GOOGLE_API_KEY")
         if self.api_key:
             genai.configure(api_key=self.api_key)
+        else:
+            print("WARNING: No API Key found for Gemini.")
 
     async def generate_content(self, model_name: str, master_prompt: str, user_input: str) -> str:
-        if not self.api_key: return "Error: API Key not configured."
+        if not self.api_key:
+            return "Error: API Key not configured."
         
-        # MAPPING UPDATE:
-        # Auto/Vision -> gemini-2.5-flash (Mapped to 2.0-flash)
-        # User -> gemini-2.5-flash
-        # Pro -> gemini-2.0-pro (Mapped to 1.5-pro or 2.0-flash if not avail)
-        # Prolux -> gemini-3-pro (Mapped to 1.5-pro or experimental if avail)
+        # EXACT MAPPING BASED ON AVAILABLE MODELS
+        target_model = "gemini-2.5-flash" # Default
+        
+        if "flash" in model_name:
+            target_model = "gemini-2.5-flash"
+        elif "pro" in model_name or "gemini-3" in model_name:
+            # User explicitly requested gemini-3-pro / nano-banana
+            target_model = "gemini-3-pro-preview" 
+        elif "gemini" == model_name:
+             target_model = "gemini-2.5-pro" # Fallback for 'pro' mode generic
 
-        target_model = "gemini-2.0-flash" 
-        
-        if "pro" in model_name or "gemini-3" in model_name:
-             target_model = "gemini-1.5-pro" # Stable "Pro" equivalent
+        print(f"Using Model: {target_model}")
 
         try:
-            # Low temperature for Identity Lock respect
-            generation_config = {
-                "temperature": 0.2,
-                "top_p": 0.8,
-            }
+            safety_settings = [
+                {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+                {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+            ]
 
             model = genai.GenerativeModel(
                 model_name=target_model,
                 system_instruction=master_prompt
             )
             
+            # Note: For Gemini 3 Pro, ensure we are not sending unsupported params if any
             response = model.generate_content(
                 user_input,
-                generation_config=generation_config
+                safety_settings=safety_settings
             )
             
-            return response.text
+            # Safe access to text
+            if response.candidates and response.candidates[0].content.parts:
+                return response.text
+            else:
+                print(f"Gemini Feedback: {response.prompt_feedback}")
+                return f"⚠️ Output Blocked. Reason: {response.prompt_feedback}"
             
         except Exception as e:
-            return f"Error from Gemini: {str(e)}"
+            print(f"Gemini generation error: {e}")
+            return f"Error from Gemini ({target_model}): {str(e)}"
 
 gemini_service = GeminiService()
