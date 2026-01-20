@@ -18,7 +18,7 @@ export const getGenerations = async (): Promise<GenerationSession[]> => {
 
     // Check if user is admin to allow "Rescue Mode" (Seeing all data)
     const { data: profile } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('is_admin')
         .eq('id', user.id)
         .single();

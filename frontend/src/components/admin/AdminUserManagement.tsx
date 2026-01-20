@@ -31,7 +31,7 @@ export const AdminUserManagement: React.FC = () => {
         try {
             // 1. Fetch Profiles
             const { data: profiles, error: profilesError } = await supabase
-                .from('profiles')
+                .from('user_profiles')
                 .select('*')
                 .order('created_at', { ascending: false });
 
@@ -89,7 +89,7 @@ export const AdminUserManagement: React.FC = () => {
 
         try {
             const { error } = await supabase
-                .from('profiles')
+                .from('user_profiles')
                 .update({ tokens_balance: newBalance })
                 .eq('id', userId);
 

@@ -8,7 +8,7 @@ export const getBalance = async (): Promise<number> => {
     if (!user) return 0;
 
     const { data, error } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('tokens_balance, is_admin')
         .eq('id', user.id)
         .single();
@@ -28,7 +28,7 @@ export const spendTokens = async (amount: number, description: string): Promise<
 
     // Check if admin first to bypass payment logic
     const { data: profile } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('is_admin')
         .eq('id', user.id)
         .single();

@@ -20,7 +20,7 @@ export const AdminInfrastructure: React.FC = () => {
         setLoading(true);
         try {
             // 1. Get Table Counts
-            const { count: usersCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true });
+            const { count: usersCount } = await supabase.from('user_profiles').select('*', { count: 'exact', head: true });
             const { count: jobsCount } = await supabase.from('generation_jobs').select('*', { count: 'exact', head: true });
 
             // 2. Ping Edge Function (Health Check)
