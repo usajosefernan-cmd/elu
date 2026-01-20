@@ -536,10 +536,13 @@ class LuxScalerAPITester:
         print("🚀 Starting LuxScaler v27 Backend API Tests")
         print("=" * 60)
         
-        # Test sequence
+        # Test sequence - focusing on review request items
         tests = [
             self.test_root_endpoint,
-            self.test_login,
+            self.test_login,  # Test 1: Login flow
+            self.test_supabase_generation_flow,  # Test 2: Generation with Supabase config
+            self.test_supabase_apply_user_macro,  # Test 3: Apply user macro updates Supabase
+            # Additional comprehensive tests
             self.test_pillars_config,
             self.test_slider_update,
             self.test_pillar_toggle,
@@ -549,8 +552,7 @@ class LuxScalerAPITester:
             self.test_vision_analysis_base64,
             self.test_vision_analysis_url,
             self.test_vision_analysis_invalid_data,
-            self.test_full_generation_flow,
-            self.test_generation
+            self.test_full_generation_flow
         ]
         
         for test in tests:
