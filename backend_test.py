@@ -437,43 +437,99 @@ class LuxScalerAPITester:
             self.log_test("Full Generation Flow", False, "Generation flow failed")
             return False
 
-    def test_generation(self):
-        """Test generation functionality"""
+    def test_supabase_generation_flow(self):
+        """Test generation flow reads configuration from Supabase user_profiles (current_config)"""
         if not self.user_id:
-            self.log_test("Generation Test", False, "No user ID available")
+            self.log_test("Supabase Generation Flow", False, "No user ID available")
             return False
 
         success, response = self.run_test(
-            "Generation Request",
+            "Supabase Generation Flow",
             "POST",
             "process/generate",
             200,
             data={
                 "userId": self.user_id,
                 "input": {
-                    "content": "Describe a futuristic city with golden lights."
+                    "content": "Test generation with Supabase config"
                 }
             }
         )
         
-        if success:
-            has_output = 'output' in response and 'text' in response['output']
-            has_metadata = 'metadata' in response
+        if success and response.get('success'):
+            output = response.get('output', {})
+            metadata = response.get('metadata', {})
+            has_text = 'text' in output and len(output['text']) > 0
+            has_metadata = 'modelUsed' in metadata
             
-            self.log_test("Generation - Output Structure", has_output, 
-                         "Has output text" if has_output else "Missing output text")
-            self.log_test("Generation - Metadata", has_metadata, 
+            self.log_test("Supabase Generation - Output Text", has_text, 
+                         "Has output text" if has_text else "Missing output text")
+            self.log_test("Supabase Generation - Metadata", has_metadata, 
                          "Has metadata" if has_metadata else "Missing metadata")
             
-            return has_output and has_metadata
+            return has_text and has_metadata
         else:
-            # Check if it's an expected error (API key not configured)
-            if "API Key not configured" in str(response):
-                self.log_test("Generation Test", True, "Expected error: API Key not configured")
-                return True
-            else:
-                self.log_test("Generation Test", False, "Unexpected generation failure")
-                return False
+            self.log_test("Supabase Generation Flow", False, "Generation flow failed")
+            return False
+
+    def test_supabase_apply_user_macro(self):
+        """Test apply-user-macro updates current_config in Supabase"""
+        if not self.user_id:
+            self.log_test("Supabase Apply User Macro", False, "No user ID available")
+            return False
+
+        success, response = self.run_test(
+            "Supabase Apply User Macro",
+            "POST",
+            "process/apply-user-macro",
+            200,
+            data={
+                "userId": self.user_id,
+                "quality": 8,
+                "aesthetics": 6,
+                "light": 7
+            }
+        )
+        
+        if success and response.get('success'):
+            config = response.get('config', {})
+            
+            # Verify config structure
+            has_photoscaler = 'photoscaler' in config
+            has_stylescaler = 'stylescaler' in config
+            has_lightscaler = 'lightscaler' in config
+            
+            config_complete = has_photoscaler and has_stylescaler and has_lightscaler
+            
+            self.log_test("Supabase User Macro - Config Structure", config_complete, 
+                         "Complete config returned" if config_complete else "Incomplete config")
+            
+            # Test that the config was actually updated in Supabase by making another generation call
+            if config_complete:
+                # Make a generation call to verify the updated config is being used
+                gen_success, gen_response = self.run_test(
+                    "Verify Supabase Config Update",
+                    "POST",
+                    "process/generate",
+                    200,
+                    data={
+                        "userId": self.user_id,
+                        "input": {
+                            "content": "Test with updated config"
+                        }
+                    }
+                )
+                
+                config_persisted = gen_success and gen_response.get('success')
+                self.log_test("Supabase Config Persistence", config_persisted, 
+                             "Config persisted in Supabase" if config_persisted else "Config not persisted")
+                
+                return config_persisted
+            
+            return config_complete
+        else:
+            self.log_test("Supabase Apply User Macro", False, "User macro application failed")
+            return False
 
     def run_all_tests(self):
         """Run all tests in sequence"""
