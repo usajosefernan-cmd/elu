@@ -240,6 +240,145 @@ class LuxScalerAPITester:
             self.log_test("User Mode Update", False, "Failed to switch to PRO mode")
             return False
 
+    def test_user_macro_logic(self):
+        """Test User Macro Logic - apply-user-macro endpoint"""
+        if not self.user_id:
+            self.log_test("User Macro Logic", False, "No user ID available")
+            return False
+
+        success, response = self.run_test(
+            "User Macro Application",
+            "POST",
+            "process/apply-user-macro",
+            200,
+            data={
+                "userId": self.user_id,
+                "quality": 10,
+                "aesthetics": 5,
+                "light": 5
+            }
+        )
+        
+        if success and response.get('success'):
+            config = response.get('config', {})
+            photoscaler = config.get('photoscaler', {})
+            sliders = photoscaler.get('sliders', [])
+            
+            # Find limpieza_artefactos slider (should be first one based on macro_mappings.py)
+            limpieza_value = None
+            for slider in sliders:
+                if slider.get('name') == 'limpieza_artefactos':
+                    limpieza_value = slider.get('value')
+                    break
+            
+            if limpieza_value == 10:
+                self.log_test("User Macro - limpieza_artefactos", True, f"Value correctly set to {limpieza_value}")
+                return True
+            else:
+                self.log_test("User Macro - limpieza_artefactos", False, f"Expected 10, got {limpieza_value}")
+                return False
+        else:
+            self.log_test("User Macro Logic", False, "Failed to apply user macro")
+            return False
+
+    def test_pro_macro_logic(self):
+        """Test Pro Macro Logic - apply-pro-macro endpoint"""
+        if not self.user_id:
+            self.log_test("Pro Macro Logic", False, "No user ID available")
+            return False
+
+        success, response = self.run_test(
+            "Pro Macro Application",
+            "POST",
+            "process/apply-pro-macro",
+            200,
+            data={
+                "userId": self.user_id,
+                "macroKey": "macro_restoration"
+            }
+        )
+        
+        if success and response.get('success'):
+            config = response.get('config', {})
+            photoscaler = config.get('photoscaler', {})
+            sliders = photoscaler.get('sliders', [])
+            
+            # Find grano_filmico slider (should be set to 0 for macro_restoration)
+            grano_value = None
+            for slider in sliders:
+                if slider.get('name') == 'grano_filmico':
+                    grano_value = slider.get('value')
+                    break
+            
+            if grano_value == 0:
+                self.log_test("Pro Macro - grano_filmico", True, f"Value correctly set to {grano_value}")
+                return True
+            else:
+                self.log_test("Pro Macro - grano_filmico", False, f"Expected 0, got {grano_value}")
+                return False
+        else:
+            self.log_test("Pro Macro Logic", False, "Failed to apply pro macro")
+            return False
+
+    def test_vision_analysis(self):
+        """Test Vision Analysis with real API"""
+        success, response = self.run_test(
+            "Vision Analysis",
+            "POST",
+            "process/analyze",
+            200,
+            data={
+                "imageUrl": "https://images.pexels.com/photos/35501372/pexels-photo-35501372.jpeg"
+            }
+        )
+        
+        if success and response.get('success'):
+            analysis = response.get('analysis', {})
+            has_semantic_anchors = 'semantic_anchors' in analysis
+            semantic_anchors_is_list = isinstance(analysis.get('semantic_anchors'), list)
+            
+            self.log_test("Vision Analysis - Structure", has_semantic_anchors, 
+                         "Has semantic_anchors" if has_semantic_anchors else "Missing semantic_anchors")
+            self.log_test("Vision Analysis - Anchors Type", semantic_anchors_is_list, 
+                         "semantic_anchors is list" if semantic_anchors_is_list else "semantic_anchors not a list")
+            
+            return has_semantic_anchors and semantic_anchors_is_list
+        else:
+            self.log_test("Vision Analysis", False, "Vision analysis failed")
+            return False
+
+    def test_full_generation_flow(self):
+        """Test Full Generation Flow with image"""
+        if not self.user_id:
+            self.log_test("Full Generation Flow", False, "No user ID available")
+            return False
+
+        success, response = self.run_test(
+            "Full Generation Flow",
+            "POST",
+            "process/generate",
+            200,
+            data={
+                "userId": self.user_id,
+                "input": {
+                    "content": "Test",
+                    "imageUrl": "https://images.pexels.com/photos/35501372/pexels-photo-35501372.jpeg"
+                }
+            }
+        )
+        
+        if success and response.get('success'):
+            output = response.get('output', {})
+            has_text = 'text' in output and len(output['text']) > 0
+            
+            self.log_test("Full Generation - Output Text", has_text, 
+                         "Has output text" if has_text else "Missing output text")
+            
+            return has_text
+        else:
+            self.log_test("Full Generation Flow", False, "Generation flow failed")
+            return False
+
     def test_generation(self):
         """Test generation functionality"""
         if not self.user_id:
