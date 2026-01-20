@@ -10,7 +10,7 @@ import json
 from datetime import datetime
 
 class LuxScalerAPITester:
-    def __init__(self, base_url="https://image-processor-16.preview.emergentagent.com"):
+    def __init__(self, base_url="https://lux-imaging.preview.emergentagent.com"):
         self.base_url = base_url
         self.user_id = None
         self.tests_run = 0
