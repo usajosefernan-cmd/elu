@@ -25,7 +25,7 @@ export const generateAvailableUsername = async (baseName: string): Promise<strin
     while (!isAvailable && attempts < 5) {
         // Check uniqueness in profiles table
         const { data } = await supabase
-            .from('profiles')
+            .from('user_profiles')
             .select('username')
             .eq('username', candidate)
             .single();
@@ -104,7 +104,7 @@ export const authenticateWithBetaCode = async (code: string) => {
         // Update profile with tokens bonus (after trigger creates profile row)
         setTimeout(async () => {
             await supabase
-                .from('profiles')
+                .from('user_profiles')
                 .update({
                     tokens_balance: waitlistEntry.tokens_bonus
                 })
@@ -136,7 +136,7 @@ export const signUpUser = async (email: string, password: string, fullName: stri
         if (!finalUsername.startsWith('@')) finalUsername = `@${finalUsername}`;
 
         // Check availability
-        const { data: existing } = await supabase.from('profiles').select('username').eq('username', finalUsername).single();
+        const { data: existing } = await supabase.from('user_profiles').select('username').eq('username', finalUsername).single();
         if (existing) {
             // If taken, try to find a close variant
             finalUsername = await generateAvailableUsername(finalUsername.replace('@', ''));
@@ -178,7 +178,7 @@ export const getCurrentUserProfile = async (): Promise<UserProfile | null> => {
 
     // Fetch extended profile data
     const { data: profile, error } = await supabase
-        .from('profiles')
+        .from('user_profiles')
         .select('*')
         .eq('id', user.id)
         .single();
