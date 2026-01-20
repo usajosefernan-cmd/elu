@@ -218,23 +218,73 @@ export const getSupabaseClient = () => supabase as any;
 // TOKEN MANAGEMENT FUNCTIONS
 // =====================================================
 
-export const spendTokens = async (actionKey: string, description?: string): Promise<boolean> => {
+// Token costs (hardcoded until DB tables are created)
+const TOKEN_COSTS: Record<string, number> = {
+    'preview_watermark': 10,
+    'preview_clean': 15,
+    'master_4k': 50,
+    'master_8k': 100
+};
+
+export const spendTokens = async (actionKey: string, amount?: number): Promise<boolean> => {
     const { data: { user } } = await (supabase as any).auth.getUser();
     if (!user) return false;
 
-    // Call the RPC function to spend tokens
-    const { data, error } = await supabase.rpc('spend_tokens', {
-        p_user_id: user.id,
-        p_action_key: actionKey,
-        p_description: description || actionKey
-    });
+    // Get current balance
+    const { data: profile, error: fetchError } = await supabase
+        .from('user_profiles')
+        .select('tokens_balance')
+        .eq('id', user.id)
+        .single();
 
-    if (error) {
-        console.error('Error spending tokens:', error);
+    if (fetchError || !profile) return false;
+
+    const currentBalance = (profile as any).tokens_balance || 0;
+    const cost = amount || TOKEN_COSTS[actionKey] || 10;
+
+    if (currentBalance < cost) return false;
+
+    // Deduct tokens
+    const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({ tokens_balance: currentBalance - cost })
+        .eq('id', user.id);
+
+    if (updateError) {
+        console.error('Error spending tokens:', updateError);
         return false;
     }
 
-    return data === true;
+    return true;
+};
+
+export const addTokens = async (amount: number): Promise<boolean> => {
+    const { data: { user } } = await (supabase as any).auth.getUser();
+    if (!user) return false;
+
+    // Get current balance
+    const { data: profile, error: fetchError } = await supabase
+        .from('user_profiles')
+        .select('tokens_balance')
+        .eq('id', user.id)
+        .single();
+
+    if (fetchError || !profile) return false;
+
+    const currentBalance = (profile as any).tokens_balance || 0;
+
+    // Add tokens
+    const { error: updateError } = await supabase
+        .from('user_profiles')
+        .update({ tokens_balance: currentBalance + amount })
+        .eq('id', user.id);
+
+    if (updateError) {
+        console.error('Error adding tokens:', updateError);
+        return false;
+    }
+
+    return true;
 };
 
 export const getTokenBalance = async (): Promise<number> => {
@@ -251,28 +301,22 @@ export const getTokenBalance = async (): Promise<number> => {
     return (data as any).tokens_balance || 0;
 };
 
+// Billing tiers (hardcoded until DB tables are created)
 export const getBillingTiers = async () => {
-    const { data, error } = await supabase
-        .from('billing_tiers')
-        .select('*')
-        .eq('is_active', true)
-        .order('price_eur', { ascending: true });
-
-    if (error) {
-        console.error('Error fetching billing tiers:', error);
-        return [];
-    }
-    return data || [];
+    return [
+        { tier_key: 'starter', name: 'Starter', price_eur: 1.99, tokens_included: 200, unlocks_profile: 'auto' },
+        { tier_key: 'creator', name: 'Creator', price_eur: 9.99, tokens_included: 1200, unlocks_profile: 'user' },
+        { tier_key: 'pro', name: 'Pro', price_eur: 29.99, tokens_included: 4000, unlocks_profile: 'pro' },
+        { tier_key: 'studio', name: 'Studio', price_eur: 99.99, tokens_included: 15000, unlocks_profile: 'prolux' }
+    ];
 };
 
+// Token costs (hardcoded until DB tables are created)
 export const getTokenCosts = async () => {
-    const { data, error } = await supabase
-        .from('token_costs')
-        .select('*');
-
-    if (error) {
-        console.error('Error fetching token costs:', error);
-        return [];
-    }
-    return data || [];
+    return [
+        { action_key: 'preview_watermark', tokens_cost: 10, description: 'Preview con marca de agua' },
+        { action_key: 'preview_clean', tokens_cost: 15, description: 'Preview sin marca' },
+        { action_key: 'master_4k', tokens_cost: 50, description: 'Master 4K' },
+        { action_key: 'master_8k', tokens_cost: 100, description: 'Master 8K' }
+    ];
 };
