@@ -215,6 +215,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 <button
                   className="bg-lumen-gold text-black px-4 py-2 md:px-6 md:py-3 rounded-full font-black text-[10px] md:text-xs hover:scale-105 transition-all uppercase tracking-widest flex items-center gap-2 shadow-[0_0_20px_rgba(212,175,55,0.2)]"
                   onClick={() => handleNav('LOGIN')}
+                  data-testid="login-button"
                 >
                   <LogIn className="w-3.5 h-3.5" />
                   <span>{t('nav.login')}</span>
