@@ -388,7 +388,29 @@ const App: React.FC = () => {
             return;
         }
 
-        // 2. VISION ANALYSIS (Optional Step)
+        // 2. SHOW PROFILE SELECTOR FIRST (v28 Flow)
+        // For logged-in users, show profile-based config
+        if (userProfile) {
+            setShowProfileSelector(true);
+            setStatus(AgentStatus.CONFIGURING);
+            
+            // Run analysis in background
+            try {
+                const analysis = await analyzeImage(uploadedPublicUrl);
+                if (analysis.safety_check?.is_nsfw) {
+                    alert("Bloqueo de Seguridad: Contenido no permitido.");
+                    setShowProfileSelector(false);
+                    resetFlow();
+                    return;
+                }
+                setAnalysisResult(analysis);
+            } catch (e) {
+                console.warn("Background analysis failed:", e);
+            }
+            return;
+        }
+
+        // 3. VISION ANALYSIS for guests (Original flow)
         try {
             setStatus(AgentStatus.ANALYZING);
             setAgentMsg({ text: "PhotoScaler™: Inspeccionando Geometría...", type: 'info' });
