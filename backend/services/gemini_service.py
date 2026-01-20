@@ -1,4 +1,5 @@
-import google.generativeai as genai
+from google import genai
+from google.genai import types
 import os
 import time
 from services.key_manager import key_manager
@@ -9,65 +10,78 @@ class GeminiService:
 
     async def generate_content(self, model_name: str, master_prompt: str, user_input: str) -> str:
         
-        # Priority 1: Requested Model (e.g. 3-pro)
-        target_model = "gemini-2.5-flash" 
-        if "pro" in model_name or "gemini-3" in model_name or "nano" in model_name:
-            target_model = "gemini-3-pro-preview" 
+        # New SDK Mapping
+        target_model = "gemini-2.0-flash" 
+        if "pro" in model_name or "gemini-3" in model_name:
+            target_model = "gemini-3-pro-preview"
         elif "gemini" == model_name:
-             target_model = "gemini-2.5-pro"
+             target_model = "gemini-2.0-pro-exp-02-05" # Modern Pro
 
-        # Priority 2: Flash Fallback
-        fallback_model_1 = "gemini-2.0-flash" 
-        
-        # Priority 3: Lite Fallback (Highest Speed/Quota)
-        fallback_model_2 = "gemini-2.0-flash-lite-preview-02-05"
+        fallback_model = "gemini-2.0-flash-lite-preview-02-05"
 
-        print(f"GeminiService: Requesting {target_model}...")
+        print(f"GeminiService (New SDK): Requesting {target_model}")
 
-        max_retries = 4 # Increased retries
+        max_retries = 3
         
         for attempt in range(max_retries):
             current_key = key_manager.get_next_key()
             if not current_key: return "Error: No API Keys configured."
             
-            genai.configure(api_key=current_key)
-            
-            # Dynamic Model Selection based on attempt
+            # Switch to fallback on last attempt
             current_model_name = target_model
-            
-            # If we are failing, degrade gracefully
-            if attempt == 1 and "pro" in target_model:
-                 current_model_name = fallback_model_1 # Switch to Flash
-                 print(f"GeminiService: Downgrading to {current_model_name}...")
-            elif attempt >= 2:
-                 current_model_name = fallback_model_2 # Switch to Lite
-                 print(f"GeminiService: Downgrading to {current_model_name} (Lite)...")
+            if attempt == max_retries - 1:
+                 current_model_name = fallback_model
+                 print(f"GeminiService: Switching to fallback {current_model_name}")
 
-            print(f"GeminiService: Attempt {attempt+1}/{max_retries} | Model: {current_model_name} | Key: ...{current_key[-4:]}")
+            print(f"GeminiService: Attempt {attempt+1} | Key ...{current_key[-4:]}")
 
             try:
-                safety_settings = [
-                    {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-                    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-                ]
-
-                model = genai.GenerativeModel(
-                    model_name=current_model_name,
-                    system_instruction=master_prompt
+                # Initialize Client (New SDK)
+                # Note: 'vertexai=False' by default uses Google AI Studio (API Key)
+                # If user wants Vertex, we would need vertexai=True and project/location.
+                # Since we have API Keys, we use standard mode.
+                client = genai.Client(api_key=current_key)
+                
+                response = client.models.generate_content(
+                    model=current_model_name,
+                    contents=[
+                        types.Content(
+                            role="user",
+                            parts=[
+                                types.Part.from_text(text=master_prompt),
+                                types.Part.from_text(text=user_input)
+                            ]
+                        )
+                    ],
+                    config=types.GenerateContentConfig(
+                        safety_settings=[
+                            types.SafetySetting(
+                                category="HARM_CATEGORY_HARASSMENT",
+                                threshold="BLOCK_NONE"
+                            ),
+                            types.SafetySetting(
+                                category="HARM_CATEGORY_HATE_SPEECH",
+                                threshold="BLOCK_NONE"
+                            ),
+                            types.SafetySetting(
+                                category="HARM_CATEGORY_SEXUALLY_EXPLICIT",
+                                threshold="BLOCK_NONE"
+                            ),
+                            types.SafetySetting(
+                                category="HARM_CATEGORY_DANGEROUS_CONTENT",
+                                threshold="BLOCK_NONE"
+                            )
+                        ],
+                        # Low temp for forensic accuracy
+                        temperature=0.2 if "pro" in current_model_name else 0.7 
+                    )
                 )
                 
-                response = model.generate_content(
-                    user_input,
-                    safety_settings=safety_settings
-                )
-                
-                if response.candidates and response.candidates[0].content.parts:
+                if response.text:
                     key_manager.report_success(current_key)
                     return response.text
                 else:
-                    return f"⚠️ Output Blocked. Reason: {response.prompt_feedback}"
+                    return "⚠️ Output Blocked / Empty."
                 
             except Exception as e:
                 print(f"GeminiService Error ({current_model_name}): {e}")
@@ -75,20 +89,11 @@ class GeminiService:
                 
                 if "429" in err_str or "quota" in err_str.lower():
                     key_manager.report_error(current_key)
-                    print(f"GeminiService: 429 Detected. Sleeping 5s before retry...")
-                    time.sleep(5) # Backoff
-                    continue
-                elif "404" in err_str:
-                    print("GeminiService: Model Not Found. Switching fallback.")
-                    # If 3-Pro is 404, next loop will likely pick fallback if logic above holds, 
-                    # but let's force it for safety in case we are at attempt 0
-                    if "pro" in target_model:
-                        target_model = fallback_model_1 
+                    time.sleep(2)
                     continue
                 else:
-                    # Other errors
                     return f"Error from Gemini ({current_model_name}): {str(e)}"
         
-        return "Failed to generate content after retries. System is busy."
+        return "Failed to generate content after retries."
 
 gemini_service = GeminiService()
