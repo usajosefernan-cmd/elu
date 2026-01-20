@@ -376,7 +376,7 @@ const App: React.FC = () => {
         let uploadedPublicUrl = "";
         try {
             setStatus(AgentStatus.ANALYZING);
-            // Force UI update before heavy compression
+            setAgentMsg({ text: "Subiendo imagen...", type: 'info' });
             await new Promise(resolve => setTimeout(resolve, 100));
 
             const { blob: compressedBlob, aspectRatio: ratio } = await compressAndResizeImage(file);
@@ -389,33 +389,40 @@ const App: React.FC = () => {
         } catch (uploadError: any) {
             console.error("Critical Upload Error:", uploadError);
             setAgentMsg({ text: "Error de Subida: " + (uploadError.message || "Red rechazada"), type: 'error' });
-            resetFlow(); // Reset everything, DO NOT open wizard
+            resetFlow();
             return;
         }
 
-        // 2. SHOW PROFILE SELECTOR FIRST (v28 Flow)
-        // For logged-in users, show profile-based config
-        if (userProfile) {
-            setShowProfileSelector(true);
-            setStatus(AgentStatus.CONFIGURING);
-            
-            // Run analysis in background
-            try {
-                const analysis = await analyzeImage(uploadedPublicUrl);
-                if (analysis.safety_check?.is_nsfw) {
-                    alert("Bloqueo de Seguridad: Contenido no permitido.");
-                    setShowProfileSelector(false);
-                    resetFlow();
-                    return;
-                }
-                setAnalysisResult(analysis);
-            } catch (e) {
-                console.warn("Background analysis failed:", e);
+        // 2. CALL EDGE FUNCTION: Vision Analysis (Gemini 2.5 Flash)
+        try {
+            setStatus(AgentStatus.ANALYZING);
+            setAgentMsg({ text: "Gemini 2.5 Flash: Analizando imagen...", type: 'info' });
+
+            const visionResult = await analyzeImageWithVision(uploadedPublicUrl, userProfile?.id);
+
+            if (!visionResult.success) {
+                throw new Error(visionResult.error || "Análisis de visión falló");
             }
+
+            // Store vision analysis
+            setVisionAnalysis(visionResult.analysis);
+
+            // Get current token balance
+            const balance = await getBalance();
+            setUserTokenBalance(balance);
+
+            // 3. SHOW VISION CONFIRM MODAL
+            setShowVisionConfirm(true);
+            setStatus(AgentStatus.CONFIGURING);
             return;
+
+        } catch (visionError: any) {
+            console.error("Vision Analysis Error:", visionError);
+            // Fallback to old flow if Edge Function fails
+            setAgentMsg({ text: "Edge Function no disponible, usando fallback...", type: 'info' });
         }
 
-        // 3. VISION ANALYSIS for guests (Original flow)
+        // FALLBACK: Original vision analysis (if Edge Function fails)
         try {
             setStatus(AgentStatus.ANALYZING);
             setAgentMsg({ text: "PhotoScaler™: Inspeccionando Geometría...", type: 'info' });
