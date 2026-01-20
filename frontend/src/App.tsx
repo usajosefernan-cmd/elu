@@ -117,6 +117,7 @@ const App: React.FC = () => {
 
     // Config Wizard State
     const [showConfigWizard, setShowConfigWizard] = useState(false);
+    const [showProfileSelector, setShowProfileSelector] = useState(false); // NEW: Profile selector
     const [analysisResult, setAnalysisResult] = useState<SemanticAnalysis | null>(null);
 
     // PWA State
