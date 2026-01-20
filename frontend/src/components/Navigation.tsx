@@ -69,9 +69,13 @@ export const Navigation: React.FC<NavigationProps> = ({
   }, []);
 
   const handleNav = (action: string) => {
+    console.log('Navigation action:', action);
     if (action === 'STUDIO' && onNavigateToStudio) onNavigateToStudio();
     if (action === 'ARCHIVE' && onNavigateToArchive) onNavigateToArchive();
-    if (action === 'LOGIN' && onLogin) onLogin();
+    if (action === 'LOGIN' && onLogin) {
+      console.log('Calling onLogin');
+      onLogin();
+    }
 
     // Handle engines/motors
     if (action === 'ENGINE_1' && onNavigateToEngine1) onNavigateToEngine1();
