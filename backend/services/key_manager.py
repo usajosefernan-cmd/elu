@@ -9,15 +9,17 @@ class KeyManager:
         self._load_keys()
     
     def _load_keys(self):
-        # Load all variables starting with GOOGLE_API_KEY
-        # Priority to GOOGLE_API_KEY_2 as it is the newest provided by user
         env_vars = dict(os.environ)
         
-        # Add GOOGLE_API_KEY_2 first (High Priority)
+        # Add GOOGLE_API_KEY_3 (Freshest - Highest Priority)
+        if "GOOGLE_API_KEY_3" in env_vars:
+            self.keys.append({"key": env_vars["GOOGLE_API_KEY_3"], "weight": 50.0})
+
+        # Add GOOGLE_API_KEY_2 (High Priority)
         if "GOOGLE_API_KEY_2" in env_vars:
             self.keys.append({"key": env_vars["GOOGLE_API_KEY_2"], "weight": 10.0})
             
-        # Add GOOGLE_API_KEY
+        # Add GOOGLE_API_KEY (Lowest - Backup)
         if "GOOGLE_API_KEY" in env_vars:
             self.keys.append({"key": env_vars["GOOGLE_API_KEY"], "weight": 1.0})
             
@@ -29,8 +31,7 @@ class KeyManager:
         active_keys = [k for k in self.keys if k['key'] not in self.banned_keys or (now - self.banned_keys[k['key']] > 60)]
         
         if not active_keys:
-            # If all banned, try to reset the oldest ban or just return the highest weighted one hoping for the best
-            print("WARNING: All keys are in cooldown. Forcing use of primary key.")
+            # If all banned, return the one with highest weight (likely the newest) hoping it cooled down
             return self.keys[0]['key'] if self.keys else None
             
         # Weighted selection
@@ -45,7 +46,6 @@ class KeyManager:
         return active_keys[0]['key']
 
     def report_error(self, key):
-        # Ban key for 60 seconds on error
         print(f"KeyManager: Banning key ...{key[-4:]} due to error.")
         self.banned_keys[key] = time.time()
 
