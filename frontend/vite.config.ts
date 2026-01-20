@@ -9,7 +9,7 @@ export default defineConfig(({ mode }) => {
       port: 3000, // Changed to 3000 for Platform
       strictPort: true,
       host: '0.0.0.0',
-      allowedHosts: ['.emergent.run', 'localhost', 'gemini-scaler.preview.emergentagent.com'],
+      allowedHosts: ['.emergent.run', 'localhost', 'gemini-scaler.preview.emergentagent.com', 'image-processor-16.preview.emergentagent.com'],
       proxy: {
         '/api': {
           target: process.env.REACT_APP_BACKEND_URL || 'http://localhost:8001',
