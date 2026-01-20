@@ -188,7 +188,7 @@ export const getCurrentUserProfile = async (): Promise<UserProfile | null> => {
     // Map database fields to frontend UserProfile type
     const dbProfile = profile as any;
     
-    // Determine admin status: check 'role' field OR 'user_mode' field
+    // Determine admin status: check 'role' field OR 'user_mode' field OR is_admin
     const isAdmin = 
         dbProfile.role === 'ADMIN' || 
         dbProfile.user_mode === 'prolux' ||
@@ -199,11 +199,15 @@ export const getCurrentUserProfile = async (): Promise<UserProfile | null> => {
         email: dbProfile.email || user.email,
         username: dbProfile.username || '',
         full_name: dbProfile.full_name || user.user_metadata?.full_name || '',
-        tokens: dbProfile.tokens_balance || 0,
-        tokens_balance: dbProfile.tokens_balance || 0,
+        tokens: dbProfile.tokens_balance || 50,
+        tokens_balance: dbProfile.tokens_balance || 50,
         is_admin: isAdmin,
         subscription_tier: dbProfile.subscription_tier || 'free',
-        subscription_status: dbProfile.subscription_status || 'active'
+        subscription_status: dbProfile.subscription_status || 'active',
+        // v28 Fields
+        profile_type: dbProfile.profile_type || dbProfile.user_mode || 'auto',
+        total_tokens_purchased: dbProfile.total_tokens_purchased || 0,
+        total_generations: dbProfile.total_generations || 0
     } as UserProfile;
 };
 
