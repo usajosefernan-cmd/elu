@@ -1,7 +1,7 @@
 import google.generativeai as genai
 import os
 import time
-from backend.services.key_manager import key_manager
+from services.key_manager import key_manager
 
 class GeminiService:
     def __init__(self):
