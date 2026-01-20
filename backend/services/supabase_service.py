@@ -44,6 +44,13 @@ class SupabaseService:
         except Exception as e:
             print(f"Supabase Error: {e}")
             return None
+    async def update_user_config(self, user_id: str, config: dict):
+        try:
+            self.client.table("user_profiles").update({"current_config": config}).eq("id", user_id).execute()
+            return True
+        except Exception as e:
+            print(f"Supabase Error (update_config): {e}")
+            return False
 
     async def log_job(self, job_data: dict):
         try:
