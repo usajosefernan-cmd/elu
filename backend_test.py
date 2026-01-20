@@ -82,13 +82,13 @@ class LuxScalerAPITester:
         return success
 
     def test_login(self):
-        """Test login with test credentials"""
+        """Test login with admin credentials"""
         success, response = self.run_test(
             "Login Authentication",
             "POST",
             "auth/login",
             200,
-            data={"email": "test_friendly@luxscaler.com", "password": "password"}
+            data={"email": "usajosefernan@gmail.com", "password": "password"}
         )
         
         if success and 'userId' in response:
