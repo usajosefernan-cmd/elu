@@ -1,41 +1,37 @@
 /** @type {import('tailwindcss').Config} */
-module.exports = {
-    darkMode: ["class"],
+export default {
     content: [
-    "./src/**/*.{js,jsx,ts,tsx}",
-    "./public/index.html"
-  ],
-  theme: {
+        "./index.html",
+        "./src/**/*.{js,ts,jsx,tsx}"
+    ],
+    theme: {
         extend: {
-                fontFamily: {
-                    sans: ['Manrope', 'sans-serif'],
-                    serif: ['Playfair Display', 'serif'],
-                    mono: ['JetBrains Mono', 'monospace'],
+            colors: {
+                gold: '#D4AF37',
+            },
+            typography: (theme) => ({
+                DEFAULT: {
+                    css: {
+                        color: theme('colors.white'),
+                        a: {
+                            color: '#D4AF37',
+                            '&:hover': {
+                                color: '#F5D76E',
+                            },
+                        },
+                        h1: { color: theme('colors.white') },
+                        h2: { color: theme('colors.white') },
+                        h3: { color: theme('colors.white') },
+                        h4: { color: theme('colors.white') },
+                        strong: { color: theme('colors.white') },
+                        code: { color: '#D4AF37' },
+                        blockquote: { borderLeftColor: '#D4AF37' },
+                    },
                 },
-                colors: {
-                        background: '#020204',
-                        foreground: '#EDEDED',
-                        card: {
-                                DEFAULT: '#0D0D10',
-                                foreground: '#EDEDED'
-                        },
-                        primary: {
-                                DEFAULT: '#D4AF37', // Gold
-                                foreground: '#000000'
-                        },
-                        secondary: {
-                                DEFAULT: '#102A20',
-                                foreground: '#FFFFFF'
-                        },
-                        muted: {
-                                DEFAULT: '#52525B',
-                                foreground: '#A1A1AA'
-                        },
-                        border: 'rgba(255, 255, 255, 0.08)',
-                        input: 'rgba(255, 255, 255, 0.05)',
-                        ring: '#D4AF37',
-                }
-        }
-  },
-  plugins: [require("tailwindcss-animate")],
-};
+            }),
+        },
+    },
+    plugins: [
+        require('@tailwindcss/typography'),
+    ],
+}

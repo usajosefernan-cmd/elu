@@ -1,0 +1,327 @@
+// PREVIEW-GENERATOR v107 (LUXIFIER MIXER)
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
+import { GoogleGenAI, HarmCategory, HarmBlockThreshold } from "npm:@google/genai"
+import { encode } from "https://deno.land/std@0.168.0/encoding/base64.ts"
+import { decode } from "https://deno.land/x/imagescript@1.2.15/mod.ts";
+import { corsHeaders } from "../_shared/cors.ts"
+import { buildDeepThinkPrompt, fetchDynamicStyles, DEFAULT_STYLE_LIBRARIES, calculateGeminiCost } from "../_shared/lux-logic.ts"
+import { getRotatedApiKey } from "../_shared/key-rotator.ts"
+
+declare const Deno: any;
+
+interface LuxMixer {
+  stylism: number;
+  atrezzo: number;
+  skin_bio: number;
+  lighting: number;
+  upScaler: number;
+}
+
+const DEFAULT_MIXER: LuxMixer = { stylism: 5, atrezzo: 5, skin_bio: 5, lighting: 5, upScaler: 0 };
+
+// KEY ROTATION IMPLEMENTED VIA shared/key-rotator.ts
+// Replaced local function with robust rotator
+
+async function getUsername(supabase: any, userId: string): Promise<string> {
+  try {
+    const { data: profile } = await supabase.from('profiles').select('username').eq('id', userId).single();
+    if (profile?.username) return profile.username;
+  } catch (e) { }
+  return userId.substring(0, 8);
+}
+
+function generateFileName(username: string, styleId: string, mixer: LuxMixer, ext: string): string {
+  const rand = Math.random().toString(36).substring(2, 6).toUpperCase();
+  const scalerStr = `S${mixer.stylism}A${mixer.atrezzo}B${mixer.skin_bio}L${mixer.lighting}`;
+  return `${styleId}_${scalerStr}_${rand}.${ext}`;
+}
+
+function generateStoragePath(userId: string, generationId: string, fileName: string): string {
+  const now = new Date();
+  const timestamp = now.toISOString().replace(/[-:T.]/g, '').slice(0, 14);
+  const genIdShort = generationId.substring(0, 8);
+  return `${userId}/${timestamp}_${genIdShort}/${fileName}`;
+}
+
+function getGeminiAspectRatio(width: number, height: number): string {
+  const ratio = width / height;
+  const ratios: Record<string, number> = {
+    "1:1": 1, "3:4": 0.75, "4:3": 1.33, "9:16": 0.5625, "16:9": 1.7778
+  };
+  const bestRatio = Object.keys(ratios).reduce((a, b) =>
+    Math.abs(ratios[a] - ratio) < Math.abs(ratios[b] - ratio) ? a : b
+  );
+  return bestRatio;
+}
+
+async function diagnoseImage(ai: GoogleGenAI, base64Image: string, mimeType: string) {
+  try {
+    const resp = await ai.models.generateContent({
+      model: 'gemini-1.5-flash-002',
+      contents: [{
+        parts: [
+          { inlineData: { mimeType, data: base64Image } },
+          { text: 'Classify this image. Output JSON: {"category":"HUMAN|FOOD|ARCH|PRODUCT|UNIVERSAL","description":"10 words max"}' }
+        ]
+      }],
+      config: { responseMimeType: "application/json" }
+    });
+    const text = resp.response.text.replace(/```json/g, '').replace(/```/g, '').trim();
+    return JSON.parse(text);
+  } catch (e) {
+    return { category: 'HUMAN', description: 'A person in a photograph' };
+  }
+}
+
+function extractImageFromResponse(resp: any): { data: string, mimeType: string } | null {
+  const candidates = resp?.response?.candidates || resp?.candidates || [];
+  if (!candidates.length) return null;
+  const parts = candidates[0]?.content?.parts || [];
+  for (const part of parts) {
+    if (part.inlineData) return { data: part.inlineData.data, mimeType: part.inlineData.mimeType || 'image/png' };
+  }
+  return null;
+}
+
+function base64ToUint8Array(base64: string): Uint8Array {
+  const binaryString = atob(base64);
+  const len = binaryString.length;
+  const bytes = new Uint8Array(len);
+  for (let i = 0; i < len; i++) {
+    bytes[i] = binaryString.charCodeAt(i);
+  }
+  return bytes;
+}
+
+serve(async (req) => {
+  if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders })
+
+  try {
+    const { imageUrl, settings, debug_userId, precomputedAnalysis } = await req.json();
+    const supabase = createClient(Deno.env.get('SUPABASE_URL')!, Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!);
+
+    let userId = debug_userId;
+    let authMethod = 'DEBUG';
+
+    if (!userId) {
+      const authHeader = req.headers.get('Authorization');
+      if (authHeader) {
+        const token = authHeader.replace('Bearer ', '');
+        const { data: { user } } = await supabase.auth.getUser(token);
+        if (user) { userId = user.id; authMethod = 'TOKEN'; }
+      }
+    }
+    if (!userId) {
+      userId = `guest_${crypto.randomUUID().split('-')[0]}`;
+      authMethod = 'GUEST';
+    }
+
+    const username = await getUsername(supabase, userId);
+    const mixer: LuxMixer = settings?.mixer || DEFAULT_MIXER;
+
+    const stream = new ReadableStream({
+      async start(controller) {
+        const encoder = new TextEncoder();
+        const send = (data: any) => { try { controller.enqueue(encoder.encode(JSON.stringify(data) + '\n')); } catch (e) { console.error("Stream enqueue failed", e); } };
+        let ticket: any = null;
+        let heartbeatInterval: any = null;
+
+        try {
+          const isRegistered = userId.length > 20 && userId.includes('-');
+          send({ type: 'info', message: `Identity: ${username} (${authMethod}). Connecting Core...` });
+
+          if (isRegistered) {
+            const { data: qData } = await supabase.from('queue_manager').insert({ user_id: userId, status: 'processing' }).select().single();
+            ticket = qData;
+          }
+
+          heartbeatInterval = setInterval(() => { send({ type: 'ping' }); }, 1500);
+
+          const imgResp = await fetch(imageUrl);
+          if (!imgResp.ok) throw new Error("Failed to download input image");
+          const imgBlob = await imgResp.blob();
+          const inputMimeType = imgBlob.type || 'image/jpeg';
+          let arrayBuffer = await imgBlob.arrayBuffer();
+
+          // === IMAGE PRE-PROCESSING: Compress if too large (NO RESIZE) ===
+          const MAX_INPUT_SIZE_MB = 4; // Gemini limit
+          let u8Array = new Uint8Array(arrayBuffer);
+          let decodedImage = await decode(u8Array);
+
+          const originalSizeMB = arrayBuffer.byteLength / (1024 * 1024);
+
+          if (originalSizeMB > MAX_INPUT_SIZE_MB) {
+            send({ type: 'info', message: `Comprimiendo imagen de entrada (${originalSizeMB.toFixed(1)}MB > ${MAX_INPUT_SIZE_MB}MB)...` });
+
+            // Only compress quality, NO resize - keep original dimensions
+            const compressedBuffer = await decodedImage.encodeJPEG(80);
+
+            arrayBuffer = compressedBuffer.buffer;
+            u8Array = new Uint8Array(arrayBuffer);
+            decodedImage = await decode(u8Array);
+
+            const newSizeMB = arrayBuffer.byteLength / (1024 * 1024);
+            send({ type: 'info', message: `Imagen comprimida: ${newSizeMB.toFixed(1)}MB (dimensiones originales conservadas)` });
+          }
+
+          const base64Image = encode(arrayBuffer);
+          const ratio = getGeminiAspectRatio(decodedImage.width, decodedImage.height);
+
+          let analysis = precomputedAnalysis;
+          if (!analysis) {
+            send({ type: 'info', message: 'Analyzing Structure...' });
+            const key = await getRotatedApiKey(supabase);
+            const ai = new GoogleGenAI({ apiKey: key });
+            analysis = await diagnoseImage(ai, base64Image, inputMimeType);
+          }
+          analysis.width = decodedImage.width;
+          analysis.height = decodedImage.height;
+          analysis.targetRatio = ratio;
+
+          const category = analysis.category || analysis.classification?.master_category || 'UNIVERSAL';
+          const dynamicLibraries = await fetchDynamicStyles(supabase);
+
+          let generationId = crypto.randomUUID();
+          if (isRegistered) {
+            // RESTORED TO REAL SCHEMA: generations has original_image_path, semantic_analysis
+            const { data: session, error: genError } = await supabase.from('generations').insert({
+              user_id: userId,
+              original_image_path: imageUrl,
+              semantic_analysis: analysis,
+              status: 'generating_previews'
+            }).select().single();
+
+            if (genError) {
+              console.error(`[DB GENERATIONS ERROR] ${genError.message}`);
+            } else if (session) {
+              generationId = session.id;
+            }
+          }
+
+          send({ type: 'session_start', data: { generationId, user: username, category } });
+
+          const library = dynamicLibraries[category] || dynamicLibraries.UNIVERSAL || DEFAULT_STYLE_LIBRARIES.UNIVERSAL;
+          let plan = library.map((s: any) => s);
+          while (plan.length < 6) {
+            const src = plan[plan.length % library.length];
+            plan.push({ ...src, id: `${src.id}_alt` });
+          }
+          plan = plan.slice(0, 6);
+
+          send({ type: 'info', message: `Rendering 6x Variations (${ratio})...` });
+
+          const generateVariation = async (archetype: any, index: number): Promise<void> => {
+            const startTime = Date.now();
+            try {
+              const runKey = await getRotatedApiKey(supabase);
+              const runAi = new GoogleGenAI({ apiKey: runKey });
+
+              const prompt = buildDeepThinkPrompt(analysis, archetype.id, settings, 'PREVIEW', dynamicLibraries);
+
+              const resp = await runAi.models.generateContent({
+                model: 'gemini-3-pro-image-preview',
+                contents: [{
+                  parts: [
+                    { inlineData: { mimeType: inputMimeType, data: base64Image } },
+                    { text: prompt }
+                  ]
+                }],
+                config: {
+                  // FIXED: use outputSize per official docs, not imageSize
+                  imageGenerationConfig: { outputSize: "2K", aspectRatio: ratio },
+                  thinkingConfig: { thinkingBudget: 0 },
+                  safetySettings: [
+                    { category: HarmCategory.HARM_CATEGORY_HARASSMENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                    { category: HarmCategory.HARM_CATEGORY_HATE_SPEECH, threshold: HarmBlockThreshold.BLOCK_NONE },
+                    { category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                    { category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT, threshold: HarmBlockThreshold.BLOCK_NONE },
+                  ]
+                }
+              });
+
+              const usageMeta = resp.response?.usageMetadata || { promptTokenCount: 0, candidatesTokenCount: 0, totalTokenCount: 0 };
+              const estimatedCost = calculateGeminiCost(usageMeta, 'GEMINI_PRO');
+
+              const imageResult = extractImageFromResponse(resp);
+              if (!imageResult) throw new Error(`Model rejected generation`);
+
+              const rawBytes = base64ToUint8Array(imageResult.data);
+              let ext = imageResult.mimeType.includes('png') ? 'png' : 'jpg';
+
+              const fileName = generateFileName(username, archetype.id, mixer, ext);
+              const storagePath = generateStoragePath(userId, generationId, fileName);
+
+              await supabase.storage.from('lux-storage').upload(storagePath, rawBytes, { contentType: imageResult.mimeType, upsert: true });
+              const { data: urlData } = supabase.storage.from('lux-storage').getPublicUrl(storagePath);
+
+              let variationRecord: any = { id: crypto.randomUUID(), image_path: urlData.publicUrl, style_id: archetype.id, type: 'preview_pro_2k' };
+
+
+              if (isRegistered) {
+                // RESTORED TO REAL SCHEMA: variations has image_path, type, style_id, prompt_payload, seed (NOT NULL!)
+                const randomSeed = Math.floor(Math.random() * 9999999999);
+                const { data: rec, error: insertError } = await supabase.from('variations').insert({
+                  generation_id: generationId,
+                  type: 'preview_pro_2k',
+                  style_id: archetype.id,
+                  image_path: urlData.publicUrl,
+                  seed: randomSeed,  // ← REQUIRED: NOT NULL column
+                  prompt_payload: {
+                    prompt,
+                    model: 'gemini-3-pro-image-preview',
+                    mixer,
+                    meta_style_name: archetype.label || archetype.name,
+                    meta_style_vibe: archetype.vibe,
+                    meta_tech_base: archetype.tech_base
+                  },
+                  settings_production_style: mixer.stylism,
+                  settings_lighting_complexity: mixer.lighting
+                }).select().single();
+
+                if (insertError) {
+                  console.error(`[DB INSERT ERROR] ${insertError.message}`);
+                } else if (rec) {
+                  variationRecord = rec;
+                }
+              }
+
+              send({ type: 'variation', data: { ...variationRecord, elapsed: `${((Date.now() - startTime) / 1000).toFixed(1)}s`, styleName: archetype.name } });
+
+            } catch (e: any) {
+              const errorMsg = e.message || 'Unknown generation error';
+              console.error(`[VAR ${index} FAILED] Style: ${archetype.id}, Error: ${errorMsg}`);
+              // Send detailed error to frontend for debugging
+              send({ type: 'variation_error', id: archetype.id, error: errorMsg, details: e.stack?.substring(0, 200) });
+            }
+          };
+
+          const BATCH_SIZE = 6;
+          for (let i = 0; i < plan.length; i += BATCH_SIZE) {
+            const batch = plan.slice(i, i + BATCH_SIZE);
+            await Promise.allSettled(batch.map((archetype, idx) => generateVariation(archetype, i + idx)));
+          }
+
+          if (isRegistered) {
+            await supabase.from('generations').update({ status: 'previews_ready' }).eq('id', generationId);
+          }
+
+          send({ type: 'done', successCount: 6, user: username });
+          if (heartbeatInterval) clearInterval(heartbeatInterval);
+          if (ticket?.id) await supabase.from('queue_manager').delete().eq('id', ticket.id);
+          controller.close();
+
+        } catch (err: any) {
+          if (heartbeatInterval) clearInterval(heartbeatInterval);
+          if (ticket?.id) await supabase.from('queue_manager').delete().eq('id', ticket.id);
+          send({ type: 'error', message: err.message || 'Stream Terminated' });
+          controller.close();
+        }
+      }
+    });
+
+    return new Response(stream, { headers: { ...corsHeaders, 'Content-Type': 'application/x-ndjson' } });
+  } catch (error: any) {
+    return new Response(JSON.stringify({ error: error.message }), { status: 500, headers: corsHeaders });
+  }
+});

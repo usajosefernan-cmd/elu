@@ -1,0 +1,46 @@
+export const en = {
+    translation: {
+        "nav": {
+            "studio": "STUDIO",
+            "archive": "ARCHIVE",
+            "login": "LOGIN",
+            "engines": {
+                "photo": "PHOTO",
+                "style": "STYLE",
+                "light": "LIGHT",
+                "up": "UP"
+            }
+        },
+        "common": {
+            "language": "LANGUAGE",
+            "install": "INSTALL APP",
+            "admin_dashboard": "ADMIN DASHBOARD",
+            "logout": "LOGOUT",
+            "expand": "Expand Menu",
+            "collapse": "Collapse Menu"
+        },
+        "sidebar": {
+            "dashboard": "Dashboard",
+            "users_marketing": "Users & Marketing",
+            "infrastructure": "Infrastructure",
+            "storage": "Storage & Assets",
+            "luxscaler_engine": "LuxScaler Engine",
+            "forensic_lab": "Forensic Lab",
+            "theme_designer": "Theme Designer",
+            "viva_config": "Runtime Config",
+            "logs": "System Logs",
+            "groups": {
+                "core": "CORE",
+                "apps": "APPS",
+                "system": "SYSTEM"
+            }
+        },
+        "dashboard": {
+            "total_users": "TOTAL USERS",
+            "total_cost": "TOTAL COST (USD)",
+            "generated_sessions": "GENERATED SESSIONS",
+            "unique_variations": "UNIQUE VARIATIONS",
+            "waitlist_pending": "WAITLIST (PENDING)"
+        }
+    }
+};

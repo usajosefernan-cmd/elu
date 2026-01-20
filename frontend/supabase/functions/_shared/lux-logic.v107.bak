@@ -1,0 +1,283 @@
+
+// LUXSCALER EDGE ENGINE (vFINAL - DEEP THINK ARCHITECTURE)
+
+// --- PRICING CONSTANTS (USD) ---
+export const PRICE_GEMINI_PRO_INPUT_1M = 2.00;
+export const PRICE_GEMINI_PRO_OUTPUT_1M = 120.00;
+export const PRICE_FLASH_INPUT_1M = 0.50;
+export const PRICE_FLASH_OUTPUT_1M = 3.00;
+export const PRICE_IMAGEN_STD = 0.04;
+export const PRICE_IMAGEN_ULTRA = 0.06;
+
+export const calculateGeminiCost = (usage: any, modelType: 'GEMINI_PRO' | 'GEMINI_FLASH' | 'IMAGEN_STD' | 'IMAGEN_ULTRA' = 'GEMINI_PRO') => {
+    let cost = 0;
+    if (modelType === 'IMAGEN_STD') return PRICE_IMAGEN_STD;
+    if (modelType === 'IMAGEN_ULTRA') return PRICE_IMAGEN_ULTRA;
+
+    if (usage) {
+        const inTokens = (usage.promptTokenCount || 0) / 1_000_000;
+        const outTokens = (usage.candidatesTokenCount || 0) / 1_000_000;
+
+        if (modelType === 'GEMINI_FLASH') {
+            cost += (inTokens * PRICE_FLASH_INPUT_1M) + (outTokens * PRICE_FLASH_OUTPUT_1M);
+        } else {
+            cost += (inTokens * PRICE_GEMINI_PRO_INPUT_1M) + (outTokens * PRICE_GEMINI_PRO_OUTPUT_1M);
+        }
+    }
+    return parseFloat(cost.toFixed(6));
+};
+
+// --- STYLE LIBRARIES (PHASE 4: VIBE) ---
+export const DEFAULT_STYLE_LIBRARIES: any = {
+    UNIVERSAL: [
+        { id: 'uni_cinematic', name: 'Cinematic Void', vibe: 'Teal/Orange blockbuster look, anamorphic flares, wide aspect ratio feeling.', tech_base: 'ARRI_ALEXA' },
+        { id: 'uni_clean', name: 'Studio Pure', vibe: 'Perfect white balance, commercial sharpness, stock photography quality.', tech_base: 'HASSELBLAD' }
+    ],
+    HUMAN: [
+        { id: 'human_glam', name: 'Paramount Glamour', vibe: 'Butterfly Lighting (Classic Hollywood). Sculpted cheekbones. High Glamour. Sharp eyes.', tech_base: 'PARAMOUNT_BUTTERFLY' },
+        { id: 'human_newton', name: 'The Newton', vibe: 'High-Fashion Flash. Razor sharp edges. Clean white/grey background (studio). High contrast.', tech_base: 'NEWTON_FLASH' },
+        { id: 'human_avedon', name: 'The Avedon', vibe: 'Stark white background, brutal sharpness, raw emotion, desaturated.', tech_base: 'AVEDON_8x10' }
+    ],
+    LANDSCAPE: [
+        { id: 'land_ansel', name: 'Ansel Mono', vibe: 'High contrast B&W, dramatic skies, Zone System.', tech_base: 'LEICA_MONOCHROME' },
+        { id: 'land_ng', name: 'NatGeo Vivid', vibe: 'Golden hour, polarized sky, deep greens, hyper-focal distance.', tech_base: 'PHASE_ONE' },
+        { id: 'land_mist', name: 'Ethereal Mist', vibe: 'Soft focus distance, moody atmosphere, volumetric fog.', tech_base: 'HASSELBLAD' }
+    ],
+    ARCH: [
+        { id: 'arch_digest', name: 'Arch Digest', vibe: 'Perfect verticals, balanced interior/exterior exposure, staged perfection.', tech_base: 'PHASE_ONE' },
+        { id: 'arch_blue', name: 'Blue Hour', vibe: 'Twilight sky, warm interior lights, cinematic contrast.', tech_base: 'ARRI_ALEXA' }
+    ],
+    FOOD: [
+        { id: 'food_michelin', name: 'Michelin Star', vibe: 'Dramatic spotlight on food, dark background, steam, high gloss.', tech_base: 'MACRO_100MM' },
+        { id: 'food_brunch', name: 'Airy Brunch', vibe: 'High key, soft window light, pastel tones, lifestyle feel.', tech_base: 'HASSELBLAD' }
+    ]
+};
+
+export const fetchDynamicStyles = async (supabase: any) => {
+    try {
+        const { data, error } = await supabase.from('lux_productions').select('*').eq('is_active', true);
+        if (error || !data || data.length === 0) return DEFAULT_STYLE_LIBRARIES;
+
+        const dynamicLib: any = { ...DEFAULT_STYLE_LIBRARIES };
+        data.forEach((style: any) => {
+            const cat = style.category_id || 'UNIVERSAL';
+            if (!dynamicLib[cat]) dynamicLib[cat] = [];
+            const idx = dynamicLib[cat].findIndex((s: any) => s.id === style.id);
+            const styleObj = {
+                id: style.id,
+                name: style.label_ui,
+                vibe: style.prompt_instruction,
+                tech_base: style.tech_stack?.base || 'GENERIC'
+            };
+            if (idx >= 0) dynamicLib[cat][idx] = styleObj;
+            else dynamicLib[cat].push(styleObj);
+        });
+        return dynamicLib;
+    } catch (e) {
+        return DEFAULT_STYLE_LIBRARIES;
+    }
+};
+
+// --- MIXER RESOLVERS (PHASE 5 LOGIC) ---
+
+const resolveAtrezzoPrompt = (level: number) => {
+    if (level <= 2) return "PRESERVE CONTEXT: Keep the background exactly as is, including mess/clutter. Only fix lighting.";
+    if (level <= 4) return "TIDY UP: Lightly declutter. Remove obvious trash or distractions (cables, napkins) but keep the room lived-in.";
+    if (level <= 6) return "ORGANIZE: Straighten objects. Align furniture. Apply 'Virtual Staging' to make the space look neat and intentional.";
+    if (level <= 8) return "DESIGNER SET: Aggressively remove non-essential items. Replace cheap objects with premium versions (e.g., paper cup -> ceramic mug).";
+    return "MINIMALIST LUXURY: Total reconstruction. Remove EVERYTHING except the subject. Place subject in a pristine, architectural void or high-end studio.";
+};
+
+const resolveSkinPrompt = (level: number, category: string) => {
+    if (level <= 2) return "RAW REALITY: Do not retouch skin. Keep all imperfections, redness, and texture. Just focus.";
+    if (level <= 4) return "HEALTHY GLOW: Hydrate the skin. Remove temporary blemishes (pimples) but keep permanent ones (moles). Denoise shadows.";
+    if (level <= 6) return "EDITORIAL RETOUCH: Even out skin tone. Reduce under-eye bags. Apply subtle 'Dodge & Burn' to contour the face.";
+    if (level <= 8) return "MAGAZINE COVER: Apply 'Frequency Separation'. Generate perfect pore texture. Whiten teeth naturally. Make eyes crystalline.";
+    return "BIOLOGICAL PERFECTION: 'Glass Skin' aesthetic. Zero flaws. Hyper-real texture. Perfect symmetry (within Identity Lock limits).";
+};
+
+const resolveLightingPrompt = (level: number) => {
+    if (level <= 2) return "AVAILABLE LIGHT: Boost exposure only. Keep the natural lighting direction and shadows of the original photo.";
+    if (level <= 4) return "SOFT FILL: Add a virtual 'Fill Light' to lift shadows. Neutralize harsh contrast. Make it look like a cloudy day.";
+    if (level <= 6) return "STUDIO SETUP: Simulate a 3-point lighting setup (Key, Fill, Rim). Create separation from the background.";
+    if (level <= 8) return "CINEMATIC DRAMA: High contrast. Use 'Gobos' to cast shadows. Add volumetric haze/fog. Distinct color grading.";
+    return "MASTERPIECE LIGHTING: Complex multi-light setup. Rim lights on every edge. Lens flares. Sub-surface scattering light. Painterly aesthetic.";
+};
+
+const resolveStylismPrompt = (level: number, vibeName: string) => {
+    if (level <= 2) return `HINT OF STYLE: Apply a very subtle color grade matching '${vibeName}'. 10% Opacity.`;
+    if (level <= 4) return `BALANCED STYLE: Apply '${vibeName}' logic but keep original colors grounded.`;
+    if (level <= 6) return `STRONG STYLE: The image must clearly read as '${vibeName}'. Override original color palette.`;
+    if (level <= 8) return `TOTAL IMMERSION: Every element must serve the '${vibeName}' aesthetic. Change materials to match.`;
+    return `STYLISTIC HALLUCINATION: Exaggerate '${vibeName}' to the max. If 'Neon', make it glow. If 'Vintage', add heavy grain.`;
+};
+
+const getOpticalStack = (techBase: string) => {
+    if (techBase === 'AVEDON_8x10') return { sensor: "8x10 Large Format", lens: "300mm Prime", lighting: "Stark White Studio", detail: "Clinical" };
+    if (techBase === 'PARAMOUNT_BUTTERFLY') return { sensor: "Medium Format", lens: "85mm Portrait", lighting: "Butterfly Pattern", detail: "Glamour" };
+    if (techBase === 'ARRI_ALEXA') return { sensor: "Arri Alexa LF", lens: "Anamorphic", lighting: "Cinematic", detail: "Film" };
+    if (techBase === 'PHASE_ONE') return { sensor: "Phase One IQ4 150MP", lens: "Rodenstock 55mm", lighting: "Natural High-End", detail: "Infinite" };
+    return { sensor: "Hasselblad X2D", lens: "50mm Prime", lighting: "Balanced", detail: "High" };
+};
+
+// --- PHASE 2: FORENSIC (SLC-R V2.0) ---
+export const buildPhase2Block = (analysis: any, settings: any) => {
+    const { mixer = {}, slcr_controls = {} } = settings;
+    const restorationLevel = mixer.restoration || 0;
+
+    const controls = {
+        definition: slcr_controls.definition ?? true,
+        tone: slcr_controls.tone ?? true,
+        perspective: slcr_controls.perspective ?? true,
+        reframing: slcr_controls.reframing ?? false,
+        materiality: slcr_controls.materiality ?? true,
+        lighting: slcr_controls.lighting ?? true
+    };
+
+    const category = analysis.classification?.master_category || 'UNIVERSAL';
+    const isHuman = category === 'HUMAN' || category === 'SELFIE';
+
+    let slcrInstructions = [];
+
+    if (controls.perspective) {
+        slcrInstructions.push(`- GEOMETRY: Auto-level horizon to 0.0°. Fix barrel/pincushion distortion. ${category === 'ARCH' ? 'Force parallel vertical lines (Keystoning fix).' : ''}`);
+    }
+
+    if (controls.definition) {
+        slcrInstructions.push(`- ACUTANCE: Optimize edge integrity. Remove digital oversharpening halos. Apply soft-roll off to high-frequency edges.`);
+    }
+
+    if (controls.tone) {
+        slcrInstructions.push(`- SIGNAL: Neutralize destructive color casts (Target 5500K). Preserve analog RGB micro-shifts (vintage glass feel) if restoration < 5.`);
+    }
+
+    if (controls.reframing) {
+        slcrInstructions.push(`- RECONSTRUCTION: Intelligent cropping/reframing. Move subject to Rule of Thirds anchor point.`);
+    }
+
+    if (controls.materiality) {
+        slcrInstructions.push(`- MATERIAL PHYSICS: Inject vellus hair (peach fuzz), skin pores, and sub-surface scattering (SSS). Remove plastic/wax artifacts.`);
+    }
+
+    if (controls.lighting) {
+        slcrInstructions.push(`- ILLUMINATION: Recover highlight clipping. Fill shadow crushing. Ensure Fresnel specular compliance.`);
+    }
+
+    return `
+<PHASE_0_FORENSIC_RESTORATION priority="CRITICAL">
+    PROTOCOL: SLC-R_2026_Standard.
+    ENGINE_LEVEL: ${restorationLevel}/10.
+    ROLE: DIGITAL IMAGING TECHNICIAN & FORENSIC EDITOR.
+    
+    [SLC-R RECONSTRUCTION MATRIX]:
+    ${slcrInstructions.join('\n    ')}
+    
+    - RESTORATION INTENSITY: ${restorationLevel <= 3 ? 'Subtle - Preserve artifacts for authenticity' : restorationLevel <= 7 ? 'Balanced - Deep clinical cleaning' : 'Maximized - Full optical reconstruction'}
+</PHASE_0_FORENSIC_RESTORATION>`;
+};
+
+// --- PHASE 3: ROLE INJECTION ---
+export const getContextualRolePrompt = (masterCategory: string, subType: string) => {
+    switch (masterCategory) {
+        case 'FOOD': return `<ROLE_DEFINITION>IDENTITY: MICHELIN STAR FOOD STYLIST. PRIORITY: Appetite Appeal, Glazed Textures, Steam.</ROLE_DEFINITION>`;
+        case 'HUMAN_MED': return `<ROLE_DEFINITION>IDENTITY: AESTHETIC CLINIC PHOTOGRAPHER. PRIORITY: Glass Skin, White Teeth, Sterile Premium Look.</ROLE_DEFINITION>`;
+        case 'ARCH': return `<ROLE_DEFINITION>IDENTITY: ARCHITECTURAL DIGEST PHOTOGRAPHER. PRIORITY: Vertical Lines, Staging, Interior/Exterior Balance.</ROLE_DEFINITION>`;
+        case 'PRODUCT': return `<ROLE_DEFINITION>IDENTITY: COMMERCIAL PRODUCT PHOTOGRAPHER. PRIORITY: Material Fidelity, Sharp Logos, Infinite Background.</ROLE_DEFINITION>`;
+        case 'LANDSCAPE': return `<ROLE_DEFINITION>IDENTITY: FINE ART LANDSCAPE PHOTOGRAPHER. PRIORITY: Dynamic Range, Sky Detail, Atmospheric Depth.</ROLE_DEFINITION>`;
+        default: return `<ROLE_DEFINITION>IDENTITY: VOGUE EDITORIAL PORTRAITIST. PRIORITY: Connection, Skin Texture, Eye Life, Flattery.</ROLE_DEFINITION>`;
+    }
+};
+
+// --- MASTER BUILDER (PHASE 5) ---
+export const buildDeepThinkPrompt = (
+    analysis: any,
+    styleId: string,
+    settings: any, // LuxConfig
+    mode: 'PREVIEW' | 'MASTER' | 'UPSCALE',
+    styleLibraries: any = DEFAULT_STYLE_LIBRARIES
+) => {
+    const masterCategory = (analysis.classification?.master_category || 'UNIVERSAL');
+    const subType = analysis.classification?.sub_type || 'General Subject';
+
+    // ROUTING
+    let library = styleLibraries[masterCategory] || styleLibraries['UNIVERSAL'];
+    let archetype = library.find((s: any) => s.id === styleId);
+    if (!archetype) archetype = library[0] || { name: 'Standard', vibe: 'Clean', tech_base: 'GENERIC' };
+
+    const tech = getOpticalStack(archetype.tech_base);
+
+    // MIXER RESOLUTION
+    const mixer = settings.mixer || { stylism: 5, atrezzo: 5, skin_bio: 5, lighting: 5 };
+
+    // GENERATE BLOCKS
+    const phase2Block = buildPhase2Block(analysis, settings.forensic || {});
+    const phase3Role = getContextualRolePrompt(masterCategory, subType);
+
+    const atrezzoInstruction = resolveAtrezzoPrompt(mixer.atrezzo);
+    const skinInstruction = resolveSkinPrompt(mixer.skin_bio, masterCategory);
+    const lightingInstruction = resolveLightingPrompt(mixer.lighting);
+    const stylismInstruction = resolveStylismPrompt(mixer.stylism, archetype.name);
+
+    // SECURITY PROTOCOLS
+    let identityProtocol = "";
+    if (masterCategory.includes('HUMAN') || masterCategory === 'SELFIE' || masterCategory === 'PET') {
+        identityProtocol = `
+    <BIOMETRIC_IDENTITY_LOCK PRIORITY="CRITICAL_ZERO_TOLERANCE">
+        1. ANATOMICAL RIGIDITY: Preserve exact bone structure (jawline, cheekbones, nose).
+        2. EYE GEOMETRY: Do NOT change shape, canthal tilt, or distance.
+        3. IMPERFECTION PRESERVATION: Keep moles, scars, dental irregularities.
+        4. TEXTURE MAPPING: Enhance texture but map 1:1 to facial topography.
+        5. STRUCTURAL ANCHOR: If rotating image (Phase 2), rotate subject rigidly. Do not redraw upright.
+    </BIOMETRIC_IDENTITY_LOCK>`;
+    }
+
+    return `
+<SYSTEM_DIRECTIVE>
+    ACTIVATE LUXIFIER OPTICAL ENGINE vFinal.
+    SYSTEM OVERRIDE: YOU ARE UPGRADING THE PHOTOGRAPHY, NOT THE SUBJECT.
+    CONTEXT: ${masterCategory} / ${subType}.
+    TARGET STYLE: ${archetype.name.toUpperCase()}.
+</SYSTEM_DIRECTIVE>
+
+${phase2Block}
+
+${phase3Role}
+
+<PRODUCTION_MIXER_SETTINGS>
+    [SCENOGRAPHY LEVEL ${mixer.atrezzo}/10]: ${atrezzoInstruction}
+    [BIOLOGY LEVEL ${mixer.skin_bio}/10]: ${skinInstruction}
+    [LIGHTING LEVEL ${mixer.lighting}/10]: ${lightingInstruction}
+    [VIBE INTENSITY ${mixer.stylism}/10]: ${stylismInstruction}
+</PRODUCTION_MIXER_SETTINGS>
+
+<VIRTUAL_HARDWARE_STACK>
+    SIMULATION:
+    - SENSOR: ${tech.sensor}
+    - LENS: ${tech.lens}
+    - LIGHTING BASE: ${tech.lighting}
+    - DETAIL TARGET: ${tech.detail}
+</VIRTUAL_HARDWARE_STACK>
+
+${identityProtocol}
+
+<TEXT_AND_SYMBOL_INTEGRITY>
+    OCR PRESERVATION: Maintain readability of text/logos. Sharpen edges but do not hallucinate new characters.
+</TEXT_AND_SYMBOL_INTEGRITY>
+
+<PRODUCTION_EXECUTION>
+    1. APPLY STYLE: Infuse '${archetype.vibe}'.
+    2. MATERIALS: Upgrade flat textures to premium materials (Silk, Marble, 8K Skin).
+    3. FOCUS: Subject must be DEAD SHARP against background.
+</PRODUCTION_EXECUTION>
+
+<AESTHETIC_OVERRIDE>
+    ${settings.userPrompt ? `USER SPECIFIC INTENT: ${settings.userPrompt}` : ''}
+</AESTHETIC_OVERRIDE>
+
+<NEGATIVE_CONSTRAINTS>
+    blurry, out of focus, messy, clutter, trash, low res, plastic skin, cartoonish, airbrushed, flat lighting, muddy, distorted eyes, watermark, DIFFERENT FACE, CHANGED IDENTITY, YASSIFIED.
+</NEGATIVE_CONSTRAINTS>
+
+OUTPUT: PHOTOREALISTIC IMAGE.
+    `;
+};

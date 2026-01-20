@@ -1,0 +1,7 @@
+{
+    "functions": {
+        "migration-runner": {
+            "verify_jwt": false
+        }
+    }
+}

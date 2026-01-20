@@ -1,0 +1,22 @@
+
+{
+  "short_name": "LuxScaler",
+  "name": "LUXSCALER | Optical Engine",
+  "icons": [
+    {
+      "src": "https://pjscnzymofaijevonxkm.supabase.co/storage/v1/object/public/lux-storage/webasset/icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://pjscnzymofaijevonxkm.supabase.co/storage/v1/object/public/lux-storage/webasset/icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": ".",
+  "display": "standalone",
+  "theme_color": "#0A0A0F",
+  "background_color": "#0A0A0F",
+  "orientation": "portrait"
+}

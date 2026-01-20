@@ -1,0 +1,7 @@
+{
+    "functions": {
+        "lux-chat": {
+            "verify_jwt": false
+        }
+    }
+}

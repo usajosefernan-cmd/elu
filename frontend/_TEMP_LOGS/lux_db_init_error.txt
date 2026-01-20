@@ -1,0 +1,22 @@
+﻿
+
+IsMutuallyAuthenticated : False
+Cookies                 : {__cf_bm=xFnwMK2aDaDN5DX8Be8G7cM3Sc2x55MBvPUY4a1OdUU-1768480092-1.0.1.1-DASFPTYwbDlM7FzuIAIPf4aSaVaxN87MxHQQS6_igmGulm_J
+                          ZCnmg4R3zWAWfWCvSgXHonNEnIldGVoYyxn7BwZTAzEjT1yuR5HO.apVies}
+Headers                 : {Transfer-Encoding, Connection, CF-Ray, CF-Cache-Status...}
+SupportsHeaders         : True
+ContentLength           : -1
+ContentEncoding         : 
+ContentType             : application/json
+CharacterSet            : 
+Server                  : cloudflare
+LastModified            : 15/01/2026 13:28:13
+StatusCode              : NotFound
+StatusDescription       : Not Found
+ProtocolVersion         : 1.1
+ResponseUri             : https://pjscnzymofaijevonxkm.supabase.co/functions/v1/lux-db-init
+Method                  : POST
+IsFromCache             : False
+
+
+
