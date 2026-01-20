@@ -42,13 +42,25 @@ LuxScaler es una aplicación de procesamiento de imágenes impulsada por IA que 
 - ✅ **Menú admin** visible en dropdown del usuario
 - **Ruta**: `/admin`
 
-### 6. Modal de Configuración por Perfil (NUEVO)
-- ✅ `ProfileConfigModal.tsx` creado con 4 UIs:
-  - AUTO: Botón simple "Generar con IA"
-  - USER: 3 sliders por pilar (Photo/Style/Light)
-  - PRO: Grid de 9 macros seleccionables
-  - PROLUX: Grid de 27 sliders individuales
-- ✅ Se muestra automáticamente al subir foto (usuarios logueados)
+### 6. Edge Functions (NUEVO - v28 Architecture)
+- ✅ **vision-analysis** - Análisis con Gemini 2.5 Flash
+- ✅ **prompt-compiler** - Compila sliders → instrucciones semánticas
+- ✅ **generate-image** - Genera imagen mejorada
+- ✅ **Frontend service** `edgeFunctionsService.ts` para llamar las funciones
+
+### 7. Modal de Confirmación de Visión (NUEVO)
+- ✅ `VisionConfirmModal.tsx` - Muestra resultados del análisis
+  - Score técnico (0-10)
+  - Semantic anchors (elementos a preservar)
+  - Problemas detectados
+  - Perfil recomendado
+  - Botones: Procesar / Personalizar / Cancelar
+
+### 8. Flujo de Procesamiento v28
+```
+Subir imagen → Edge: vision-analysis → VisionConfirmModal → 
+Usuario confirma → Edge: prompt-compiler → Edge: generate-image → Resultado
+```
 
 ---
 
@@ -63,14 +75,38 @@ LuxScaler es una aplicación de procesamiento de imágenes impulsada por IA que 
 - full_name: TEXT
 - username: TEXT
 - current_config: JSONB (configuración de sliders)
-- created_at: TIMESTAMPTZ
-- updated_at: TIMESTAMPTZ
 ```
 
-### Pendiente: Tablas adicionales (SQL en /app/BBLA/SCHEMA_v28_COMPLETE.sql)
-- `billing_tiers` - Configuración de pricing
-- `token_costs` - Costos por acción
-- `user_transactions` - Historial de transacciones
+### Tabla: `slider_semantic_mappings` (v28)
+```sql
+- id: UUID
+- pillar_name: TEXT ('photoscaler' | 'stylescaler' | 'lightscaler')
+- slider_name: TEXT
+- instruction_off: TEXT
+- instruction_low: TEXT
+- instruction_med: TEXT
+- instruction_high: TEXT
+- instruction_force: TEXT
+```
+
+---
+
+## 📦 Edge Functions
+
+### vision-analysis
+- **Modelo**: `gemini-2.5-flash-preview-05-20`
+- **Input**: imageUrl o imageBase64
+- **Output**: technical_score, semantic_anchors, suggested_settings, detected_issues, recommended_profile
+
+### prompt-compiler
+- **Input**: slider config, visionAnalysis, userMode
+- **Output**: compiled prompt con bloques PHOTOSCALER/STYLESCALER/LIGHTSCALER
+- **Features**: Veto rules, Identity Lock
+
+### generate-image
+- **Modelo**: Según userMode (Flash para auto/user, Pro para pro/prolux)
+- **Input**: imageUrl, compiledPrompt, outputType
+- **Output**: generated image, tokens charged
 
 ---
 
@@ -80,8 +116,9 @@ LuxScaler es una aplicación de procesamiento de imágenes impulsada por IA que 
 - **Framework**: React 19 + Vite + TypeScript
 - **Styling**: TailwindCSS + Shadcn/UI
 - **Auth**: Supabase Auth
+- **Edge Calls**: `/services/edgeFunctionsService.ts`
 
-### Backend
+### Backend (Fallback)
 - **Framework**: FastAPI (Python)
 - **AI**: Google Gemini API
 - **DB**: Supabase (PostgreSQL)
@@ -95,12 +132,14 @@ LuxScaler es una aplicación de procesamiento de imágenes impulsada por IA que 
 ## 📝 Tareas Pendientes (Backlog)
 
 ### P0 - Alta Prioridad
-- [ ] Crear tablas `billing_tiers`, `token_costs` en Supabase SQL Editor
-- [ ] Integración Stripe para pagos reales
+- [x] Crear Edge Functions (vision-analysis, prompt-compiler, generate-image)
+- [x] VisionConfirmModal con análisis de visión
+- [ ] **DEPLOY Edge Functions** (requiere Docker en local) - Ver `/app/BBLA/DEPLOY_EDGE_FUNCTIONS.md`
 
 ### P1 - Media Prioridad  
+- [ ] Poblar tabla `slider_semantic_mappings` con los 27 sliders
+- [ ] Integración Stripe para pagos reales
 - [ ] Sistema de presets de usuario
-- [ ] Historial de procesamiento
 
 ### P2 - Baja Prioridad
 - [ ] In-painting y refining features
@@ -109,19 +148,28 @@ LuxScaler es una aplicación de procesamiento de imágenes impulsada por IA que 
 
 ---
 
-## 📂 Archivos Clave Actualizados
+## 📂 Archivos Clave
 
 ```
-/app/frontend/src/
-├── components/
-│   ├── Navigation.tsx           # Balance sincronizado, click→pricing
-│   ├── ProfileConfigModal.tsx   # NUEVO: UI 4 perfiles
-│   └── PricingPage.tsx          # Precios actualizados v28
-├── services/
-│   ├── authService.ts           # Mapeo profile_type
-│   └── paymentService.ts        # getBalance con logs
-├── types.ts                     # UserProfile extendido
-└── App.tsx                      # ProfileConfigModal integrado
+/app
+├── frontend/src/
+│   ├── components/
+│   │   ├── VisionConfirmModal.tsx   # NUEVO: Confirmación de análisis
+│   │   ├── ProfileConfigModal.tsx   # UI 4 perfiles
+│   │   └── Navigation.tsx           # Balance sincronizado
+│   ├── services/
+│   │   ├── edgeFunctionsService.ts  # NUEVO: Cliente Edge Functions
+│   │   ├── authService.ts
+│   │   └── paymentService.ts
+│   └── App.tsx                      # Flujo v28 integrado
+├── supabase/functions/
+│   ├── vision-analysis/index.ts     # NUEVO: Gemini 2.5 Flash
+│   ├── prompt-compiler/index.ts     # NUEVO: Semantic compiler
+│   └── generate-image/index.ts      # NUEVO: Image generation
+└── BBLA/
+    ├── DEPLOY_EDGE_FUNCTIONS.md     # NUEVO: Guía de deploy
+    ├── maestro arqu.md              # Arquitectura v28
+    └── PRICING.md                   # Sistema de pricing
 ```
 
 ---
@@ -136,4 +184,9 @@ LuxScaler es una aplicación de procesamiento de imágenes impulsada por IA que 
 - ✅ Panel Admin visible para usuarios PROLUX
 - ✅ Página de Pricing actualizada con precios v28
 - ✅ Creado `ProfileConfigModal` con 4 UIs de perfil
-- ✅ Integrado ProfileConfigModal en flujo de subida de fotos
+- ✅ **NUEVO**: Edge Function `vision-analysis` (Gemini 2.5 Flash)
+- ✅ **NUEVO**: Edge Function `prompt-compiler` (Semantic mapping)
+- ✅ **NUEVO**: Edge Function `generate-image`
+- ✅ **NUEVO**: `VisionConfirmModal` para confirmación post-análisis
+- ✅ **NUEVO**: `edgeFunctionsService.ts` para llamar Edge Functions
+- ✅ **NUEVO**: Flujo v28 integrado en App.tsx
