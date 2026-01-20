@@ -4,7 +4,9 @@ import Layout from '../components/Layout';
 import PillarColumn from '../components/PillarColumn';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Sparkles, Terminal } from '@phosphor-icons/react';
+// Using simple icons instead of phosphor icons for now
+const Sparkles = () => <span>✨</span>;
+const Terminal = () => <span>💻</span>;
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
