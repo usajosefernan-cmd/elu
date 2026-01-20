@@ -5,9 +5,10 @@ import PillarColumn from '../components/PillarColumn';
 import UserMacroControl from '../components/UserMacroControl';
 import ProMacroGallery from '../components/ProMacroGallery';
 import VisionAnalysisModal from '../components/VisionAnalysisModal';
+import ResultOverlay from '../components/ResultOverlay';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Sparkles, Terminal, Camera, Zap, Upload, X } from 'lucide-react';
+import { Sparkles, Terminal, Camera, Zap, Upload, X, Grid } from 'lucide-react';
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -19,7 +20,7 @@ export default function Dashboard() {
   const [inputText, setInputText] = useState("Mejorar esta imagen con estilo cinematográfico.");
   
   // Image State
-  const [imageUrl, setImageUrl] = useState("https://images.pexels.com/photos/35501372/pexels-photo-35501372.jpeg"); // Default
+  const [imageUrl, setImageUrl] = useState("https://images.pexels.com/photos/35501372/pexels-photo-35501372.jpeg"); 
   const [isCustomImage, setIsCustomImage] = useState(false);
   const fileInputRef = useRef(null);
 
@@ -27,6 +28,9 @@ export default function Dashboard() {
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [analysisData, setAnalysisData] = useState(null);
   const [analyzing, setAnalyzing] = useState(false);
+
+  // Result Overlay State
+  const [showResult, setShowResult] = useState(false);
 
   useEffect(() => {
     if (!authLoading && !user) {
@@ -51,7 +55,7 @@ export default function Dashboard() {
     fetchConfig();
   }, [user]);
 
-  // Handle Updates
+  // ... (Handle Updates & Macros - Keep same logic as previous) ...
   const handleSliderUpdate = async (pillarName, sliderName, value) => {
     const newConfig = { ...config };
     const pillar = newConfig[pillarName];
@@ -103,7 +107,6 @@ export default function Dashboard() {
     });
   };
 
-  // Image Upload Logic
   const handleFileSelect = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -117,16 +120,9 @@ export default function Dashboard() {
     }
   };
 
-  const triggerFileUpload = () => {
-    fileInputRef.current.click();
-  };
+  const triggerFileUpload = () => { fileInputRef.current.click(); };
+  const resetImage = () => { setImageUrl("https://images.pexels.com/photos/35501372/pexels-photo-35501372.jpeg"); setIsCustomImage(false); };
 
-  const resetImage = () => {
-    setImageUrl("https://images.pexels.com/photos/35501372/pexels-photo-35501372.jpeg");
-    setIsCustomImage(false);
-  };
-
-  // Generation Logic
   const handleGenerateClick = async () => {
     if (config.user_mode === 'user') {
         await runGeneration();
@@ -163,12 +159,29 @@ export default function Dashboard() {
       const data = await res.json();
       setResult(data.output.text);
       setShowAnalysis(false);
+      setShowResult(true); // Trigger Result Overlay
       toast.success("Procesamiento completado");
     } catch (e) {
       toast.error("Generación falló");
     } finally {
       setProcessing(false);
     }
+  };
+
+  const handleSaveResult = () => {
+      // Mock Save
+      toast.success("Image saved to Gallery");
+      setShowResult(false);
+      navigate('/gallery');
+  };
+
+  const handleRefineResult = (refineText) => {
+      // Mock Refine - ideally calls backend again with context
+      toast.promise(new Promise((resolve) => setTimeout(resolve, 2000)), {
+          loading: 'Refining with Gemini 1.5...',
+          success: 'Refinement complete',
+          error: 'Error refining'
+      });
   };
 
   if (loading || !config) return <div className="h-screen bg-black text-gold flex items-center justify-center">Loading...</div>;
@@ -178,7 +191,13 @@ export default function Dashboard() {
       <div className="flex flex-col h-screen overflow-hidden">
         {/* Header */}
         <header className="h-16 border-b border-white/10 flex items-center justify-between px-8 bg-[#020204] z-20">
-          <h1 className="text-xl font-serif text-primary tracking-tighter">LUXSCALER <span className="text-xs font-sans text-muted-foreground ml-2">v27.0</span></h1>
+          <div className="flex items-center gap-6">
+            <h1 className="text-xl font-serif text-primary tracking-tighter">LUXSCALER <span className="text-xs font-sans text-muted-foreground ml-2">v27.0</span></h1>
+            <nav className="flex gap-4 border-l border-white/10 pl-6">
+                <button onClick={() => navigate('/dashboard')} className="text-xs uppercase tracking-widest text-white font-bold">Studio</button>
+                <button onClick={() => navigate('/gallery')} className="text-xs uppercase tracking-widest text-muted-foreground hover:text-white transition-colors">Gallery</button>
+            </nav>
+          </div>
           <div className="flex items-center gap-4">
             <span className="text-xs font-mono px-3 py-1 bg-white/5 rounded-full border border-white/10 uppercase text-primary">
                 {config.user_mode} MODE
@@ -205,10 +224,8 @@ export default function Dashboard() {
 
             {/* RIGHT PANEL: PREVIEW & ACTION */}
             <div className="col-span-4 bg-[#08080A] flex flex-col p-6 overflow-hidden">
-                {/* Image Input */}
                 <div className="mb-6 relative group aspect-video bg-black rounded-sm border border-white/10 overflow-hidden cursor-pointer" onClick={triggerFileUpload}>
                     <img src={imageUrl} alt="Input" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
-                    
                     {!isCustomImage ? (
                         <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none group-hover:bg-black/40 transition-colors">
                             <Upload className="text-white/40 mb-2 group-hover:text-primary transition-colors" size={32} />
@@ -216,9 +233,7 @@ export default function Dashboard() {
                         </div>
                     ) : (
                          <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                             <button onClick={(e) => { e.stopPropagation(); resetImage(); }} className="p-1 bg-black/50 rounded-full hover:bg-red-500/50 text-white">
-                                 <X size={14}/>
-                             </button>
+                             <button onClick={(e) => { e.stopPropagation(); resetImage(); }} className="p-1 bg-black/50 rounded-full hover:bg-red-500/50 text-white"><X size={14}/></button>
                          </div>
                     )}
                     <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileSelect} accept="image/*" />
@@ -256,15 +271,24 @@ export default function Dashboard() {
                 </div>
             </div>
         </div>
-      </div>
 
-      <VisionAnalysisModal 
-        open={showAnalysis} 
-        analysis={analysisData}
-        onConfirm={runGeneration}
-        onCancel={() => setShowAnalysis(false)}
-        generating={processing}
-      />
+        {/* MODALS */}
+        <VisionAnalysisModal 
+            open={showAnalysis} 
+            analysis={analysisData}
+            onConfirm={runGeneration}
+            onCancel={() => setShowAnalysis(false)}
+            generating={processing}
+        />
+
+        <ResultOverlay 
+            open={showResult}
+            onClose={() => setShowResult(false)}
+            resultData={result}
+            onSave={handleSaveResult}
+            onRefine={handleRefineResult}
+        />
+      </div>
     </Layout>
   );
 }

@@ -5,6 +5,7 @@ import { Toaster } from 'sonner';
 import Dashboard from './pages/Dashboard';
 import LoginPage from './pages/Login';
 import ModeSelection from './pages/ModeSelection';
+import Gallery from './pages/Gallery';
 
 function App() {
   return (
@@ -14,6 +15,7 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/modes" element={<ModeSelection />} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/gallery" element={<Gallery />} />
           <Route path="/" element={<Navigate to="/login" replace />} />
         </Routes>
       </Router>
