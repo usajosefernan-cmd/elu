@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Body
-from backend.models import LoginRequest, UserProfile
-from backend.server import db
-from backend.data.snippets import get_default_pillars_config
+from models import LoginRequest, UserProfile
+from server import db
+from data.snippets import get_default_pillars_config
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
