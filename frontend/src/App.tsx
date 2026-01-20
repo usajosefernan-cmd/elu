@@ -23,6 +23,7 @@ import { PurchaseModal } from './components/PurchaseModal';
 import { MobileConfigWizard } from './components/MobileConfigWizard';
 import { AdvancedConfigModal } from './components/AdvancedConfigModal';
 import { ImageInspectorModal } from './components/ImageInspectorModal';
+import { ProfileConfigModal } from './components/ProfileConfigModal';
 import { TermsPage, PrivacyPage, CookiesPage, LegalNoticePage, APIDocsPage, ContactPage, InfoPages } from './components/InfoPages';
 import TutorialInteractive from './components/TutorialInteractive';
 import FAQInteractive from './components/FAQInteractive';
