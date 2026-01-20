@@ -130,7 +130,7 @@ async def apply_pro_macro_endpoint(body: dict = Body(...)):
     user_id = body.get('userId')
     macro_key = body.get('macroKey')
     
-    config = await db.pillars_config.find_one({"user_id": user_id})
+    config = await db.pillars_config.find_one({"user_id": user_id}, {"_id": 0})
     if not config: return {"success": False}
     
     new_config = apply_pro_macro(config, macro_key)
