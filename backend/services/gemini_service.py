@@ -6,37 +6,27 @@ class GeminiService:
         self.api_key = os.environ.get("GOOGLE_API_KEY")
         if self.api_key:
             genai.configure(api_key=self.api_key)
-        else:
-            print("WARNING: No API Key found for Gemini.")
 
     async def generate_content(self, model_name: str, master_prompt: str, user_input: str) -> str:
-        if not self.api_key:
-            return "Error: API Key not configured."
+        if not self.api_key: return "Error: API Key not configured."
         
+        # MAPPING UPDATE:
+        # Auto/Vision -> gemini-2.5-flash (Mapped to 2.0-flash)
+        # User -> gemini-2.5-flash
+        # Pro -> gemini-2.0-pro (Mapped to 1.5-pro or 2.0-flash if not avail)
+        # Prolux -> gemini-3-pro (Mapped to 1.5-pro or experimental if avail)
+
         target_model = "gemini-2.0-flash" 
-        if "pro" in model_name or model_name == "gemini":
-            target_model = "gemini-1.5-pro"
-             
+        
+        if "pro" in model_name or "gemini-3" in model_name:
+             target_model = "gemini-1.5-pro" # Stable "Pro" equivalent
+
         try:
-            # Configure safety settings to BLOCK_NONE to allow creative/forensic prompts
-            safety_settings = [
-                {
-                    "category": "HARM_CATEGORY_HARASSMENT",
-                    "threshold": "BLOCK_NONE"
-                },
-                {
-                    "category": "HARM_CATEGORY_HATE_SPEECH",
-                    "threshold": "BLOCK_NONE"
-                },
-                {
-                    "category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-                    "threshold": "BLOCK_NONE"
-                },
-                {
-                    "category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-                    "threshold": "BLOCK_NONE"
-                },
-            ]
+            # Low temperature for Identity Lock respect
+            generation_config = {
+                "temperature": 0.2,
+                "top_p": 0.8,
+            }
 
             model = genai.GenerativeModel(
                 model_name=target_model,
@@ -45,18 +35,12 @@ class GeminiService:
             
             response = model.generate_content(
                 user_input,
-                safety_settings=safety_settings
+                generation_config=generation_config
             )
             
-            if response.candidates:
-                return response.text
-            else:
-                # Log feedback for debugging
-                print(f"Gemini Blocked Response: {response.prompt_feedback}")
-                return f"⚠️ Generation Blocked by Safety Filters.\nReason: {response.prompt_feedback}"
+            return response.text
             
         except Exception as e:
-            print(f"Gemini generation error: {e}")
             return f"Error from Gemini: {str(e)}"
 
 gemini_service = GeminiService()
