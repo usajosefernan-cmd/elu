@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "powershell -ExecutionPolicy Bypass -File ./scripts/kill_zombies.ps1 && vite --port 8081",
+    "dev": "vite --host --port 3000",
+    "start": "vite --host --port 3000",
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "tsc -b && vite build && firebase deploy",
