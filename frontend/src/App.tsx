@@ -475,6 +475,117 @@ const App: React.FC = () => {
         resetFlow();
     };
 
+    // NEW: Handlers for Vision Confirm Modal (Edge Function flow)
+    const handleVisionConfirm = async (useAuto: boolean) => {
+        setShowVisionConfirm(false);
+        
+        if (useAuto) {
+            // Use recommended settings from vision analysis
+            const config: LuxConfig = {
+                userPrompt: '',
+                mode: visionAnalysis?.recommended_profile?.toUpperCase() || 'AUTO',
+                mixer: {
+                    stylism: 5,
+                    atrezzo: 5,
+                    skin_bio: 5,
+                    lighting: 5,
+                    restoration: 5,
+                    upScaler: 1
+                }
+            };
+            
+            // Process with Edge Functions
+            await processWithEdgeFunctions(inputImageUrl!, config);
+        }
+    };
+
+    const handleVisionCustomize = () => {
+        setShowVisionConfirm(false);
+        // Show profile selector for customization
+        setShowProfileSelector(true);
+    };
+
+    const handleVisionCancel = () => {
+        setShowVisionConfirm(false);
+        setVisionAnalysis(null);
+        resetFlow();
+    };
+
+    // NEW: Process using Edge Functions
+    const processWithEdgeFunctions = async (imageUrl: string, config: LuxConfig) => {
+        try {
+            setStatus(AgentStatus.GENERATING_PREVIEWS);
+            setAgentMsg({ text: "Compilando prompt con IA...", type: 'info' });
+            navigate('/result');
+
+            // Step 1: Compile prompt via Edge Function
+            const sliderConfig = {
+                photoscaler: { sliders: [
+                    { name: 'limpieza_artefactos', value: config.mixer.restoration },
+                    { name: 'optica_nitidez', value: config.mixer.restoration },
+                ]},
+                stylescaler: { sliders: [
+                    { name: 'vibracion_saturacion', value: config.mixer.stylism },
+                    { name: 'retoque_piel', value: config.mixer.skin_bio },
+                ]},
+                lightscaler: { sliders: [
+                    { name: 'brillo_exposicion', value: config.mixer.lighting },
+                    { name: 'iluminacion_dramatica', value: config.mixer.lighting },
+                ]},
+            };
+
+            const promptResult = await compilePrompt(
+                sliderConfig,
+                visionAnalysis,
+                userProfile?.profile_type || 'auto'
+            );
+
+            if (!promptResult.success) {
+                throw new Error(promptResult.error || "Error compilando prompt");
+            }
+
+            setAgentMsg({ text: "Generando imagen mejorada...", type: 'info' });
+            addSystemLog(`Prompt compilado: ${promptResult.metadata?.active_sliders} sliders activos`);
+            addSystemLog(`Identity Lock: ${promptResult.metadata?.identity_lock ? 'ACTIVO' : 'DESACTIVADO'}`);
+
+            // Step 2: Generate image via Edge Function
+            const generateResult = await generateEnhancedImage(
+                imageUrl,
+                promptResult.prompt!,
+                {
+                    userMode: userProfile?.profile_type || 'auto',
+                    userId: userProfile?.id,
+                    outputType: 'preview_watermark',
+                }
+            );
+
+            if (!generateResult.success) {
+                throw new Error(generateResult.error || "Error generando imagen");
+            }
+
+            // Add result to previews
+            if (generateResult.output?.image) {
+                setPreviews([{
+                    id: `edge-${Date.now()}`,
+                    url: generateResult.output.image,
+                    prompt: generateResult.output.text || '',
+                    styleId: 'edge_generated',
+                    timestamp: Date.now(),
+                    settings: config.mixer
+                }]);
+            }
+
+            setStatus(AgentStatus.COMPLETE);
+            setAgentMsg({ text: "¡Procesamiento completado!", type: 'success' });
+            addSystemLog(`Tokens utilizados: ${generateResult.metadata?.tokens_charged}`);
+
+        } catch (error: any) {
+            console.error("Edge Function Processing Error:", error);
+            setAgentMsg({ text: `Error: ${error.message}`, type: 'error' });
+            setStatus(AgentStatus.ERROR);
+        }
+    };
+
     const processFileGeneration = async (url: string, config: LuxConfig, analysis: SemanticAnalysis | null) => {
         try {
             setStatus(AgentStatus.ANALYZING);
