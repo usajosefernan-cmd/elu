@@ -38,7 +38,7 @@ async def generate(body: dict = Body(...)):
     analysis_result = body.get('analysisResult') # Optional, if passed from frontend confirmation
     
     # 1. Get Config
-    config = await db.pillars_config.find_one({"user_id": user_id})
+    config = await db.pillars_config.find_one({"user_id": user_id}, {"_id": 0})
     if not config:
         raise HTTPException(status_code=404, detail="Config not found")
         
