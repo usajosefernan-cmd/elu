@@ -1,5 +1,5 @@
 from services.hierarchy_resolver import resolve_conflicts
-from backend.data.snippets import SNIPPET_DICTIONARY, map_value_to_level
+from data.snippets import SNIPPET_DICTIONARY, map_value_to_level
 
 def build_universal_prompt(config: dict, vision_summary: dict = None) -> str:
     """
