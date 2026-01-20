@@ -25,10 +25,16 @@ async def generate(body: dict = Body(...)):
     analysis_result = body.get('analysisResult')
     
     # config = await db.pillars_config.find_one({"user_id": user_id})
-    config = await supabase_db.get_slider_config(user_id)
-    if not config: raise HTTPException(status_code=404, detail="Config not found")
+    user_profile = await supabase_db.get_slider_config(user_id)
+    if not user_profile: raise HTTPException(status_code=404, detail="User profile not found")
+    
+    config = user_profile.get('current_config')
+    if not config: 
+        # Generate default config if not present
+        from data.snippets import get_default_pillars_config
+        config = get_default_pillars_config()
         
-    user_mode = config.get('user_mode', 'user')
+    user_mode = user_profile.get('user_mode', 'user')
 
     if not analysis_result and image_url:
         analysis_result = await vision_service.analyze_image(image_url)
