@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAuth } from '../context/AuthContext';
 import Layout from '../components/Layout';
 import PillarColumn from '../components/PillarColumn';
@@ -7,7 +7,7 @@ import ProMacroGallery from '../components/ProMacroGallery';
 import VisionAnalysisModal from '../components/VisionAnalysisModal';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
-import { Sparkles, Terminal, Camera, Zap } from 'lucide-react';
+import { Sparkles, Terminal, Camera, Zap, Upload, X } from 'lucide-react';
 
 export default function Dashboard() {
   const { user, loading: authLoading } = useAuth();
@@ -17,8 +17,12 @@ export default function Dashboard() {
   const [processing, setProcessing] = useState(false);
   const [result, setResult] = useState(null);
   const [inputText, setInputText] = useState("Mejorar esta imagen con estilo cinematográfico.");
-  const [imageUrl, setImageUrl] = useState("https://images.pexels.com/photos/35501372/pexels-photo-35501372.jpeg"); // Default mock image
   
+  // Image State
+  const [imageUrl, setImageUrl] = useState("https://images.pexels.com/photos/35501372/pexels-photo-35501372.jpeg"); // Default
+  const [isCustomImage, setIsCustomImage] = useState(false);
+  const fileInputRef = useRef(null);
+
   // Vision Analysis State
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [analysisData, setAnalysisData] = useState(null);
@@ -49,7 +53,6 @@ export default function Dashboard() {
 
   // Handle Updates
   const handleSliderUpdate = async (pillarName, sliderName, value) => {
-    // Optimistic update logic same as before...
     const newConfig = { ...config };
     const pillar = newConfig[pillarName];
     const slider = pillar.sliders.find(s => s.name === sliderName);
@@ -63,7 +66,6 @@ export default function Dashboard() {
   };
 
   const handleUserMacroUpdate = async (values) => {
-    // Call user macro endpoint
     try {
         const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/process/apply-user-macro`, {
             method: 'POST',
@@ -90,14 +92,45 @@ export default function Dashboard() {
     } catch (e) { console.error(e); }
   };
 
-  const handleToggle = async (pillarName, mode) => { /* Same as before */ };
+  const handleToggle = async (pillarName, mode) => {
+    const newConfig = { ...config };
+    newConfig[pillarName].mode = mode;
+    setConfig(newConfig);
+    await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/pillars/toggle`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId: user.id, pilarName: pillarName, mode })
+    });
+  };
 
+  // Image Upload Logic
+  const handleFileSelect = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setImageUrl(reader.result);
+            setIsCustomImage(true);
+            toast.success("Imagen cargada correctamente");
+        };
+        reader.readAsDataURL(file);
+    }
+  };
+
+  const triggerFileUpload = () => {
+    fileInputRef.current.click();
+  };
+
+  const resetImage = () => {
+    setImageUrl("https://images.pexels.com/photos/35501372/pexels-photo-35501372.jpeg");
+    setIsCustomImage(false);
+  };
+
+  // Generation Logic
   const handleGenerateClick = async () => {
     if (config.user_mode === 'user') {
-        // User mode: Direct generation (Auto analysis in backend)
         await runGeneration();
     } else {
-        // Pro/Prolux: Analyze first
         setAnalyzing(true);
         try {
             const res = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/process/analyze`, {
@@ -159,18 +192,8 @@ export default function Dashboard() {
             
             {/* LEFT PANEL: CONTROLS */}
             <div className="col-span-8 bg-[#050505] overflow-y-auto relative border-r border-white/10">
-                
-                {/* USER MODE UI */}
-                {config.user_mode === 'user' && (
-                    <UserMacroControl onUpdate={handleUserMacroUpdate} />
-                )}
-
-                {/* PRO MODE UI */}
-                {config.user_mode === 'pro' && (
-                    <ProMacroGallery onSelect={handleProMacroSelect} />
-                )}
-
-                {/* PROLUX MODE UI (Full Grid) */}
+                {config.user_mode === 'user' && <UserMacroControl onUpdate={handleUserMacroUpdate} />}
+                {config.user_mode === 'pro' && <ProMacroGallery onSelect={handleProMacroSelect} />}
                 {config.user_mode === 'prolux' && (
                     <div className="grid grid-cols-3 h-full">
                          <PillarColumn pillar={config.photoscaler} onToggle={handleToggle} onSliderUpdate={handleSliderUpdate} />
@@ -182,12 +205,23 @@ export default function Dashboard() {
 
             {/* RIGHT PANEL: PREVIEW & ACTION */}
             <div className="col-span-4 bg-[#08080A] flex flex-col p-6 overflow-hidden">
-                {/* Image Input Simulation */}
-                <div className="mb-6 relative group aspect-video bg-black rounded-sm border border-white/10 overflow-hidden">
+                {/* Image Input */}
+                <div className="mb-6 relative group aspect-video bg-black rounded-sm border border-white/10 overflow-hidden cursor-pointer" onClick={triggerFileUpload}>
                     <img src={imageUrl} alt="Input" className="w-full h-full object-cover opacity-60 group-hover:opacity-100 transition-opacity" />
-                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <Camera className="text-white/20" size={48} />
-                    </div>
+                    
+                    {!isCustomImage ? (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none group-hover:bg-black/40 transition-colors">
+                            <Upload className="text-white/40 mb-2 group-hover:text-primary transition-colors" size={32} />
+                            <span className="text-[10px] uppercase tracking-widest text-white/40">Click to Upload Image</span>
+                        </div>
+                    ) : (
+                         <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                             <button onClick={(e) => { e.stopPropagation(); resetImage(); }} className="p-1 bg-black/50 rounded-full hover:bg-red-500/50 text-white">
+                                 <X size={14}/>
+                             </button>
+                         </div>
+                    )}
+                    <input type="file" ref={fileInputRef} className="hidden" onChange={handleFileSelect} accept="image/*" />
                 </div>
 
                 <div className="mb-4">
@@ -196,6 +230,7 @@ export default function Dashboard() {
                         value={inputText}
                         onChange={(e) => setInputText(e.target.value)}
                         className="w-full h-24 bg-black/40 border border-white/10 p-4 text-sm font-mono text-white focus:border-primary outline-none resize-none rounded-sm"
+                        placeholder="Describe cómo quieres mejorar la imagen..."
                     />
                 </div>
 

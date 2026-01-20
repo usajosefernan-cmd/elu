@@ -1,12 +1,15 @@
-from emergentintegrations.llm.chat import LlmChat, UserMessage
+import google.generativeai as genai
 import os
 import json
+import base64
 
 class VisionService:
     def __init__(self):
         self.api_key = os.environ.get("GOOGLE_API_KEY")
+        if self.api_key:
+            genai.configure(api_key=self.api_key)
         
-    async def analyze_image(self, image_url: str) -> dict:
+    async def analyze_image(self, image_input: str) -> dict:
         if not self.api_key:
             return {"error": "No API Key"}
 
@@ -35,33 +38,51 @@ JSON OUTPUT FORMAT:
   "suggested_pillar_settings": { "limpieza_artefactos": 8, ... }
 }
 """
-        # Note: emergentintegrations current version might support image inputs differently or use GPT-4o for vision. 
-        # Since we are strictly Gemini, and the library supports Gemini, we assume it can handle image URLs 
-        # or we might need to describe the image if the library doesn't support direct image URL with Gemini yet.
-        # FALLBACK: If library doesn't support image URL for Gemini, we would usually use a direct requests call, 
-        # but user mandated use of Gemini. 
-        
-        # Assuming we can pass image_url or content. 
-        # For now, since I cannot verify if the specific emergentintegrations version supports image url for Gemini 
-        # (usually it does via multimodel message), I will simulate the input as a text description of the image 
-        # if the user provided one, OR try to use the image_url if the library allows.
-        
-        # Given the constraints and "Vision Analysis" requirement, I will assume we are mocking the *computer vision* part 
-        # if the library is text-only, OR passing the URL if it supports it.
-        # Let's try to pass the URL in the message content if possible.
-        
         try:
-            # Using 'gemini-2.5-flash' for analysis as per requirements
-            chat = LlmChat(
-                api_key=self.api_key,
-                session_id="vision-analysis",
-                system_message=prompt
-            ).with_model("gemini", "gemini-2.5-flash")
+            model = genai.GenerativeModel('gemini-2.0-flash') # Using Flash for speed/vision
             
-            # Construct message with image if supported, else just text instruction + url
-            user_msg = UserMessage(text=f"Analyze this image: {image_url}")
+            content_parts = [prompt]
             
-            response = await chat.send_message(user_msg)
+            # Check if image_input is URL or Base64
+            if image_input.startswith("data:image"):
+                # Base64 Data URI
+                try:
+                    header, encoded = image_input.split(",", 1)
+                    mime_type = header.split(":")[1].split(";")[0]
+                    image_data = base64.b64decode(encoded)
+                    
+                    content_parts.append({
+                        "mime_type": mime_type,
+                        "data": image_data
+                    })
+                except Exception as e:
+                    print(f"Base64 decode error: {e}")
+                    return {"error": "Invalid Image Data"}
+            else:
+                # URL - Gemini API python client doesn't fetch URLs automatically.
+                # We should fetch it or ask user for base64. 
+                # For this MVP, if it's a URL, we'll try to use it as text description fallback
+                # OR we could fetch it here.
+                # Let's assume if it's http it's a URL, else it's a text description?
+                if image_input.startswith("http"):
+                    # Mock/Describe fallback since we can't easily fetch and pass to Gemini without requests
+                    # But we can try to fetch it.
+                    import requests
+                    try:
+                        resp = requests.get(image_input)
+                        if resp.status_code == 200:
+                            content_parts.append({
+                                "mime_type": resp.headers.get("Content-Type", "image/jpeg"),
+                                "data": resp.content
+                            })
+                        else:
+                             content_parts.append(f"Image URL: {image_input} (Could not fetch)")
+                    except:
+                        content_parts.append(f"Image URL: {image_input}")
+                else:
+                    content_parts.append(f"Image Description: {image_input}")
+
+            response = model.generate_content(content_parts)
             
             # Clean response to get JSON
             text = response.text
@@ -74,9 +95,8 @@ JSON OUTPUT FORMAT:
             
         except Exception as e:
             print(f"Vision Analysis Failed: {e}")
-            # Return dummy analysis for resilience
             return {
-                "semantic_anchors": ["Detected Image Subject"],
+                "semantic_anchors": ["Detected Image Subject (Fallback)"],
                 "technical_assessment": {"noise_level": 5, "blur_level": 2},
                 "suggested_pillar_settings": {}
             }
