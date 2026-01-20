@@ -1037,7 +1037,19 @@ const App: React.FC = () => {
 
             {/* SHARED MODALS */}
             
-            {/* NEW: Profile Config Modal v28 */}
+            {/* NEW: Vision Confirm Modal (Edge Function result) */}
+            <VisionConfirmModal
+                isVisible={showVisionConfirm}
+                imageUrl={inputImageUrl || ''}
+                analysis={visionAnalysis}
+                onConfirm={handleVisionConfirm}
+                onCustomize={handleVisionCustomize}
+                onCancel={handleVisionCancel}
+                tokensRequired={10}
+                userTokens={userTokenBalance}
+            />
+            
+            {/* Profile Config Modal v28 */}
             <ProfileConfigModal
                 isVisible={showProfileSelector}
                 currentProfile={userProfile?.profile_type || 'auto'}
