@@ -32,22 +32,19 @@ export const compressAndResizeImage = async (file: File): Promise<{ blob: Blob, 
 };
 
 export const uploadImageToStorage = async (imageBlob: Blob, userId: string): Promise<string> => {
-    // For now, simpler to just use Base64 for the Python backend if storage fails, 
-    // but let's try Supabase Storage if configured.
-    // If Supabase Storage is not set up, we might need a fallback.
-    // Let's assume user set it up or we use a data URI fallback in memory? 
-    // No, better to try upload.
     const supabase = getSupabaseClient();
     const fileName = `${userId}/${Date.now()}.jpg`;
-    const { data, error } = await supabase.storage.from('lux-storage').upload(fileName, imageBlob);
+
+    const { error } = await supabase.storage
+        .from('lux-storage')
+        .upload(fileName, imageBlob, { contentType: 'image/jpeg', upsert: false });
+
     if (error) {
-        console.warn("Storage Upload Failed (Bucket might be missing). Using Base64 fallback.");
-        return new Promise((resolve) => {
-            const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(imageBlob);
-        });
+        // IMPORTANT: Do NOT fallback to base64 (it freezes UI and mixes flows).
+        // Instead, show a clear error so bucket/policies can be fixed.
+        throw new Error(`Storage upload failed: ${error.message}`);
     }
+
     const { data: publicUrl } = supabase.storage.from('lux-storage').getPublicUrl(fileName);
     return publicUrl.publicUrl;
 };
