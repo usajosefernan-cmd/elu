@@ -88,7 +88,7 @@ const callEdgeFunction = async <T>(
     functionName === 'vision-analysis'
       ? 'process/analyze'
       : functionName === 'prompt-compiler'
-        ? 'process/compile'
+        ? 'process/generate'
         : functionName === 'generate-image'
           ? 'process/generate'
           : functionName;
