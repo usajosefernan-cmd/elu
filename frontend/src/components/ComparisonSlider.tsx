@@ -21,7 +21,7 @@ export const ComparisonSlider: React.FC<ComparisonSliderProps> = ({
     processedImage,
     aspectRatio,
     isLocked = false,
-    objectFit = 'contain', // Default to contain to see full frame changes
+    objectFit = 'contain',
     enableNativeScrolling = false,
     staticZoomLevel = 1,
     focusPoint = { x: 50, y: 50 },
@@ -31,18 +31,24 @@ export const ComparisonSlider: React.FC<ComparisonSliderProps> = ({
 }) => {
     const [sliderPosition, setSliderPosition] = useState(50);
     const [isDraggingSlider, setIsDraggingSlider] = useState(false);
+    const [detectedAspectRatio, setDetectedAspectRatio] = useState<number | null>(null);
 
     const containerRef = useRef<HTMLDivElement>(null);
 
-    // --- SMART ASPECT RATIO DETECTION ---
-    const handleProcessedImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
+    // --- SMART ASPECT RATIO DETECTION from ORIGINAL image ---
+    const handleOriginalImageLoad = (e: React.SyntheticEvent<HTMLImageElement>) => {
         const { naturalWidth, naturalHeight } = e.currentTarget;
-        if (naturalWidth && naturalHeight && onAspectRatioChange) {
-            const detectedRatio = naturalWidth / naturalHeight;
-            // Notify parent to resize container to fit the NEW structure
-            onAspectRatioChange(detectedRatio);
+        if (naturalWidth && naturalHeight) {
+            const ratio = naturalWidth / naturalHeight;
+            setDetectedAspectRatio(ratio);
+            if (onAspectRatioChange) {
+                onAspectRatioChange(ratio);
+            }
         }
     };
+
+    // Use passed aspectRatio, or detected from original, or default
+    const finalAspectRatio = aspectRatio || detectedAspectRatio || (4/3);
 
     // --- SLIDER LOGIC ---
     const updateSlider = useCallback((clientX: number) => {
