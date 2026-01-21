@@ -270,17 +270,18 @@ const PRO_MACROS = {
 
 const ProProfileUI: React.FC<{ 
   onConfirm: (config: LuxConfig) => void;
-}> = ({ onConfirm }) => {
+  initialMixer?: LuxMixer;
+}> = ({ onConfirm, initialMixer }) => {
   const [macroValues, setMacroValues] = useState<Record<string, number>>({
-    restauracion: 5,
-    fidelidad: 5,
-    caracter: 5,
-    presencia: 5,
-    pulido: 5,
-    cinematica: 5,
-    volumen: 5,
-    drama: 5,
-    atmosfera: 5,
+    restauracion: initialMixer?.restoration ?? 5,
+    fidelidad: initialMixer?.restoration ?? 5,
+    caracter: initialMixer?.restoration ?? 5,
+    presencia: initialMixer?.skin_bio ?? 5,
+    pulido: initialMixer?.stylism ?? 5,
+    cinematica: initialMixer?.stylism ?? 5,
+    volumen: initialMixer?.lighting ?? 5,
+    drama: initialMixer?.lighting ?? 5,
+    atmosfera: initialMixer?.lighting ?? 5,
   });
 
   const allMacros = [
