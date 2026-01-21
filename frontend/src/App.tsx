@@ -172,6 +172,13 @@ const App: React.FC = () => {
 
     const fileInputRef = useRef<HTMLInputElement>(null);
 
+    // Update elapsed display while overlay visible
+    useEffect(() => {
+        if (!showProcessingOverlay || !phaseStartedAt) return;
+        const t = setInterval(() => setElapsedTime(prev => prev + 0.1), 100);
+        return () => clearInterval(t);
+    }, [showProcessingOverlay, phaseStartedAt]);
+
     // --- EFFECTS ---
 
     // Timer Logic
