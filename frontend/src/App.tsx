@@ -1411,30 +1411,15 @@ const App: React.FC = () => {
 
             {/* SHARED MODALS */}
             
-            {/* NEW: Vision Confirm Modal (Edge Function result) */}
-            <VisionConfirmModal
-                isVisible={showVisionConfirm}
+            {/* NEW: Unified Config Modal (Vision + Profile combined) */}
+            <UnifiedConfigModal
+                isVisible={showVisionConfirm || showProfileSelector}
                 imageUrl={stagedImageUrl || inputImageUrl || ''}
                 analysis={visionAnalysis}
-                onConfirm={handleVisionConfirm}
-                onCustomize={handleVisionCustomize}
-                onCancel={handleVisionCancel}
+                onConfirm={handleUnifiedConfirm}
+                onCancel={handleUnifiedCancel}
                 tokensRequired={10}
                 userTokens={userTokenBalance}
-            />
-            
-            {/* Profile Config Modal v28 */}
-            <ProfileConfigModal
-                isVisible={showProfileSelector}
-                currentProfile={userProfile?.profile_type || 'auto'}
-                availableTokens={userProfile?.tokens || 0}
-                totalTokensPurchased={userProfile?.total_tokens_purchased || 0}
-                imageUrl={stagedImageUrl || inputImageUrl || ''}
-                initialMixer={visionAnalysis?._defaultMixer}
-                initialSuggestedSettings={visionAnalysis?.suggested_settings}
-                onConfirm={handleProfileConfigConfirm}
-                onCancel={handleProfileConfigCancel}
-                onUpgrade={() => navigate('/pricing')}
             />
 
             {/* Legacy MobileConfigWizard disabled for v28 flow */}
