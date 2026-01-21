@@ -521,15 +521,10 @@ const App: React.FC = () => {
         } catch (visionError: any) {
             console.error("Vision Analysis Error:", visionError);
             setShowProcessingOverlay(false);
-            setAgentMsg({ text: `Fallo en Brain pipeline: ${visionError.message}. Probando fallback legacy...`, type: 'info' });
+            setAgentMsg({ text: `Error en análisis (Vision): ${visionError.message}`, type: 'error' });
+            resetFlow();
+            return;
         }
-
-        // FALLBACK: Original vision analysis (if Edge Function fails)
-        try {
-            setStatus(AgentStatus.ANALYZING);
-            setAgentMsg({ text: "PhotoScaler™: Inspeccionando Geometría...", type: 'info' });
-
-            const analysis = await analyzeImage(uploadedPublicUrl);
 
             if (analysis.safety_check?.is_nsfw) {
                 alert("Bloqueo de Seguridad: Contenido no permitido.");
