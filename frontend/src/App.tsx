@@ -431,6 +431,8 @@ const App: React.FC = () => {
             setPhaseProgress(5);
             setPhaseLabel('Analizando (Vision) — esto puede tardar ~3–8s');
 
+            // IMPORTANT: avoid showing legacy "PROCESANDO ESTUDIO" panel
+            // during the v28 Brain pipeline
             setStatus(AgentStatus.ANALYZING);
             setAgentMsg({ text: "Gemini 2.5 Flash: Analizando imagen...", type: 'info' });
 
