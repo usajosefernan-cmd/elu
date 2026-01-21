@@ -192,3 +192,5 @@
 ## agent_communication:
 ##   - agent: "main"
 ##     message: "Se corrigió el wiring del botón Upload Project y se añadió fallback real (no mock). Por favor prueba el flujo completo con login y sin login si aplica."
+##   - agent: "testing"
+##     message: "E2E testing completed. Upload flow partially working but VisionConfirmModal not appearing due to API quota limits. File input accessible, new wiring confirmed, archives functional, mobile responsive. See detailed findings below."
