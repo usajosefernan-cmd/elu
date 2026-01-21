@@ -192,7 +192,7 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                 isOpen={isZoomModalOpen}
                 onClose={() => setIsZoomModalOpen(false)}
                 processedImage={getMasterUrl(selectedVariation?.image_path || '')}
-                originalImage={getDisplayUrl(currentSession.original_image_path)}
+                originalImage={currentSession.original_image_path}
                 title={isMaster ? "4K Master Inspection" : "2K Proxy Inspection"}
                 variation={selectedVariation}
                 generation={currentSession}
@@ -248,16 +248,11 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                 </button>
                             </div>
                             <div className="flex-1 flex items-center justify-center bg-checkered relative">
-                                <div className="w-full h-full relative flex items-center justify-center">
+                                <div className="w-full h-full relative">
                                     {isMaster ? (
-                                        <img src={getDisplayUrl(selectedVariation.image_path)} className="max-w-full max-h-full object-contain" />
+                                        <img src={getDisplayUrl(selectedVariation.image_path)} className="w-full h-full object-cover" />
                                     ) : (
-                                        <ComparisonSlider 
-                                            originalImage={getDisplayUrl(currentSession.original_image_path)} 
-                                            processedImage={getDisplayUrl(selectedVariation.image_path)} 
-                                            isLocked={false} 
-                                            objectFit="contain"
-                                        />
+                                        <ComparisonSlider originalImage={currentSession.original_image_path} processedImage={getDisplayUrl(selectedVariation.image_path)} isLocked={false} objectFit="cover" />
                                     )}
                                 </div>
                             </div>
