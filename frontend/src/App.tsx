@@ -950,12 +950,22 @@ const App: React.FC = () => {
 
                 const nowIso = new Date().toISOString();
                 const id = `edge-${Date.now()}`;
+                
+                // Guardar el prompt COMPLETO y toda la info de debug
                 const promptPayload = { 
                     prompt: generateResult.output?.text || '', 
                     compiledPrompt: promptResult.prompt,
                     mode: config.mode || 'AUTO',
-                    selectedPresetId: config.selectedPresetId,
-                    mixer: config.mixer
+                    selectedPresetId: JSON.stringify(sliderConfig), // Guardar los 27 sliders exactos
+                    mixer: config.mixer,
+                    // Guardar metadata del compilador
+                    metadata: promptResult.metadata,
+                    // Guardar info de debug (vetos, sanitization, etc.)
+                    debugInfo: promptResult.debug_info,
+                    // Tokens estimados
+                    tokensEstimate: promptResult.tokens_estimate,
+                    // DNA Anchor info
+                    dnaAnchor: promptResult.dna_anchor,
                 };
 
                 setPreviews([{
