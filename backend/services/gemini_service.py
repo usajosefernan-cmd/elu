@@ -5,11 +5,43 @@ import time
 import base64
 import requests
 from io import BytesIO
+from PIL import Image
 from services.key_manager import key_manager
 
 class GeminiService:
     def __init__(self):
         pass
+
+    def _get_image_aspect_ratio(self, image_input: str) -> str:
+        """Detect aspect ratio from input image and return closest standard ratio."""
+        try:
+            if image_input.startswith("data:image"):
+                header, encoded = image_input.split(",", 1)
+                image_data = base64.b64decode(encoded)
+                img = Image.open(BytesIO(image_data))
+            elif image_input.startswith("http"):
+                resp = requests.get(image_input)
+                img = Image.open(BytesIO(resp.content))
+            else:
+                return "1:1"  # Default
+            
+            width, height = img.size
+            ratio = width / height
+            
+            # Map to closest standard aspect ratio
+            if ratio > 1.6:  # Wide
+                return "16:9"
+            elif ratio > 1.2:  # Slightly wide
+                return "4:3"
+            elif ratio > 0.9:  # Square-ish
+                return "1:1"
+            elif ratio > 0.7:  # Portrait
+                return "3:4"
+            else:  # Tall portrait
+                return "9:16"
+        except Exception as e:
+            print(f"Aspect ratio detection error: {e}")
+            return "1:1"  # Safe default
 
     async def generate_content(self, model_name: str, master_prompt: str, user_input_text: str, image_input: str = None) -> dict:
         
