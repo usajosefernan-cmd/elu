@@ -448,78 +448,93 @@ const ProProfileUI: React.FC<{
 };
 
 // =====================================================
-// PROLUX PROFILE UI - 27 Sliders
+// PROLUX PROFILE UI - 27 Sliders con UI Compacta
 // =====================================================
-// IMPORTANTE: Los keys deben coincidir EXACTAMENTE con slider_semantic_mappings en Supabase
-const SLIDERS_27 = {
-  photoscaler: [
-    { key: 'limpieza_artefactos', name: 'Limpieza', short: 'CLN' },
-    { key: 'grano_filmico', name: 'Grano', short: 'GRN' },
-    { key: 'optica', name: 'Óptica/Nitidez', short: 'OPT' },
-    { key: 'geometria', name: 'Geometría', short: 'GEO' },
-    { key: 'chronos', name: 'Chronos', short: 'CHR' },
-    { key: 'senal_raw', name: 'Señal RAW', short: 'RAW' },
-    { key: 'sintesis_adn', name: 'Síntesis ADN', short: 'ADN' },
-    { key: 'enfoque', name: 'Enfoque', short: 'FOC' },
-    { key: 'resolucion', name: 'Resolución', short: 'RES' }
-  ],
-  stylescaler: [
-    { key: 'styling_piel', name: 'Piel', short: 'SKN' },
-    { key: 'styling_pelo', name: 'Pelo', short: 'HAR' },
-    { key: 'styling_ropa', name: 'Ropa', short: 'CLO' },
-    { key: 'maquillaje', name: 'Maquillaje', short: 'MKP' },
-    { key: 'limpieza_entorno', name: 'Entorno', short: 'ENV' },
-    { key: 'reencuadre_ia', name: 'Reencuadre IA', short: 'FRM' },
-    { key: 'atmosfera', name: 'Atmósfera', short: 'ATM' },
-    { key: 'look_cine', name: 'Look Cine', short: 'CIN' },
-    { key: 'materiales_pbr', name: 'Materiales PBR', short: 'PBR' }
-  ],
-  lightscaler: [
-    { key: 'key_light', name: 'Luz Principal', short: 'KEY' },
-    { key: 'fill_light', name: 'Luz Relleno', short: 'FIL' },
-    { key: 'rim_light', name: 'Contra Luz', short: 'RIM' },
-    { key: 'volumetria', name: 'Volumetría', short: 'VOL' },
-    { key: 'temperatura', name: 'Temperatura', short: 'TMP' },
-    { key: 'contraste', name: 'Contraste', short: 'CNT' },
-    { key: 'sombras', name: 'Sombras', short: 'SHD' },
-    { key: 'estilo_autor', name: 'Estilo Autor', short: 'STY' },
-    { key: 'reflejos', name: 'Reflejos', short: 'REF' }
-  ]
+// Definiciones con nombres legibles y descripciones
+const SLIDER_DEFINITIONS = {
+  photoscaler: {
+    name: '📷 Cámara & Óptica',
+    description: 'Control del equipo de cámara virtual',
+    sliders: [
+      { key: 'limpieza_artefactos', name: 'Limpieza Digital', desc: 'Elimina ruido, manchas y artefactos de compresión' },
+      { key: 'geometria', name: 'Corrección Geométrica', desc: 'Endereza líneas y corrige distorsión de lente' },
+      { key: 'optica', name: 'Calidad Óptica', desc: 'Simula lentes profesionales de alta gama' },
+      { key: 'chronos', name: 'Control de Movimiento', desc: 'Congela el movimiento y elimina desenfoque' },
+      { key: 'senal_raw', name: 'Rango Dinámico', desc: 'Recupera detalles en sombras y luces' },
+      { key: 'sintesis_adn', name: 'Síntesis de Detalle', desc: 'Genera texturas y detalles de alta resolución' },
+      { key: 'grano_filmico', name: 'Grano de Película', desc: 'Añade textura cinematográfica tipo film' },
+      { key: 'enfoque', name: 'Nitidez', desc: 'Aumenta la definición de bordes y detalles' },
+      { key: 'resolucion', name: 'Resolución', desc: 'Escala la imagen a mayor resolución' }
+    ]
+  },
+  stylescaler: {
+    name: '🎨 Dirección de Arte',
+    description: 'Control del departamento artístico',
+    sliders: [
+      { key: 'styling_piel', name: 'Tratamiento de Piel', desc: 'Retoque profesional de piel y textura' },
+      { key: 'styling_pelo', name: 'Estilismo de Cabello', desc: 'Mejora brillo, volumen y definición del pelo' },
+      { key: 'styling_ropa', name: 'Estilismo de Ropa', desc: 'Mejora texturas y pliegues de la ropa' },
+      { key: 'maquillaje', name: 'Maquillaje Virtual', desc: 'Aplica o mejora el maquillaje existente' },
+      { key: 'limpieza_entorno', name: 'Limpieza de Fondo', desc: 'Elimina distracciones y ordena el entorno' },
+      { key: 'reencuadre_ia', name: 'Reencuadre Inteligente', desc: 'Recompone la imagen con reglas profesionales' },
+      { key: 'atmosfera', name: 'Atmósfera', desc: 'Añade niebla, humo o efectos ambientales' },
+      { key: 'look_cine', name: 'Look Cinematográfico', desc: 'Aplica gradación de color tipo película' },
+      { key: 'materiales_pbr', name: 'Realismo de Materiales', desc: 'Mejora reflejos y texturas de superficies' }
+    ]
+  },
+  lightscaler: {
+    name: '💡 Iluminación',
+    description: 'Control del equipo de iluminación',
+    sliders: [
+      { key: 'key_light', name: 'Luz Principal', desc: 'Controla la fuente de luz dominante' },
+      { key: 'fill_light', name: 'Luz de Relleno', desc: 'Suaviza las sombras con luz secundaria' },
+      { key: 'rim_light', name: 'Contraluz', desc: 'Añade separación del fondo con luz trasera' },
+      { key: 'volumetria', name: 'Luz Volumétrica', desc: 'Crea rayos de luz visibles y atmósfera' },
+      { key: 'temperatura', name: 'Temperatura de Color', desc: 'Ajusta entre tonos cálidos y fríos' },
+      { key: 'contraste', name: 'Contraste', desc: 'Controla la diferencia entre luces y sombras' },
+      { key: 'sombras', name: 'Profundidad de Sombras', desc: 'Ajusta la intensidad de las zonas oscuras' },
+      { key: 'estilo_autor', name: 'Estilo de Autor', desc: 'Aplica esquemas de luz de maestros del cine' },
+      { key: 'reflejos', name: 'Brillo y Reflejos', desc: 'Controla especularidad y brillos de piel' }
+    ]
+  }
 };
 
 const ProluxProfileUI: React.FC<{ 
   onConfirm: (config: LuxConfig) => void;
+  onCancel?: () => void;
   initialMixer?: LuxMixer;
-}> = ({ onConfirm, initialMixer }) => {
+  initialSettings?: any;
+}> = ({ onConfirm, onCancel, initialMixer, initialSettings }) => {
+  // Inicializar con valores de auto_settings si existen
   const [sliderValues, setSliderValues] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
-    // Inicializar todos los sliders con valores del initialMixer si están disponibles
-    // PhotoScaler sliders -> restoration
-    SLIDERS_27.photoscaler.forEach(s => {
-      initial[s.key] = initialMixer?.restoration ?? 5;
-    });
-    // StyleScaler sliders -> stylism
-    SLIDERS_27.stylescaler.forEach(s => {
-      initial[s.key] = initialMixer?.stylism ?? 5;
-    });
-    // LightScaler sliders -> lighting
-    SLIDERS_27.lightscaler.forEach(s => {
-      initial[s.key] = initialMixer?.lighting ?? 5;
-    });
+    
+    // Usar auto_settings si están disponibles
+    if (initialSettings) {
+      Object.entries(initialSettings.photoscaler || {}).forEach(([k, v]) => { initial[k] = v as number; });
+      Object.entries(initialSettings.stylescaler || {}).forEach(([k, v]) => { initial[k] = v as number; });
+      Object.entries(initialSettings.lightscaler || {}).forEach(([k, v]) => { initial[k] = v as number; });
+    } else {
+      // Fallback a valores por defecto
+      SLIDER_DEFINITIONS.photoscaler.sliders.forEach(s => { initial[s.key] = initialMixer?.restoration ?? 5; });
+      SLIDER_DEFINITIONS.stylescaler.sliders.forEach(s => { initial[s.key] = initialMixer?.stylism ?? 5; });
+      SLIDER_DEFINITIONS.lightscaler.sliders.forEach(s => { initial[s.key] = initialMixer?.lighting ?? 5; });
+    }
     return initial;
   });
+  
   const [activePillar, setActivePillar] = useState<'photoscaler' | 'stylescaler' | 'lightscaler'>('photoscaler');
+  const [expandedSlider, setExpandedSlider] = useState<string | null>(null);
 
   const updateSlider = (key: string, value: number) => {
     setSliderValues(prev => ({ ...prev, [key]: value }));
   };
 
   const handleGenerate = () => {
-    // Construir configuración completa de 27 sliders para el prompt compiler
     const buildPillar = (pillarKey: 'photoscaler' | 'stylescaler' | 'lightscaler') => ({
-      sliders: SLIDERS_27[pillarKey].map(s => ({
+      sliders: SLIDER_DEFINITIONS[pillarKey].sliders.map(s => ({
         name: s.key,
-        value: sliderValues[s.key] ?? 0
+        value: sliderValues[s.key] ?? 5
       }))
     });
 
@@ -529,10 +544,9 @@ const ProluxProfileUI: React.FC<{
       lightscaler: buildPillar('lightscaler'),
     };
 
-    // Enviar configuración completa via selectedPresetId
     onConfirm({
       userPrompt: '',
-      mode: 'PROLUX',  // Cambiar de 'ADVANCED' a 'PROLUX'
+      mode: 'PROLUX',
       selectedPresetId: JSON.stringify(sliderConfig),
       mixer: {
         stylism: Math.round((sliderValues.atmosfera + sliderValues.look_cine + sliderValues.materiales_pbr) / 3),
@@ -545,72 +559,164 @@ const ProluxProfileUI: React.FC<{
     });
   };
 
-  const pillarColors = {
-    photoscaler: 'cyan',
-    stylescaler: 'pink',
-    lightscaler: 'orange'
-  };
+  // Contar sliders activos (valor > 3)
+  const activeCount = Object.values(sliderValues).filter(v => v > 3).length;
+  const currentPillar = SLIDER_DEFINITIONS[activePillar];
 
   return (
     <div className="space-y-3">
-      <div className="text-center mb-2">
-        <h3 className="text-lg font-bold text-white mb-1">Control Total</h3>
-        <p className="text-[10px] text-gray-400">27 parámetros de ajuste fino</p>
-      </div>
-
-      {/* Pillar Tabs */}
-      <div className="flex gap-1 bg-white/5 rounded-lg p-1">
-        {(['photoscaler', 'stylescaler', 'lightscaler'] as const).map(pillar => (
+      {/* Header con botón volver */}
+      <div className="flex items-center justify-between">
+        {onCancel && (
           <button
-            key={pillar}
-            onClick={() => setActivePillar(pillar)}
-            className={`flex-1 py-2 px-3 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all ${
-              activePillar === pillar
-                ? `bg-${pillarColors[pillar]}-500/20 text-${pillarColors[pillar]}-400 border border-${pillarColors[pillar]}-500/50`
-                : 'text-gray-500 hover:text-white'
-            }`}
+            onClick={onCancel}
+            className="flex items-center gap-1 text-xs text-gray-400 hover:text-white transition-colors"
           >
-            {pillar === 'photoscaler' && <Camera className="w-3 h-3 inline mr-1" />}
-            {pillar === 'stylescaler' && <Palette className="w-3 h-3 inline mr-1" />}
-            {pillar === 'lightscaler' && <Sun className="w-3 h-3 inline mr-1" />}
-            {pillar.replace('scaler', '')}
+            <ChevronRight className="w-4 h-4 rotate-180" />
+            Volver
           </button>
-        ))}
+        )}
+        <div className="text-right">
+          <span className="text-[10px] text-gray-500">{activeCount}/27 activos</span>
+        </div>
       </div>
 
-      {/* Sliders Grid */}
-      <div className="grid grid-cols-3 gap-2 max-h-[300px] overflow-y-auto pr-2">
-        {SLIDERS_27[activePillar].map(slider => (
-          <div 
-            key={slider.key}
-            className="bg-white/5 rounded-lg p-2 border border-white/5 hover:border-white/20 transition-all"
-          >
-            <div className="flex items-center justify-between mb-1">
-              <span className="text-[8px] text-gray-500 uppercase">{slider.short}</span>
-              <span className="text-[10px] font-mono text-white">{sliderValues[slider.key]}</span>
+      {/* Pillar Tabs - Compactos */}
+      <div className="flex gap-1 p-1 bg-white/5 rounded-xl">
+        {(['photoscaler', 'stylescaler', 'lightscaler'] as const).map(pillar => {
+          const info = SLIDER_DEFINITIONS[pillar];
+          const isActive = activePillar === pillar;
+          return (
+            <button
+              key={pillar}
+              onClick={() => setActivePillar(pillar)}
+              className={`flex-1 py-2.5 px-2 rounded-lg text-xs font-bold transition-all ${
+                isActive 
+                  ? 'bg-lumen-gold text-black' 
+                  : 'text-gray-400 hover:text-white hover:bg-white/5'
+              }`}
+            >
+              {info.name.split(' ')[0]}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Pillar description */}
+      <div className="text-center">
+        <p className="text-sm font-bold text-white">{currentPillar.name}</p>
+        <p className="text-[10px] text-gray-500">{currentPillar.description}</p>
+      </div>
+
+      {/* Sliders List - Diseño compacto tipo acordeón */}
+      <div className="space-y-1 max-h-[280px] overflow-y-auto pr-1">
+        {currentPillar.sliders.map(slider => {
+          const value = sliderValues[slider.key] ?? 5;
+          const isExpanded = expandedSlider === slider.key;
+          const isActive = value > 3;
+          
+          // Indicador de nivel
+          const levelLabel = value <= 2 ? 'Sutil' : value <= 5 ? 'Normal' : value <= 8 ? 'Intenso' : 'Máximo';
+          const levelColor = value <= 2 ? 'text-gray-400' : value <= 5 ? 'text-blue-400' : value <= 8 ? 'text-purple-400' : 'text-lumen-gold';
+
+          return (
+            <div 
+              key={slider.key}
+              className={`rounded-xl border transition-all ${
+                isActive 
+                  ? 'bg-white/5 border-lumen-gold/30' 
+                  : 'bg-white/[0.02] border-white/5'
+              }`}
+            >
+              {/* Header clickeable */}
+              <button
+                onClick={() => setExpandedSlider(isExpanded ? null : slider.key)}
+                className="w-full px-3 py-2.5 flex items-center justify-between"
+              >
+                <div className="flex items-center gap-2 flex-1 min-w-0">
+                  <span className={`text-sm font-medium truncate ${isActive ? 'text-white' : 'text-gray-400'}`}>
+                    {slider.name}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className={`text-xs font-mono ${levelColor}`}>{value}</span>
+                  <span className={`text-[9px] uppercase ${levelColor}`}>{levelLabel}</span>
+                  <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
+                </div>
+              </button>
+
+              {/* Contenido expandido */}
+              {isExpanded && (
+                <div className="px-3 pb-3 space-y-2 animate-in slide-in-from-top-2 duration-200">
+                  <p className="text-[11px] text-gray-500 leading-relaxed">{slider.desc}</p>
+                  
+                  {/* Slider */}
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="range"
+                      min="1"
+                      max="10"
+                      value={value}
+                      onChange={(e) => updateSlider(slider.key, parseInt(e.target.value))}
+                      className="flex-1 h-2 bg-white/10 rounded-full appearance-none cursor-pointer accent-lumen-gold"
+                    />
+                    <div className="flex gap-1">
+                      {[1, 5, 10].map(v => (
+                        <button
+                          key={v}
+                          onClick={() => updateSlider(slider.key, v)}
+                          className={`w-7 h-7 rounded-lg text-[10px] font-bold transition-all ${
+                            value === v 
+                              ? 'bg-lumen-gold text-black' 
+                              : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                          }`}
+                        >
+                          {v}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-            <input
-              type="range"
-              min="0"
-              max="10"
-              value={sliderValues[slider.key]}
-              onChange={(e) => updateSlider(slider.key, parseInt(e.target.value))}
-              className="w-full h-1 bg-white/10 rounded-full appearance-none cursor-pointer accent-lumen-gold"
-            />
-            <p className="text-[7px] text-gray-600 mt-1 truncate">{slider.name}</p>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
+      {/* Quick presets */}
+      <div className="flex gap-2">
+        <button
+          onClick={() => {
+            const reset: Record<string, number> = {};
+            Object.values(SLIDER_DEFINITIONS).forEach(p => p.sliders.forEach(s => { reset[s.key] = 5; }));
+            setSliderValues(reset);
+          }}
+          className="flex-1 py-2 px-3 bg-white/5 text-gray-400 text-[10px] font-bold uppercase rounded-lg hover:bg-white/10 transition-all"
+        >
+          Reset a 5
+        </button>
+        <button
+          onClick={() => {
+            const max: Record<string, number> = {};
+            Object.values(SLIDER_DEFINITIONS).forEach(p => p.sliders.forEach(s => { max[s.key] = 10; }));
+            setSliderValues(max);
+          }}
+          className="flex-1 py-2 px-3 bg-white/5 text-gray-400 text-[10px] font-bold uppercase rounded-lg hover:bg-white/10 transition-all"
+        >
+          Todo al Máximo
+        </button>
+      </div>
+
+      {/* Generate button */}
       <button
         onClick={handleGenerate}
-        className="w-full mt-2 px-6 py-3 bg-lumen-gold text-black font-bold rounded-xl hover:bg-white transition-all text-sm uppercase tracking-widest"
+        className="w-full py-4 bg-gradient-to-r from-lumen-gold to-yellow-500 text-black font-bold rounded-xl hover:opacity-90 transition-all text-sm uppercase tracking-widest flex items-center justify-center gap-2 shadow-lg shadow-lumen-gold/20"
       >
-        <Zap className="w-4 h-4 inline mr-2" />
-        Generar PROLUX
+        <Zap className="w-5 h-5" />
+        Generar con Control Total
       </button>
       <p className="text-[10px] text-gray-600 text-center">
-        Costo: 15 tokens · Máxima calidad
+        15 tokens · Máxima calidad y control
       </p>
     </div>
   );
