@@ -1280,14 +1280,7 @@ const App: React.FC = () => {
                 availableTokens={userProfile?.tokens || 0}
                 totalTokensPurchased={userProfile?.total_tokens_purchased || 0}
                 imageUrl={stagedImageUrl || inputImageUrl || ''}
-                initialMixer={visionAnalysis?.suggested_settings ? {
-                    stylism: visionAnalysis.suggested_settings.estilo_autor ?? 5,
-                    atrezzo: 5,
-                    skin_bio: visionAnalysis.suggested_settings.styling_piel ?? 5,
-                    lighting: visionAnalysis.suggested_settings.contraste ?? 5,
-                    restoration: visionAnalysis.suggested_settings.limpieza_artefactos ?? 5,
-                    upScaler: 1
-                } : undefined}
+                initialMixer={visionAnalysis?._defaultMixer}
                 onConfirm={handleProfileConfigConfirm}
                 onCancel={handleProfileConfigCancel}
                 onUpgrade={() => navigate('/pricing')}
