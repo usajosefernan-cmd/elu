@@ -701,7 +701,7 @@ const App: React.FC = () => {
     const processWithEdgeFunctions = async (imageUrl: string, config: LuxConfig) => {
         try {
             setAgentMsg({ text: "Compilando prompt con IA...", type: 'info' });
-            navigate('/result');
+            // NO navegamos a /result hasta tener una imagen generada
 
             // Step 1: Compile prompt (Edge Functions w/ fallback)
             // PRO mode may provide an explicit semantic sliderConfig serialized in selectedPresetId
@@ -744,7 +744,7 @@ const App: React.FC = () => {
             setPhaseStartedAt(Date.now());
             setPhaseEtaSeconds(45);
             setPhaseProgress(15);
-            setPhaseLabel('Generando preview — estimado 20–60s (asíncrono)');
+            setPhaseLabel('Generando imagen — puedes cerrar esta ventana');
 
             if (!promptResult.success) {
                 throw new Error(promptResult.error || "Error compilando prompt");
