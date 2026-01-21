@@ -578,12 +578,16 @@ const App: React.FC = () => {
                 ]},
             };
 
-            // NOTE: The FastAPI fallback currently compiles+generates via /api/process/generate
             const promptResult = await compilePrompt(
                 sliderConfig,
                 visionAnalysis,
                 userProfile?.profile_type || 'auto'
             );
+            setProcessingPhase('generate');
+            setPhaseStartedAt(Date.now());
+            setPhaseEtaSeconds(45);
+            setPhaseProgress(15);
+            setPhaseLabel('Generando preview — estimado 20–60s (asíncrono)');
 
             if (!promptResult.success) {
                 throw new Error(promptResult.error || "Error compilando prompt");
