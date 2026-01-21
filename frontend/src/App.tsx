@@ -563,7 +563,9 @@ const App: React.FC = () => {
     // NEW: Handler for Profile Config Modal (v28)
     const handleProfileConfigConfirm = async (config: LuxConfig) => {
         setShowProfileSelector(false);
-        if (inputImageUrl) {
+        const finalInputUrl = stagedMasterImageUrl || stagedImageUrl || inputImageUrl;
+        if (finalInputUrl) {
+            setInputImageUrl(finalInputUrl);
             // IMPORTANT: Use the v28 Brain pipeline (Edge Functions w/ fallback)
             setShowProcessingOverlay(true);
             setProcessingPhase('compile');
