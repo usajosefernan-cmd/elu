@@ -393,7 +393,7 @@ const App: React.FC = () => {
             return;
         }
 
-        // 2. CALL EDGE FUNCTION: Vision Analysis (Gemini 2.5 Flash)
+        // 2. CALL "Brain" pipeline (Edge Functions w/ fallback to FastAPI)
         try {
             setStatus(AgentStatus.ANALYZING);
             setAgentMsg({ text: "Gemini 2.5 Flash: Analizando imagen...", type: 'info' });
@@ -418,8 +418,7 @@ const App: React.FC = () => {
 
         } catch (visionError: any) {
             console.error("Vision Analysis Error:", visionError);
-            // Fallback to old flow if Edge Function fails
-            setAgentMsg({ text: "Edge Function no disponible, usando fallback...", type: 'info' });
+            setAgentMsg({ text: `Fallo en Brain pipeline: ${visionError.message}. Probando fallback legacy...`, type: 'info' });
         }
 
         // FALLBACK: Original vision analysis (if Edge Function fails)
