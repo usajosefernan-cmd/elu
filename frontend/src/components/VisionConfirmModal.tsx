@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { 
   Check, X, Sparkles, Wand2, Edit3, 
-  Camera, Palette, Sun, ChevronRight, Zap
+  Camera, Palette, Sun, ChevronRight, Zap,
+  Eye, AlertTriangle, User, Layers, ChevronDown, ChevronUp
 } from 'lucide-react';
 
 interface VisionAnalysis {
@@ -20,9 +21,10 @@ interface VisionAnalysis {
   technical_diagnosis?: {
     noise_level: number;
     blur_level: number;
+    exposure_issues?: string;
     has_person?: boolean;
+    dominant_colors?: string[];
   };
-  // Legacy support
   semantic_anchors?: string[];
   suggested_settings?: Record<string, number>;
   _defaultMixer?: any;
@@ -39,6 +41,19 @@ interface VisionConfirmModalProps {
   userTokens: number;
 }
 
+// Mini bar component for showing values
+const MiniBar: React.FC<{ value: number; max?: number; color: string }> = ({ value, max = 10, color }) => (
+  <div className="flex items-center gap-1.5">
+    <div className="w-16 h-1 bg-white/10 rounded-full overflow-hidden">
+      <div 
+        className={`h-full ${color} rounded-full transition-all`} 
+        style={{ width: `${(value / max) * 100}%` }} 
+      />
+    </div>
+    <span className="text-[9px] font-mono text-gray-400 w-4">{value}</span>
+  </div>
+);
+
 export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
   isVisible,
   imageUrl,
@@ -50,15 +65,14 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
   userTokens,
 }) => {
   const [selectedIntent, setSelectedIntent] = useState<number>(0);
-  const [showCustomInput, setShowCustomInput] = useState(false);
   const [customIntent, setCustomIntent] = useState('');
   const [mode, setMode] = useState<'auto' | 'select' | 'custom'>('auto');
+  const [showFullAnalysis, setShowFullAnalysis] = useState(false);
 
   if (!isVisible) return null;
 
   const hasEnoughTokens = userTokens >= tokensRequired;
   
-  // Get intents from new or legacy format
   const intents = analysis?.intents_detected || [
     "1. 🎬 Mejora Estándar - Calidad profesional",
     "2. 💎 Retrato Limpio - Look pulido",
@@ -67,10 +81,8 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
     "5. 🎨 Edición Artística - Tratamiento creativo"
   ];
 
-  const productionAnalysis = analysis?.production_analysis || {
-    current_quality: "Imagen analizada",
-    target_vision: "Mejora profesional"
-  };
+  const tech = analysis?.technical_diagnosis;
+  const autoSettings = analysis?.auto_settings;
 
   const handleGenerate = () => {
     if (mode === 'auto') {
@@ -83,139 +95,174 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-2">
       <div className="absolute inset-0 bg-black/95 backdrop-blur-xl" onClick={onCancel} />
       
-      <div className="relative bg-gradient-to-b from-[#111] to-[#0a0a0a] border border-white/10 w-full max-w-md rounded-2xl shadow-2xl overflow-hidden animate-in zoom-in-95 duration-300">
+      <div className="relative bg-gradient-to-b from-[#111] to-[#0a0a0a] border border-white/10 w-full max-w-md max-h-[90vh] rounded-xl shadow-2xl overflow-hidden flex flex-col">
         
-        {/* Header compacto con preview */}
-        <div className="relative">
-          {/* Image preview pequeño */}
-          <div className="h-32 overflow-hidden relative">
-            <img 
-              src={imageUrl} 
-              alt="Preview" 
-              className="w-full h-full object-cover opacity-60"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-[#111] via-transparent to-transparent" />
-            
-            {/* Close button */}
-            <button
-              onClick={onCancel}
-              className="absolute top-3 right-3 p-2 bg-black/50 rounded-full hover:bg-black/70 transition-colors"
-            >
-              <X size={16} className="text-white/70" />
-            </button>
-          </div>
-
-          {/* Analysis badge */}
-          <div className="absolute bottom-0 left-0 right-0 px-4 pb-4">
-            <div className="flex items-center gap-2">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-lumen-gold/20 border border-lumen-gold/30 rounded-full">
-                <Sparkles size={14} className="text-lumen-gold" />
-                <span className="text-xs font-bold text-lumen-gold">ANÁLISIS COMPLETADO</span>
-              </div>
+        {/* Header con imagen */}
+        <div className="relative h-24 flex-shrink-0">
+          <img src={imageUrl} alt="" className="w-full h-full object-cover opacity-50" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[#111] to-transparent" />
+          <button onClick={onCancel} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full hover:bg-black/70">
+            <X size={14} className="text-white/70" />
+          </button>
+          <div className="absolute bottom-2 left-3 flex items-center gap-2">
+            <div className="px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded-full flex items-center gap-1">
+              <Eye size={10} className="text-emerald-400" />
+              <span className="text-[9px] font-bold text-emerald-400">ANÁLISIS COMPLETO</span>
             </div>
           </div>
         </div>
 
-        {/* Content */}
-        <div className="p-4 space-y-4">
+        {/* Content scrollable */}
+        <div className="flex-1 overflow-y-auto p-3 space-y-3">
           
-          {/* Technical Diagnosis - Compact badges */}
-          {analysis?.technical_diagnosis && (
-            <div className="flex flex-wrap gap-1.5">
-              <div className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase flex items-center gap-1 ${
-                analysis.technical_diagnosis.noise_level > 5 ? 'bg-orange-500/20 text-orange-400' : 'bg-green-500/20 text-green-400'
-              }`}>
-                <span>Ruido: {analysis.technical_diagnosis.noise_level}/10</span>
+          {/* Diagnóstico técnico completo */}
+          <div className="bg-white/[0.03] rounded-lg p-2.5 border border-white/5">
+            <button 
+              onClick={() => setShowFullAnalysis(!showFullAnalysis)}
+              className="w-full flex items-center justify-between"
+            >
+              <span className="text-[10px] text-gray-400 uppercase font-bold">Diagnóstico Técnico</span>
+              {showFullAnalysis ? <ChevronUp size={12} className="text-gray-500" /> : <ChevronDown size={12} className="text-gray-500" />}
+            </button>
+            
+            {/* Siempre visible: resumen */}
+            <div className="flex flex-wrap gap-1.5 mt-2">
+              {tech && (
+                <>
+                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${
+                    tech.noise_level > 6 ? 'bg-red-500/20 text-red-400' : 
+                    tech.noise_level > 3 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
+                  }`}>
+                    Ruido: {tech.noise_level}/10
+                  </span>
+                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${
+                    tech.blur_level > 6 ? 'bg-red-500/20 text-red-400' : 
+                    tech.blur_level > 3 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
+                  }`}>
+                    Desenfoque: {tech.blur_level}/10
+                  </span>
+                  {tech.exposure_issues && tech.exposure_issues !== 'none' && (
+                    <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-orange-500/20 text-orange-400">
+                      {tech.exposure_issues === 'underexposed' ? 'Subexpuesta' : 'Sobreexpuesta'}
+                    </span>
+                  )}
+                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${
+                    tech.has_person ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400'
+                  }`}>
+                    {tech.has_person ? '👤 Persona' : '🖼️ Sin persona'}
+                  </span>
+                </>
+              )}
+            </div>
+
+            {/* Expandido: configuración auto sugerida */}
+            {showFullAnalysis && autoSettings && (
+              <div className="mt-3 pt-2 border-t border-white/5 space-y-2">
+                <p className="text-[9px] text-gray-500 uppercase">Configuración AUTO sugerida:</p>
+                
+                {/* PhotoScaler */}
+                <div className="space-y-0.5">
+                  <p className="text-[8px] text-cyan-400 font-bold">📷 PHOTO</p>
+                  <div className="grid grid-cols-3 gap-x-2 gap-y-0.5">
+                    {Object.entries(autoSettings.photoscaler || {}).map(([k, v]) => (
+                      <div key={k} className="flex items-center justify-between">
+                        <span className="text-[8px] text-gray-500 truncate">{k.replace(/_/g, ' ').slice(0, 8)}</span>
+                        <MiniBar value={v as number} color="bg-cyan-500" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* StyleScaler */}
+                <div className="space-y-0.5">
+                  <p className="text-[8px] text-pink-400 font-bold">🎨 STYLE</p>
+                  <div className="grid grid-cols-3 gap-x-2 gap-y-0.5">
+                    {Object.entries(autoSettings.stylescaler || {}).map(([k, v]) => (
+                      <div key={k} className="flex items-center justify-between">
+                        <span className="text-[8px] text-gray-500 truncate">{k.replace(/_/g, ' ').slice(0, 8)}</span>
+                        <MiniBar value={v as number} color="bg-pink-500" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* LightScaler */}
+                <div className="space-y-0.5">
+                  <p className="text-[8px] text-orange-400 font-bold">☀️ LIGHT</p>
+                  <div className="grid grid-cols-3 gap-x-2 gap-y-0.5">
+                    {Object.entries(autoSettings.lightscaler || {}).map(([k, v]) => (
+                      <div key={k} className="flex items-center justify-between">
+                        <span className="text-[8px] text-gray-500 truncate">{k.replace(/_/g, ' ').slice(0, 8)}</span>
+                        <MiniBar value={v as number} color="bg-orange-500" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <div className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase flex items-center gap-1 ${
-                analysis.technical_diagnosis.blur_level > 5 ? 'bg-orange-500/20 text-orange-400' : 'bg-green-500/20 text-green-400'
-              }`}>
-                <span>Desenfoque: {analysis.technical_diagnosis.blur_level}/10</span>
-              </div>
-              {analysis.technical_diagnosis.has_person !== undefined && (
-                <div className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase ${
-                  analysis.technical_diagnosis.has_person ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400'
-                }`}>
-                  {analysis.technical_diagnosis.has_person ? '👤 Persona detectada' : '🖼️ Sin persona'}
+            )}
+          </div>
+
+          {/* Director creativo */}
+          {analysis?.production_analysis && (
+            <div className="bg-white/[0.03] rounded-lg p-2.5 border border-white/5">
+              <p className="text-[10px] text-gray-400 uppercase font-bold mb-1.5">Director Creativo</p>
+              <p className="text-xs text-gray-300 leading-relaxed">
+                "{analysis.production_analysis.target_vision}"
+              </p>
+              {analysis.production_analysis.gaps_detected && analysis.production_analysis.gaps_detected.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-1">
+                  {analysis.production_analysis.gaps_detected.map((gap, i) => (
+                    <span key={i} className="px-1.5 py-0.5 bg-amber-500/10 text-amber-400 text-[8px] rounded">
+                      {gap}
+                    </span>
+                  ))}
                 </div>
               )}
             </div>
           )}
 
-          {/* Production Analysis - Compacto */}
-          <div className="bg-white/5 rounded-xl p-3 border border-white/5">
-            <div className="flex items-start gap-3">
-              <div className="w-8 h-8 rounded-lg bg-lumen-gold/10 flex items-center justify-center flex-shrink-0">
-                <Camera size={16} className="text-lumen-gold" />
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="text-[10px] text-gray-500 uppercase tracking-wider mb-1">Director Creativo dice:</p>
-                <p className="text-xs text-gray-300 leading-relaxed">
-                  "{productionAnalysis.target_vision}"
-                </p>
-              </div>
-            </div>
+          {/* Mode selector */}
+          <div className="flex gap-1 p-0.5 bg-white/5 rounded-lg">
+            {[
+              { key: 'auto', label: '⚡ AUTO', desc: 'IA decide' },
+              { key: 'select', label: '🎯 ELEGIR', desc: 'Elige intent' },
+              { key: 'custom', label: '✏️ CUSTOM', desc: 'Tu descripción' }
+            ].map(m => (
+              <button
+                key={m.key}
+                onClick={() => setMode(m.key as any)}
+                className={`flex-1 py-1.5 px-2 rounded text-[10px] font-bold transition-all ${
+                  mode === m.key 
+                    ? 'bg-amber-500 text-black' 
+                    : 'text-gray-500 hover:text-white hover:bg-white/5'
+                }`}
+              >
+                {m.label}
+              </button>
+            ))}
           </div>
 
-          {/* Mode selector - Tabs compactos */}
-          <div className="flex gap-1 p-1 bg-white/5 rounded-lg">
-            <button
-              onClick={() => { setMode('auto'); setShowCustomInput(false); }}
-              className={`flex-1 py-2 px-3 rounded-md text-xs font-bold transition-all ${
-                mode === 'auto' 
-                  ? 'bg-lumen-gold text-black' 
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              ⚡ AUTO
-            </button>
-            <button
-              onClick={() => { setMode('select'); setShowCustomInput(false); }}
-              className={`flex-1 py-2 px-3 rounded-md text-xs font-bold transition-all ${
-                mode === 'select' 
-                  ? 'bg-lumen-gold text-black' 
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              🎯 ELEGIR
-            </button>
-            <button
-              onClick={() => { setMode('custom'); setShowCustomInput(true); }}
-              className={`flex-1 py-2 px-3 rounded-md text-xs font-bold transition-all ${
-                mode === 'custom' 
-                  ? 'bg-lumen-gold text-black' 
-                  : 'text-gray-400 hover:text-white hover:bg-white/5'
-              }`}
-            >
-              ✏️ MANUAL
-            </button>
-          </div>
-
-          {/* AUTO Mode info */}
+          {/* AUTO info */}
           {mode === 'auto' && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <Zap size={14} className="text-emerald-400" />
-                <span className="text-xs font-bold text-emerald-400">MODO AUTOMÁTICO</span>
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2.5">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Zap size={12} className="text-emerald-400" />
+                <span className="text-[10px] font-bold text-emerald-400">AUTOMÁTICO</span>
               </div>
-              <p className="text-xs text-gray-400">
-                La IA aplicará la mejor configuración detectada: 
-                <span className="text-white font-medium block mt-1">
-                  {analysis?.auto_settings?.primary_intent_used || intents[0]?.split(' - ')[0]?.substring(3)}
-                </span>
+              <p className="text-[10px] text-gray-400">
+                Aplicará: <span className="text-white">{autoSettings?.primary_intent_used || intents[0]?.split(' - ')[0]}</span>
               </p>
             </div>
           )}
 
-          {/* Intent selector - Lista compacta */}
+          {/* Intent selector */}
           {mode === 'select' && (
-            <div className="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+            <div className="space-y-1 max-h-36 overflow-y-auto">
               {intents.map((intent, idx) => {
                 const isSelected = selectedIntent === idx;
-                // Parse intent: "1. 🎬 Headline - Description"
                 const parts = intent.match(/^\d+\.\s*(.+?)\s*-\s*(.+)$/);
                 const headline = parts ? parts[1] : intent;
                 const desc = parts ? parts[2] : '';
@@ -224,24 +271,22 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
                   <button
                     key={idx}
                     onClick={() => setSelectedIntent(idx)}
-                    className={`w-full p-3 rounded-xl text-left transition-all ${
+                    className={`w-full p-2 rounded-lg text-left transition-all ${
                       isSelected 
-                        ? 'bg-lumen-gold/20 border-2 border-lumen-gold/50' 
-                        : 'bg-white/5 border border-white/5 hover:border-white/20'
+                        ? 'bg-amber-500/20 border border-amber-500/50' 
+                        : 'bg-white/[0.02] border border-white/5 hover:border-white/20'
                     }`}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-bold truncate ${isSelected ? 'text-lumen-gold' : 'text-white'}`}>
+                        <p className={`text-xs font-bold truncate ${isSelected ? 'text-amber-400' : 'text-white'}`}>
                           {headline}
                         </p>
-                        {desc && (
-                          <p className="text-[10px] text-gray-500 truncate mt-0.5">{desc}</p>
-                        )}
+                        {desc && <p className="text-[9px] text-gray-500 truncate">{desc}</p>}
                       </div>
                       {isSelected && (
-                        <div className="w-5 h-5 rounded-full bg-lumen-gold flex items-center justify-center flex-shrink-0 ml-2">
-                          <Check size={12} className="text-black" />
+                        <div className="w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center ml-2">
+                          <Check size={10} className="text-black" />
                         </div>
                       )}
                     </div>
@@ -251,56 +296,50 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
             </div>
           )}
 
-          {/* Custom intent input */}
+          {/* Custom input */}
           {mode === 'custom' && (
-            <div className="space-y-2">
-              <label className="text-[10px] text-gray-500 uppercase tracking-wider">
-                Describe el look que quieres:
-              </label>
-              <textarea
-                value={customIntent}
-                onChange={(e) => setCustomIntent(e.target.value)}
-                placeholder="Ej: Retrato editorial estilo Vanity Fair con iluminación dramática..."
-                className="w-full h-24 px-3 py-2 bg-white/5 border border-white/10 rounded-xl text-sm text-white placeholder-gray-500 focus:outline-none focus:border-lumen-gold/50 resize-none"
-              />
-            </div>
+            <textarea
+              value={customIntent}
+              onChange={(e) => setCustomIntent(e.target.value)}
+              placeholder="Describe el look que quieres..."
+              className="w-full h-20 px-2.5 py-2 bg-white/5 border border-white/10 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50 resize-none"
+            />
           )}
+        </div>
 
-          {/* Generate button */}
+        {/* Footer */}
+        <div className="p-3 border-t border-white/5 bg-black/40 flex-shrink-0 space-y-2">
           <button
             onClick={handleGenerate}
             disabled={!hasEnoughTokens || (mode === 'custom' && !customIntent.trim())}
-            className={`w-full py-4 rounded-xl font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+            className={`w-full py-2.5 rounded-lg font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
               hasEnoughTokens && (mode !== 'custom' || customIntent.trim())
-                ? 'bg-gradient-to-r from-lumen-gold to-yellow-500 text-black hover:opacity-90 shadow-lg shadow-lumen-gold/20'
+                ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:opacity-90'
                 : 'bg-gray-800 text-gray-500 cursor-not-allowed'
             }`}
           >
-            <Wand2 size={18} />
-            <span>GENERAR IMAGEN</span>
-            <span className="text-xs opacity-70">({tokensRequired} tokens)</span>
+            <Wand2 size={16} />
+            Generar · {tokensRequired} tokens
           </button>
-
-          {/* Advanced options link */}
+          
           <button
             onClick={onCustomize}
-            className="w-full py-2 text-xs text-gray-500 hover:text-lumen-gold transition-colors flex items-center justify-center gap-1"
+            className="w-full py-1.5 text-[10px] text-gray-500 hover:text-amber-400 transition-colors flex items-center justify-center gap-1"
           >
-            <Edit3 size={12} />
+            <Edit3 size={10} />
             Control avanzado (27 sliders)
-            <ChevronRight size={12} />
+            <ChevronRight size={10} />
           </button>
 
-          {/* Token warning */}
           {!hasEnoughTokens && (
-            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3 text-center">
-              <p className="text-xs text-red-400">
-                Tokens insuficientes. Necesitas {tokensRequired}, tienes {userTokens}.
-              </p>
-            </div>
+            <p className="text-[10px] text-red-400 text-center">
+              Tokens insuficientes ({userTokens} disponibles)
+            </p>
           )}
         </div>
       </div>
     </div>
   );
 };
+
+export default VisionConfirmModal;
