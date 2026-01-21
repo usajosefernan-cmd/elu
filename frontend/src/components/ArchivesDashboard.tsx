@@ -237,10 +237,8 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                             Vista Rápida
                                         </button>
                                         <button
-                                            onClick={() => setViewMode('full')}
-                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
-                                                viewMode === 'full' ? 'bg-lumen-gold text-black' : 'text-gray-400 hover:text-white'
-                                            }`}
+                                            onClick={() => setIsZoomModalOpen(true)}
+                                            className="px-3 py-1.5 rounded-lg text-[10px] font-bold text-gray-400 hover:text-white hover:bg-white/10 transition-all"
                                         >
                                             1:1 Comparar
                                         </button>
@@ -249,27 +247,17 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
 
                                 {/* Image View */}
                                 <div className="flex-1 flex items-center justify-center p-4 bg-[#0a0a0a] relative overflow-hidden">
-                                    {viewMode === 'thumb' && (
-                                        // Vista rápida: Solo imagen procesada (thumbnail mediano)
-                                        <img 
-                                            src={getMediumPreview(selectedVariation.image_path)} 
-                                            alt="" 
-                                            className="max-w-full max-h-full object-contain rounded-lg"
-                                            loading="lazy"
-                                        />
-                                    )}
-                                    
-                                    {viewMode === 'full' && (
-                                        // 1:1: Abre el modal de pantalla completa directamente
-                                        <div className="w-full h-full relative">
-                                            <ComparisonSlider 
-                                                originalImage={getDisplayUrl(currentSession.original_image_path)} 
-                                                processedImage={getDisplayUrl(selectedVariation.image_path)} 
-                                                isLocked={false} 
-                                                objectFit="contain"
-                                            />
-                                        </div>
-                                    )}
+                                    {/* Vista rápida: Solo imagen procesada (thumbnail mediano) */}
+                                    <img 
+                                        src={getMediumPreview(selectedVariation.image_path)} 
+                                        alt="" 
+                                        className="max-w-full max-h-full object-contain rounded-lg cursor-pointer hover:opacity-90 transition-opacity"
+                                        loading="lazy"
+                                        onClick={() => setIsZoomModalOpen(true)}
+                                    />
+                                    <div className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-black/60 backdrop-blur rounded-full text-[9px] text-gray-400 pointer-events-none">
+                                        Clic para ver 1:1 con comparador
+                                    </div>
                                 </div>
 
                                 {/* Variaciones de esta sesión */}
