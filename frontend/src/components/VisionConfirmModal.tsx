@@ -75,7 +75,7 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
       <div className="relative bg-gradient-to-b from-[#0d0d0d] to-[#080808] border border-white/10 w-full max-w-lg rounded-2xl shadow-2xl max-h-[90vh] overflow-hidden">
         
         {/* Header with Image Preview */}
-        <div className="relative h-48 overflow-hidden">
+        <div className="relative h-40 sm:h-48 overflow-hidden">
           <button
             onClick={onCancel}
             className="absolute top-3 left-3 z-10 w-9 h-9 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all"
