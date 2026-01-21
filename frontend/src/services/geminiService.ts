@@ -36,9 +36,9 @@ export const compressAndResizeImage = async (
     });
 };
 
-export const uploadImageToStorage = async (imageBlob: Blob, userId: string): Promise<string> => {
+export const uploadImageToStorage = async (imageBlob: Blob, pathPrefix: string): Promise<string> => {
     const supabase = getSupabaseClient();
-    const fileName = `${userId}/${Date.now()}.jpg`;
+    const fileName = `${pathPrefix}/${Date.now()}.jpg`;
 
     const { error } = await supabase.storage
         .from('lux-storage')
