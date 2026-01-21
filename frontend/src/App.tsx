@@ -822,10 +822,24 @@ const App: React.FC = () => {
 
                 // Persist to ARCHIVE (Supabase DB + Storage URLs)
                 await persistToArchive(imageUrl, visionAnalysis, archiveImageUrl, promptPayload);
+                
+                // AHORA navegamos a /result porque ya tenemos imagen
+                navigate('/result');
             }
 
             setShowProcessingOverlay(false);
-            notify('LuxScaler', 'Tu preview ya está listo.');
+            
+            // Notificación del navegador
+            notify('LuxScaler ✨', '¡Tu imagen está lista! Haz clic para verla.');
+            
+            // Toast informativo en la app
+            setToastState({
+                isOpen: true,
+                title: '¡Generación completada!',
+                message: 'Tu imagen ha sido procesada exitosamente.',
+                type: 'success'
+            });
+            
             setStatus(AgentStatus.COMPLETED);
             setAgentMsg({ text: "¡Procesamiento completado!", type: 'success' });
             addSystemLog(`Tokens utilizados: ${generateResult.metadata?.tokens_charged ?? 0}`);
