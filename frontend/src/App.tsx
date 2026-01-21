@@ -588,7 +588,66 @@ const App: React.FC = () => {
         resetFlow();
     };
 
-    // NEW: Handlers for Vision Confirm Modal (Edge Function flow)
+    // NEW: Unified handler for the combined modal
+    const handleUnifiedConfirm = async (confirmConfig: { mode: 'auto' | 'preset' | 'manual'; settings: any; customIntent?: string }) => {
+        setShowVisionConfirm(false);
+        setShowProfileSelector(false);
+        
+        // Settings already come in correct format from UnifiedConfigModal
+        const sliderConfig = confirmConfig.settings;
+        
+        console.log('[LuxScaler] Mode:', confirmConfig.mode);
+        console.log('[LuxScaler] Slider config:', JSON.stringify(sliderConfig).slice(0, 500));
+        
+        const config: LuxConfig = {
+            userPrompt: confirmConfig.customIntent || '',
+            mode: confirmConfig.mode.toUpperCase() as any,
+            selectedPresetId: JSON.stringify(sliderConfig),
+            mixer: {
+                stylism: 5, atrezzo: 5, skin_bio: 5,
+                lighting: 5, restoration: 5, upScaler: 1
+            }
+        };
+        
+        // UX overlay for generation
+        setToastState({
+            isOpen: true,
+            title: 'Procesando',
+            message: 'Puedes cerrar esta ventana. Te avisaremos cuando termine.'
+        });
+        setShowProcessingOverlay(true);
+        setProcessingPhase('compile');
+        setPhaseStartedAt(Date.now());
+        setPhaseEtaSeconds(2);
+        setPhaseProgress(5);
+        setPhaseLabel('Compilando instrucciones...');
+        setElapsedTime(0);
+
+        // Ensure we have a public URL for generation
+        let finalInputUrl = stagedMasterImageUrl || stagedImageUrl || inputImageUrl;
+        if (!finalInputUrl && masterUploadPromiseRef.current) {
+            setProcessingPhase('upload');
+            setPhaseLabel('Subiendo original...');
+            try { finalInputUrl = await masterUploadPromiseRef.current; } catch { /* ignore */ }
+        }
+        if (!finalInputUrl) {
+            setShowProcessingOverlay(false);
+            setAgentMsg({ text: 'Error: No hay imagen disponible', type: 'error' });
+            return;
+        }
+        setInputImageUrl(finalInputUrl);
+
+        await processWithEdgeFunctions(finalInputUrl, config);
+    };
+
+    const handleUnifiedCancel = () => {
+        setShowVisionConfirm(false);
+        setShowProfileSelector(false);
+        setVisionAnalysis(null);
+        resetFlow();
+    };
+
+    // LEGACY: Handlers for Vision Confirm Modal (kept for compatibility)
     const handleVisionConfirm = async (confirmConfig: { mode: 'auto' | 'intent' | 'custom'; intentIndex?: number; customIntent?: string; settings?: any }) => {
         setShowVisionConfirm(false);
         
