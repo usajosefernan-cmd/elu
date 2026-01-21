@@ -102,6 +102,19 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
+## update_2026_01_21_speed_and_legacy_mix:
+## frontend:
+##   - task: "Vision más rápido: thumbnail upload (2048px) + master upload en background"
+##     implemented: true
+##     files:
+##       - "frontend/src/services/geminiService.ts"
+##       - "frontend/src/App.tsx"
+##   - task: "Eliminar pantallas antiguas antes de Vision: usar stagedImageUrl y no setear inputImageUrl hasta confirmar"
+##     implemented: true
+##     files:
+##       - "frontend/src/App.tsx"
+
+
 ## update_2026_01_21_pro_macros:
 ## frontend:
 ##   - task: "PRO profile macros conceptuales (9) con mapping semántico a sliders"
