@@ -1279,7 +1279,7 @@ const App: React.FC = () => {
                 currentProfile={userProfile?.profile_type || 'auto'}
                 availableTokens={userProfile?.tokens || 0}
                 totalTokensPurchased={userProfile?.total_tokens_purchased || 0}
-                imageUrl={inputImageUrl || ''}
+                imageUrl={stagedImageUrl || inputImageUrl || ''}
                 onConfirm={handleProfileConfigConfirm}
                 onCancel={handleProfileConfigCancel}
                 onUpgrade={() => navigate('/pricing')}
