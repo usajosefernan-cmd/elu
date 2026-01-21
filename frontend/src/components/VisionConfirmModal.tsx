@@ -110,7 +110,7 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
         </div>
 
         {/* Analysis Results */}
-        <div className="p-4 space-y-4">
+        <div className="p-4 space-y-4 overflow-y-auto" style={{ maxHeight: 'calc(90vh - 12rem - 6.5rem)' }}>
           
           {/* Recommended Profile */}
           <div className={`bg-${color}-500/10 border border-${color}-500/30 rounded-xl p-4`}>
