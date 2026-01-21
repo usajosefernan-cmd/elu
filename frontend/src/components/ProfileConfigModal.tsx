@@ -596,6 +596,7 @@ export const ProfileConfigModal: React.FC<ProfileConfigModalProps> = ({
   totalTokensPurchased,
   imageUrl,
   initialMixer,
+  initialSuggestedSettings,
   onConfirm,
   onCancel,
   onUpgrade
