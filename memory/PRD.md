@@ -148,13 +148,14 @@ El resto de sliders quedan LIBRES para que el usuario los modifique.
 
 ### 🔄 Pendiente
 1. **Biopsy Engine** - Thumbnail + 3 crops para análisis
-2. **Context Caching** - Caché de contexto por usuario
-3. **Job Queues** - Procesamiento asíncrono
-4. **Storage Structure** - Estructura de carpetas definida
-5. **Stripe Integration** - Pagos en /pricing
+2. **Context Caching Vertex AI** - Requiere google-cloud-aiplatform SDK y GCP config
+3. **Face Detection Dependencies** - Instalar face_recognition para DNA Anchor completo
+4. **Job Queues** - Procesamiento asíncrono
+5. **Storage Structure** - Estructura de carpetas definida
+6. **Stripe Integration** - Pagos en /pricing
 
 ### ❌ Bugs Conocidos
-1. **Sliders P0** - Verificar que sliders en 10 afectan la imagen
+1. **Sliders P0** - Verificar que sliders en 10 afectan la imagen generada (prompt correcto, verificar Gemini)
 2. **Aspect Ratio** - Verificar alineación en Archives
 3. **Legacy Modal** - ImageInspectorModal aparece después de generación
 
