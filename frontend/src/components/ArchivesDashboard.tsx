@@ -95,35 +95,52 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
 
     // Fit image to container
     const fitToContainer = useCallback(() => {
-        if (!containerRef.current || !imgSize.w) return;
+        if (!containerRef.current || !displaySize.w) return;
         const { clientWidth, clientHeight } = containerRef.current;
-        const scaleX = clientWidth / imgSize.w;
-        const scaleY = clientHeight / imgSize.h;
+        const scaleX = clientWidth / displaySize.w;
+        const scaleY = clientHeight / displaySize.h;
         const fitScale = Math.min(scaleX, scaleY, 1);
         setScale(fitScale);
         setTranslate({
-            x: (clientWidth - imgSize.w * fitScale) / 2,
-            y: (clientHeight - imgSize.h * fitScale) / 2
+            x: (clientWidth - displaySize.w * fitScale) / 2,
+            y: (clientHeight - displaySize.h * fitScale) / 2
         });
-    }, [imgSize]);
+    }, [displaySize]);
 
-    // Image load handler
-    const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
-        const img = e.currentTarget;
-        setImgSize({ w: img.naturalWidth, h: img.naturalHeight });
-        setIsImageLoaded(true);
-        
-        if (containerRef.current) {
-            const { clientWidth, clientHeight } = containerRef.current;
-            const scaleX = clientWidth / img.naturalWidth;
-            const scaleY = clientHeight / img.naturalHeight;
-            const fitScale = Math.min(scaleX, scaleY, 1);
-            setScale(fitScale);
-            setTranslate({
-                x: (clientWidth - img.naturalWidth * fitScale) / 2,
-                y: (clientHeight - img.naturalHeight * fitScale) / 2
-            });
+    // Calculate display size when both images are loaded - use the AFTER image as reference
+    const calculateDisplaySize = useCallback(() => {
+        if (afterImgSize.w > 0 && afterImgSize.h > 0) {
+            setDisplaySize({ w: afterImgSize.w, h: afterImgSize.h });
+            setIsImageLoaded(true);
+            
+            // Auto-fit on initial load
+            if (containerRef.current) {
+                const { clientWidth, clientHeight } = containerRef.current;
+                const scaleX = clientWidth / afterImgSize.w;
+                const scaleY = clientHeight / afterImgSize.h;
+                const fitScale = Math.min(scaleX, scaleY, 1);
+                setScale(fitScale);
+                setTranslate({
+                    x: (clientWidth - afterImgSize.w * fitScale) / 2,
+                    y: (clientHeight - afterImgSize.h * fitScale) / 2
+                });
+            }
         }
+    }, [afterImgSize]);
+
+    useEffect(() => {
+        calculateDisplaySize();
+    }, [calculateDisplaySize]);
+
+    // Image load handlers
+    const handleAfterImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+        const img = e.currentTarget;
+        setAfterImgSize({ w: img.naturalWidth, h: img.naturalHeight });
+    }, []);
+
+    const handleBeforeImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+        const img = e.currentTarget;
+        setBeforeImgSize({ w: img.naturalWidth, h: img.naturalHeight });
     }, []);
 
     // Wheel zoom
