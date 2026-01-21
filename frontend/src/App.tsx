@@ -564,6 +564,11 @@ const App: React.FC = () => {
             };
             
             // UX overlay for generation
+            setToastState({
+                isOpen: true,
+                title: 'Trabajo encargado',
+                message: 'Puedes cerrar esta ventana (X). La generación continuará y te avisaremos al terminar.'
+            });
             setShowProcessingOverlay(true);
             setProcessingPhase('compile');
             setPhaseStartedAt(Date.now());
