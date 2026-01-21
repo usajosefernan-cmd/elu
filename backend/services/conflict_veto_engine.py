@@ -57,7 +57,7 @@ VETO_RULES: List[VetoRule] = [
     VetoRule(
         name="Paradoja de Geometría",
         trigger_condition=lambda s: (
-            s.get('geometria_distorsion', 0) == 10 and 
+            (s.get('geometria_distorsion', 0) == 10 or s.get('geometria', 0) == 10) and 
             s.get('reencuadre_ia', 0) == 10
         ),
         veto_actions=[
