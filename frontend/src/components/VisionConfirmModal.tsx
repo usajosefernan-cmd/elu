@@ -70,7 +70,7 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/95 backdrop-blur-xl" onClick={onCancel} />
+      <div className="absolute inset-0 bg-black/95 backdrop-blur-xl" />
       
       <div className="relative bg-gradient-to-b from-[#0d0d0d] to-[#080808] border border-white/10 w-full max-w-lg overflow-hidden rounded-2xl shadow-2xl">
         

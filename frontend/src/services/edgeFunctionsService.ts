@@ -91,9 +91,14 @@ const callEdgeFunction = async <T>(
 
   if (canUseSupabaseFn) {
     try {
-      // Use Supabase Edge Functions
+      // Use Supabase Edge Functions (with short timeout → fallback rápido si BOOT_ERROR)
+      const controller = new AbortController();
+      const timeoutMs = 2500;
+      const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
       const response = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
         method: 'POST',
+        signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
           // NOTE: anon key works for functions if they're not enforcing auth.
@@ -101,7 +106,7 @@ const callEdgeFunction = async <T>(
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify(body),
-      });
+      }).finally(() => window.clearTimeout(timeoutId));
 
       if (!response.ok) {
         const errorText = await response.text();
