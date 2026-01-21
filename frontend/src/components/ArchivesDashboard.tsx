@@ -392,60 +392,18 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                     </div>
                                 </div>
 
-                                {/* Visor principal con zoom/pan */}
+                                {/* Visor principal - ComparisonSlider ajustado al contenedor */}
                                 <div 
                                     ref={containerRef}
-                                    className="flex-1 bg-[#080808] relative overflow-hidden touch-none"
-                                    style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
-                                    onWheel={handleWheel}
-                                    onMouseDown={handleMouseDown}
-                                    onMouseMove={handleMouseMove}
-                                    onMouseUp={handleMouseUp}
-                                    onMouseLeave={handleMouseUp}
-                                    onTouchStart={handleTouchStart}
-                                    onTouchMove={handleTouchMove}
-                                    onTouchEnd={handleTouchEnd}
+                                    className="flex-1 bg-[#080808] relative overflow-hidden"
                                 >
-                                    {!isImageLoaded && (
-                                        <div className="absolute inset-0 flex items-center justify-center">
-                                            <Loader2 className="w-6 h-6 text-lumen-gold animate-spin" />
-                                        </div>
-                                    )}
-                                    
-                                    <div
-                                        style={{
-                                            transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
-                                            width: imgNativeSize.w || 'auto',
-                                            height: imgNativeSize.h || 'auto',
-                                            transformOrigin: '0 0',
-                                            willChange: 'transform'
-                                        }}
-                                        className="relative"
-                                    >
-                                        <ComparisonSlider
-                                            originalImage={getDisplayUrl(currentSession.original_image_path)}
-                                            processedImage={getDisplayUrl(selectedVariation.image_path)}
-                                            isLocked={false}
-                                            objectFit="cover"
-                                            onAspectRatioChange={(ratio) => {
-                                                // Optional: handle aspect ratio
-                                            }}
-                                        />
-                                        {/* Hidden image for size detection */}
-                                        <img 
-                                            src={getDisplayUrl(selectedVariation.image_path)}
-                                            onLoad={handleImageLoad}
-                                            className="absolute opacity-0 pointer-events-none"
-                                            alt=""
-                                        />
-                                    </div>
-
-                                    {/* Hint */}
-                                    {!isDragging && scale <= fitScale * 1.1 && (
-                                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-black/60 backdrop-blur rounded-full text-[9px] text-gray-400 flex items-center gap-2 pointer-events-none">
-                                            <Hand className="w-3 h-3" /> Scroll para zoom · Arrastra para mover
-                                        </div>
-                                    )}
+                                    <ComparisonSlider
+                                        originalImage={getDisplayUrl(currentSession.original_image_path)}
+                                        processedImage={getDisplayUrl(selectedVariation.image_path)}
+                                        isLocked={false}
+                                        objectFit="contain"
+                                        className="w-full h-full"
+                                    />
                                 </div>
 
                                 {/* Variaciones */}
