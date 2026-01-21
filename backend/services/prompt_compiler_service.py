@@ -91,9 +91,10 @@ class PromptCompilerService:
         identity_block: str
     ) -> str:
         """
-        Construye el System Prompt dinámico según documento maestro.
+        Construye el System Prompt dinámico según documento maestro v29.
         
         Incluye:
+        - CRITICAL: Resolución de conflictos lógicos
         - Identity Lock dinámico
         - Bloques de los 3 pilares
         - Negative prompt
@@ -122,6 +123,12 @@ Target Vision: {va.get('production_analysis', {}).get('target_vision', 'Professi
         system_prompt = f"""[SYSTEM OVERRIDE: UNIVERSAL FORENSIC RE-SHOOT & OPTICAL SYNTHESIS PROTOCOL v{self.version}]
 [ROLE: REALITY RECONSTRUCTION ENGINE]
 [USER_PROFILE: {input_data.profile_type}]
+
+=== CRITICAL INSTRUCTION: LOGICAL CONFLICT RESOLUTION ===
+If the instructions below contain contradictory elements (e.g., "Fog" AND "Sharpness", or "Light" AND "Dark"), 
+YOU MUST PRIORITIZE THE LAST INSTRUCTION IN THE LIST and ignore the conflicting previous one.
+DO NOT attempt to merge contradictory styles. Pick one distinct path.
+When in doubt, choose COHERENCE over literal interpretation.
 
 INPUT CONTEXT:
 {vision_summary}
