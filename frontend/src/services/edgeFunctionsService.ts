@@ -2,12 +2,12 @@
 // Centralizes all calls to Supabase Edge Functions
 // Falls back to FastAPI backend if Edge Functions are not deployed
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined;
+const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
+const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
 // Backend base URL (required for fallback to FastAPI)
 // NOTE: In Vite, only VITE_* vars are exposed to the browser.
-const BACKEND_URL = import.meta.env.VITE_BACKEND_URL as string | undefined;
+const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 
 interface VisionAnalysisResult {
   success: boolean;
