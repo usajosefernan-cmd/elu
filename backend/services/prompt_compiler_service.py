@@ -1,199 +1,277 @@
+# LuxScaler v28.0 - Prompt Compiler Service (COMPLETE REWRITE)
+# FASE 4: El Cerebro - Compila el prompt universal desde sliders + visión
+
 import asyncio
 from typing import Dict, Optional, List
 from services.supabase_service import supabase_db
+from services.semantic_motor import semantic_motor
+from services.veto_engine import veto_engine
+from services.identity_lock_service import identity_lock_service
+
 
 class PromptCompilerService:
-    def __init__(self):
-        self._mappings_cache = None
-        self._last_fetch = 0
-        
-    async def _ensure_mappings_loaded(self):
-        if self._mappings_cache:
-            return
-
-        print("PromptCompiler: Loading semantic mappings from Supabase...")
-        try:
-            response = supabase_db.client.table("slider_semantic_mappings").select("*").execute()
-            data = response.data
-            
-            self._mappings_cache = {}
-            for item in data:
-                p = item['pillar_name']
-                s = item['slider_name']
-                if p not in self._mappings_cache:
-                    self._mappings_cache[p] = {}
-                self._mappings_cache[p][s] = item
-                
-            print(f"PromptCompiler: Loaded {len(data)} mappings.")
-        except Exception as e:
-            print(f"PromptCompiler: Error loading mappings: {e}")
-            self._mappings_cache = {}
-
-    def _get_instruction(self, pillar: str, slider: str, value: int) -> str:
-        """
-        Maps slider value (1-10) to instruction text.
-        1-2: LOW, 3-5: MED, 6-8: HIGH, 9-10: FORCE
-        Value 0 or missing = OFF
-        """
-        if not self._mappings_cache:
-            return ""
-            
-        mapping = self._mappings_cache.get(pillar, {}).get(slider)
-        if not mapping:
-            return ""
-
-        # New scale: 1-10 (0 = off)
-        if value <= 0: return mapping.get('instruction_off', "")
-        if value <= 2: return mapping.get('instruction_low', "")
-        if value <= 5: return mapping.get('instruction_med', "")
-        if value <= 8: return mapping.get('instruction_high', "")
-        if value >= 9: return mapping.get('instruction_force', "")
-        
-        return ""
-
+    """
+    Compila el prompt universal LuxScaler desde:
+    - Configuración de 27 sliders
+    - Análisis de visión
+    - Perfil de usuario
+    - Reglas de veto
+    - Identity Lock
+    """
+    
+    VERSION = "28.1"
+    
     async def compile_prompt(self, config: dict, vision_data: dict = None) -> str:
         """
-        Compiles Universal Prompt from slider config and vision data.
-        Now accepts the new vision format with intents and auto_settings.
+        Compila el prompt completo para Gemini.
+        
+        Args:
+            config: Slider configuration
+            vision_data: Vision analysis results
+        
+        Returns:
+            Compiled prompt string
         """
-        await self._ensure_mappings_loaded()
-
-        # Extract settings - support both old and new format
-        if config.get('photoscaler') and isinstance(config['photoscaler'], dict):
-            if 'sliders' in config['photoscaler']:
-                # Old format: { photoscaler: { sliders: [{name, value}] } }
-                slider_config = config
-            else:
-                # New format: { photoscaler: { slider_name: value } }
-                slider_config = self._convert_new_format(config)
-        else:
-            slider_config = self._convert_new_format(config.get('auto_settings', {}))
-
-        # Identity Lock - only disable if reencuadre_ia > 5
-        reframe_val = 0
-        if 'stylescaler' in slider_config and 'sliders' in slider_config['stylescaler']:
-            for s in slider_config['stylescaler']['sliders']:
-                if s['name'] == 'reencuadre_ia': 
-                    reframe_val = s['value']
+        # Step 1: Normalize config format
+        slider_config = self._normalize_config(config)
         
-        identity_lock = reframe_val <= 5
-
-        identity_block = """CRITICAL: IDENTITY LOCK ACTIVE - ABSOLUTE FACE PRESERVATION.
-DO NOT change facial structure, bone structure, eye shape, nose shape, lip shape.
-DO NOT change face proportions or skin tone significantly.
-The person in OUTPUT must be IDENTICAL to INPUT.
-Texture/color/lighting changes allowed. Background geometry changes allowed.
-FACIAL GEOMETRY MUST BE PIXEL-PERFECT TO SOURCE."""
+        # Step 2: Apply veto rules
+        veto_result = await veto_engine.apply_vetos(slider_config)
+        modified_config = veto_result['modified_config']
+        vetos_applied = veto_result['vetos_applied']
         
-        if not identity_lock:
-            identity_block = """REFRAME MODE: Limited structural changes for recomposition.
-Facial identity must remain recognizable. Position may change."""
-
-        # Vision context
-        vision_context = "No prior analysis."
-        intent_context = ""
-        if vision_data:
-            if 'production_analysis' in vision_data:
-                pa = vision_data['production_analysis']
-                vision_context = f"""
-CURRENT: {pa.get('current_quality', 'Unknown')}
-TARGET: {pa.get('target_vision', 'Professional enhancement')}"""
-            
-            if 'auto_settings' in vision_data:
-                intent_context = f"SELECTED INTENT: {vision_data['auto_settings'].get('primary_intent_used', 'Auto')}"
-            
-            if 'technical_diagnosis' in vision_data:
-                td = vision_data['technical_diagnosis']
-                vision_context += f"""
-TECH: Noise={td.get('noise_level', 'N/A')}/10, Blur={td.get('blur_level', 'N/A')}/10"""
-
-        # Build instruction blocks
-        def get_block(pillar_name):
-            p_data = slider_config.get(pillar_name)
-            if not p_data:
-                return "[STANDARD]"
-            
-            block = ""
-            sliders = p_data.get('sliders', [])
-            for slider in sliders:
-                val = slider.get('value', 0)
-                if val <= 0: continue
-                
-                instruction = self._get_instruction(pillar_name, slider['name'], val)
-                if instruction:
-                    # Add intensity indicator
-                    intensity = "●" if val >= 9 else "◐" if val >= 6 else "○"
-                    block += f"[{intensity}{val}] {instruction}\n"
-            return block if block else "[STANDARD]"
-
-        photoscaler_block = get_block('photoscaler')
-        stylescaler_block = get_block('stylescaler')
-        lightscaler_block = get_block('lightscaler')
-
-        # Assemble final prompt
-        prompt = f"""
-[LUXSCALER v28.1 - UNIVERSAL PRODUCTION PROTOCOL]
+        if vetos_applied:
+            print(f"PromptCompiler: Applied {len(vetos_applied)} veto rules")
+        
+        # Step 3: Translate sliders to instructions
+        translation_result = await semantic_motor.translate_all(modified_config)
+        
+        # Step 4: Build instruction blocks
+        photo_block = "\n".join(translation_result['active_instructions']['photoscaler']) or "[STANDARD PROCESSING]"
+        style_block = "\n".join(translation_result['active_instructions']['stylescaler']) or "[STANDARD STYLING]"
+        light_block = "\n".join(translation_result['active_instructions']['lightscaler']) or "[NATURAL LIGHTING]"
+        
+        # Step 5: Generate Identity Lock block
+        has_person = vision_data.get('technical_diagnosis', {}).get('has_person', True) if vision_data else True
+        semantic_anchors = vision_data.get('semantic_anchors', []) if vision_data else []
+        identity_block = identity_lock_service.generate_lock_block(
+            modified_config, 
+            has_person=has_person,
+            semantic_anchors=semantic_anchors
+        )
+        
+        # Step 6: Extract vision context
+        vision_context = self._build_vision_context(vision_data)
+        
+        # Step 7: Build veto warnings
+        veto_warnings = self._build_veto_warnings(vetos_applied)
+        
+        # Step 8: Get aspect ratio
+        aspect_ratio = vision_data.get('aspect_ratio', '1:1') if vision_data else '1:1'
+        
+        # Step 9: Assemble final prompt
+        prompt = f"""[LUXSCALER v{self.VERSION} - UNIVERSAL PRODUCTION PROTOCOL]
 [ROLE: HIGH-END PHOTO PRODUCTION ENGINE]
-{intent_context}
+[TARGET: $100,000 PRODUCTION VALUE]
 
 === CRITICAL: ASPECT RATIO LOCK ===
 OUTPUT MUST HAVE EXACTLY THE SAME DIMENSIONS AND ASPECT RATIO AS INPUT.
+INPUT ASPECT RATIO: {aspect_ratio}
 DO NOT crop, extend, pad, or change the frame in any way.
 Every pixel position in output must correspond to the same position in input.
-If input is 1080x1920 (9:16), output MUST be 1080x1920 (9:16).
-If input is 4:3, output MUST be 4:3.
 NO EXCEPTIONS. This is required for before/after comparison overlay.
 
-=== PHASE 0: IDENTITY LOCK ===
 {identity_block}
 
 === PHASE 1: PRODUCTION CONTEXT ===
 {vision_context}
 
-=== PHASE 2: CAMERA & OPTICS (PhotoScaler) ===
-{photoscaler_block}
+=== PHASE 2: CAMERA & OPTICS (PhotoScaler Engine) ===
+{photo_block}
 
-=== PHASE 3: ART DIRECTION (StyleScaler) ===
-{stylescaler_block}
+=== PHASE 3: ART DIRECTION (StyleScaler Engine) ===
+{style_block}
 
-=== PHASE 4: LIGHTING (LightScaler) ===
-{lightscaler_block}
+=== PHASE 4: LIGHTING (LightScaler Engine) ===
+{light_block}
 
-=== PHASE 5: EXECUTION ===
-Execute all instructions while PRESERVING:
-1. The subject's identity (same person)
+{veto_warnings}
+
+=== PHASE 5: EXECUTION MANDATE ===
+Execute ALL instructions above while PRESERVING:
+1. The subject's identity (same person, same face)
 2. The exact aspect ratio and dimensions of the input
-3. The pixel-to-pixel correspondence for overlay comparison
+3. Pixel-to-pixel correspondence for overlay comparison
+4. All semantic anchors detected in analysis
 
-Output should look like a $100,000 professional production.
-Maintain natural appearance unless FORCE instructions are present.
+INTENSITY LEGEND:
+○ = Subtle enhancement (1-5)
+◐ = Professional grade (6-8)
+● = FORCE mode - Maximum effect (9-10)
 
-=== NEGATIVE ===
-different person, face swap, age change, gender change, distorted anatomy, 
+Apply transformations in order: Photo → Style → Light
+
+=== QUALITY GATES ===
+- Resolution: Match or exceed input
+- Color depth: 24-bit sRGB minimum
+- Compression: Minimal artifacts
+- Identity: Must pass recognition test
+
+=== NEGATIVE PROMPT ===
+different person, face swap, age change, gender change, distorted anatomy,
 bad hands, extra limbs, watermarks, text, compression artifacts,
-different aspect ratio, cropped, extended, padded, different dimensions.
+different aspect ratio, cropped, extended, padded, different dimensions,
+blurry, noisy (unless grain is requested), overprocessed, plastic skin,
+shifted facial features, morphed bone structure.
 """
         return prompt
-
-    def _convert_new_format(self, settings: dict) -> dict:
-        """
-        Converts new format { pillar: { slider: value } } 
-        to old format { pillar: { sliders: [{name, value}] } }
-        """
-        result = {}
+    
+    def _normalize_config(self, config: dict) -> dict:
+        """Normaliza diferentes formatos de config al formato estándar."""
+        result = {
+            'photoscaler': {'sliders': []},
+            'stylescaler': {'sliders': []},
+            'lightscaler': {'sliders': []}
+        }
+        
         for pillar in ['photoscaler', 'stylescaler', 'lightscaler']:
-            pillar_data = settings.get(pillar, {})
-            if isinstance(pillar_data, dict) and 'sliders' not in pillar_data:
-                # New format - convert
-                result[pillar] = {
-                    'sliders': [
-                        {'name': k, 'value': v} 
-                        for k, v in pillar_data.items()
+            pillar_data = config.get(pillar, {})
+            
+            if isinstance(pillar_data, dict):
+                if 'sliders' in pillar_data:
+                    sliders = pillar_data['sliders']
+                    if isinstance(sliders, list):
+                        result[pillar]['sliders'] = sliders
+                    elif isinstance(sliders, dict):
+                        result[pillar]['sliders'] = [
+                            {'name': k, 'value': v} for k, v in sliders.items()
+                        ]
+                else:
+                    # Direct dict format: {slider_name: value}
+                    result[pillar]['sliders'] = [
+                        {'name': k, 'value': v} for k, v in pillar_data.items()
                         if isinstance(v, (int, float))
                     ]
-                }
-            else:
-                result[pillar] = pillar_data
+        
         return result
+    
+    def _build_vision_context(self, vision_data: dict) -> str:
+        """Construye el contexto de visión para el prompt."""
+        if not vision_data:
+            return "No prior vision analysis available. Apply standard professional enhancement."
+        
+        parts = []
+        
+        # Production analysis
+        if 'production_analysis' in vision_data:
+            pa = vision_data['production_analysis']
+            current = pa.get('current_quality', 'Unknown')
+            target = pa.get('target_vision', 'Professional enhancement')
+            parts.append(f"CURRENT STATE: {current}")
+            parts.append(f"TARGET VISION: {target}")
+            
+            gaps = pa.get('gaps_detected', [])
+            if gaps:
+                parts.append(f"GAPS TO CLOSE: {', '.join(gaps)}")
+        
+        # Technical diagnosis
+        if 'technical_diagnosis' in vision_data:
+            td = vision_data['technical_diagnosis']
+            tech_parts = []
+            if 'noise_level' in td:
+                tech_parts.append(f"Noise={td['noise_level']}/10")
+            if 'blur_level' in td:
+                tech_parts.append(f"Blur={td['blur_level']}/10")
+            if 'exposure_issues' in td and td['exposure_issues'] != 'none':
+                tech_parts.append(f"Exposure={td['exposure_issues']}")
+            if tech_parts:
+                parts.append(f"TECHNICAL: {', '.join(tech_parts)}")
+        
+        # Primary intent
+        if 'auto_settings' in vision_data:
+            intent = vision_data['auto_settings'].get('primary_intent_used', '')
+            if intent:
+                parts.append(f"SELECTED INTENT: {intent}")
+        
+        # Semantic anchors
+        if 'semantic_anchors' in vision_data:
+            anchors = vision_data['semantic_anchors'][:5]  # Top 5
+            if anchors:
+                parts.append(f"PRESERVE ELEMENTS: {', '.join(anchors)}")
+        
+        return "\n".join(parts) if parts else "Standard professional enhancement mode."
+    
+    def _build_veto_warnings(self, vetos_applied: list) -> str:
+        """Genera advertencias sobre vetos aplicados."""
+        if not vetos_applied:
+            return ""
+        
+        lines = ["=== SYSTEM VETO WARNINGS ==="]
+        for veto in vetos_applied:
+            lines.append(f"⚠️ {veto['rule_name']}:")
+            for action in veto['actions']:
+                lines.append(f"   - {action['slider_name']}: {action['original']} → {action['forced']} ({action['reason']})")
+        
+        return "\n".join(lines)
+    
+    async def compile_with_metadata(self, config: dict, vision_data: dict = None, user_mode: str = 'auto') -> dict:
+        """
+        Compila el prompt y devuelve metadata adicional.
+        
+        Returns:
+            {
+                'success': bool,
+                'prompt': str,
+                'metadata': {
+                    'vetos_applied': list,
+                    'active_sliders': int,
+                    'force_sliders': int,
+                    'identity_lock': bool,
+                    'user_mode': str,
+                    'version': str
+                }
+            }
+        """
+        try:
+            # Normalize
+            slider_config = self._normalize_config(config)
+            
+            # Get veto result
+            veto_result = await veto_engine.apply_vetos(slider_config)
+            
+            # Get translation summary
+            translation_result = await semantic_motor.translate_all(veto_result['modified_config'])
+            summary = translation_result['summary']
+            
+            # Get identity lock status
+            has_person = vision_data.get('technical_diagnosis', {}).get('has_person', True) if vision_data else True
+            identity_analysis = identity_lock_service.analyze_identity_risk(slider_config)
+            
+            # Compile prompt
+            prompt = await self.compile_prompt(config, vision_data)
+            
+            return {
+                'success': True,
+                'prompt': prompt,
+                'metadata': {
+                    'vetos_applied': veto_result['vetos_applied'],
+                    'active_sliders': summary['active_sliders'],
+                    'force_sliders': summary['force_sliders'],
+                    'identity_lock': identity_analysis['identity_lock_active'],
+                    'identity_risk': identity_analysis['risk_level'],
+                    'conflicts': translation_result['conflicts_detected'],
+                    'user_mode': user_mode,
+                    'version': self.VERSION
+                }
+            }
+        except Exception as e:
+            print(f"PromptCompiler Error: {e}")
+            return {
+                'success': False,
+                'error': str(e),
+                'prompt': '',
+                'metadata': {}
+            }
+
 
 prompt_compiler = PromptCompilerService()
