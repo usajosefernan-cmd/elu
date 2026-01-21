@@ -142,6 +142,14 @@ const App: React.FC = () => {
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
     const [inputImageUrl, setInputImageUrl] = useState<string | null>(null);
     const [processedImageUrl, setProcessedImageUrl] = useState<string | null>(null);
+
+    // UX overlay (upload/generate progress)
+    const [showProcessingOverlay, setShowProcessingOverlay] = useState(false);
+    const [processingPhase, setProcessingPhase] = useState<'upload' | 'vision' | 'compile' | 'generate' | null>(null);
+    const [phaseStartedAt, setPhaseStartedAt] = useState<number | null>(null);
+    const [phaseEtaSeconds, setPhaseEtaSeconds] = useState<number | null>(null);
+    const [phaseProgress, setPhaseProgress] = useState<number>(0);
+    const [phaseLabel, setPhaseLabel] = useState<string>('');
     const [gridZoom, setGridZoom] = useState(3); // 2 to 6 columns
     const [showBeforeAfter, setShowBeforeAfter] = useState(false); // Toggle for B/A
     const [aspectRatio, setAspectRatio] = useState<number>(3 / 4);
