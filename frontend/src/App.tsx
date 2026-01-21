@@ -423,82 +423,46 @@ const App: React.FC = () => {
     };
 
     const processFileForAnalysis = async (file: File) => {
-        // 1. UPLOAD IMAGE (CRITICAL STEP)
-        let uploadedPublicUrl = "";
+        // 1. IMMEDIATE FEEDBACK + LOCAL PREVIEW (do not wait for Storage)
         try {
-            // UX: Upload phase overlay
             setToastState({
                 isOpen: true,
                 title: 'Subida iniciada',
-                message: 'Optimizando imagen y subiendo a Storage...'
+                message: 'Preparando análisis...'
             });
             setShowProcessingOverlay(true);
             setProcessingPhase('upload');
             setPhaseStartedAt(Date.now());
-            setPhaseEtaSeconds(8);
+            setPhaseEtaSeconds(3);
             setPhaseProgress(10);
-            setPhaseLabel('Subiendo imagen (optimización + upload)...');
+            setPhaseLabel('Preparando archivo...');
             setElapsedTime(0);
 
-            setStatus(AgentStatus.ANALYZING);
-            setAgentMsg({ text: "Subiendo imagen...", type: 'info' });
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Local preview for instant UI
+            const localUrl = URL.createObjectURL(file);
+            generatedObjectUrlsRef.current.push(localUrl);
+            setStagedImageUrl(localUrl);
 
-            // Fast path for vision: small thumbnail upload
-            const { blob: visionBlob, aspectRatio: ratio } = await compressAndResizeImage(file, { maxDimension: 2048, quality: 0.78 });
-            setAspectRatio(ratio);
-            setPhaseProgress(35);
-
-            const userId = userProfile ? userProfile.id : 'guest_analysis';
-            uploadedPublicUrl = await uploadImageToStorage(visionBlob, userId);
-            setStagedImageUrl(uploadedPublicUrl);
-            setPhaseProgress(70);
-
-            // Background upload for master-quality input (does not block Vision)
-            (async () => {
-                try {
-                    setToastState({
-                        isOpen: true,
-                        title: 'Optimizando original',
-                        message: 'Subiendo versión de mayor calidad en segundo plano.'
-                    });
-                    const { blob: masterBlob } = await compressAndResizeImage(file, { maxDimension: 8192, quality: 0.9 });
-                    const masterUrl = await uploadImageToStorage(masterBlob, userId);
-                    setStagedMasterImageUrl(masterUrl);
-                } catch (e) {
-                    console.warn('Master upload failed:', e);
-                }
-            })();
-
-            setPhaseProgress(90);
-
-        } catch (uploadError: any) {
-            console.error("Critical Upload Error:", uploadError);
-            setAgentMsg({ text: "Error de Subida: " + (uploadError.message || "Red rechazada"), type: 'error' });
-            setShowProcessingOverlay(false);
-            resetFlow();
-            return;
+        } catch (e: any) {
+            console.error('Preview prep error:', e);
         }
 
-        // 2. CALL "Brain" pipeline (Edge Functions w/ fallback to FastAPI)
+        // 2. VISION FIRST (base64) — fastest path, no Storage propagation wait
         try {
             setToastState({
                 isOpen: true,
                 title: 'Análisis de visión',
-                message: 'Usando Gemini 2.5 Flash (rápido).'
+                message: 'Usando Gemini 2.5 Flash.'
             });
             setProcessingPhase('vision');
             setPhaseStartedAt(Date.now());
-            setPhaseEtaSeconds(8);
-            setPhaseProgress(5);
-            setPhaseLabel('Analizando (Vision) — esto puede tardar ~3–8s');
+            setPhaseEtaSeconds(6);
+            setPhaseProgress(25);
+            setPhaseLabel('Analizando (Vision) — debería ser rápido');
 
-            // IMPORTANT: avoid showing legacy "PROCESANDO ESTUDIO" panel
-            // during the v28 Brain pipeline
             setStatus(AgentStatus.ANALYZING);
             setAgentMsg({ text: "Gemini 2.5 Flash: Analizando imagen...", type: 'info' });
 
-            // Avoid waiting for Storage public URL propagation. Use base64 direct for vision.
             const visionBase64 = await new Promise<string>((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onloadend = () => resolve(reader.result as string);
@@ -509,15 +473,29 @@ const App: React.FC = () => {
             const visionResult = await analyzeImageBase64WithVision(visionBase64, userProfile?.id);
             setPhaseProgress(100);
 
-            // ask notification permission early
             await requestNotifications();
 
             if (!visionResult.success) {
                 throw new Error(visionResult.error || "Análisis de visión falló");
             }
 
-            // Store vision analysis
             setVisionAnalysis(visionResult.analysis);
+
+            // Background: upload optimized images for generation/archive
+            (async () => {
+                try {
+                    const userId = userProfile ? userProfile.id : 'guest_analysis';
+                    const { blob: visionBlob } = await compressAndResizeImage(file, { maxDimension: 2048, quality: 0.78 });
+                    const publicThumb = await uploadImageToStorage(visionBlob, userId);
+                    setStagedImageUrl(publicThumb);
+
+                    const { blob: masterBlob } = await compressAndResizeImage(file, { maxDimension: 8192, quality: 0.9 });
+                    const masterUrl = await uploadImageToStorage(masterBlob, userId);
+                    setStagedMasterImageUrl(masterUrl);
+                } catch (e) {
+                    console.warn('Background upload failed:', e);
+                }
+            })();
 
             // Compute default slider start values from AUTO suggested_settings
             const ss = visionResult.analysis?.suggested_settings || {};
@@ -589,17 +567,18 @@ const App: React.FC = () => {
         setShowVisionConfirm(false);
         
         if (useAuto) {
-            // Use recommended settings from vision analysis
+            // Use recommended settings from vision analysis (AUTO default)
+            const dm = (visionAnalysis as any)?._defaultMixer;
             const config: LuxConfig = {
                 userPrompt: '',
-                mode: visionAnalysis?.recommended_profile?.toUpperCase() || 'AUTO',
+                mode: 'AUTO',
                 mixer: {
-                    stylism: 5,
-                    atrezzo: 5,
-                    skin_bio: 5,
-                    lighting: 5,
-                    restoration: 5,
-                    upScaler: 1
+                    stylism: dm?.stylism ?? 5,
+                    atrezzo: dm?.atrezzo ?? 5,
+                    skin_bio: dm?.skin_bio ?? 5,
+                    lighting: dm?.lighting ?? 5,
+                    restoration: dm?.restoration ?? 5,
+                    upScaler: dm?.upScaler ?? 1
                 }
             };
             
@@ -1342,6 +1321,7 @@ const App: React.FC = () => {
                 totalTokensPurchased={userProfile?.total_tokens_purchased || 0}
                 imageUrl={stagedImageUrl || inputImageUrl || ''}
                 initialMixer={visionAnalysis?._defaultMixer}
+                initialSuggestedSettings={visionAnalysis?.suggested_settings}
                 onConfirm={handleProfileConfigConfirm}
                 onCancel={handleProfileConfigCancel}
                 onUpgrade={() => navigate('/pricing')}
