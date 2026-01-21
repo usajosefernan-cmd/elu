@@ -107,27 +107,6 @@ export const Navigation: React.FC<NavigationProps> = ({
         {/* ACTIONS CONTAINER */}
         <div className="flex items-center gap-4 md:gap-6 pointer-events-auto">
 
-          {/* 4 MOTORES (Desktop only - Hidden on mobile) */}
-          <div className="hidden md:flex items-center gap-1">
-            {[
-              { id: 'ENGINE_1', name: t('nav.engines.photo') },
-              { id: 'ENGINE_2', name: t('nav.engines.style') },
-              { id: 'ENGINE_3', name: t('nav.engines.light') },
-              { id: 'ENGINE_4', name: t('nav.engines.up') },
-            ].map((motor) => (
-              <button
-                key={motor.id}
-                onClick={() => handleNav(motor.id)}
-                className={`px-3 py-2 text-[10px] font-bold uppercase tracking-widest transition-all ${currentView === motor.id
-                  ? 'text-black bg-lumen-gold'
-                  : 'text-gray-500 hover:text-white hover:bg-white/5'
-                  }`}
-              >
-                {motor.name}
-              </button>
-            ))}
-          </div>
-
           {/* USER CONTEXT */}
           <div className="flex items-center gap-1">
 
