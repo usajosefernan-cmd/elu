@@ -532,11 +532,11 @@ const ProluxProfileUI: React.FC<{
       mode: 'PROLUX',  // Cambiar de 'ADVANCED' a 'PROLUX'
       selectedPresetId: JSON.stringify(sliderConfig),
       mixer: {
-        stylism: Math.round((sliderValues.vibracion_saturacion + sliderValues.paleta_tonos + sliderValues.estilo_render) / 3),
-        atrezzo: Math.round((sliderValues.detalle_texturas + sliderValues.caracter_procesa) / 2),
-        skin_bio: sliderValues.retoque_piel,
-        lighting: Math.round((sliderValues.brillo_exposicion + sliderValues.iluminacion_dramatica + sliderValues.balance_luminoso) / 3),
-        restoration: Math.round((sliderValues.limpieza_artefactos + sliderValues.restauracion_danos) / 2),
+        stylism: Math.round((sliderValues.atmosfera + sliderValues.look_cine + sliderValues.materiales_pbr) / 3),
+        atrezzo: Math.round((sliderValues.limpieza_entorno + sliderValues.styling_ropa) / 2),
+        skin_bio: sliderValues.styling_piel,
+        lighting: Math.round((sliderValues.key_light + sliderValues.volumetria + sliderValues.contraste) / 3),
+        restoration: Math.round((sliderValues.limpieza_artefactos + sliderValues.optica) / 2),
         upScaler: 2
       }
     });
