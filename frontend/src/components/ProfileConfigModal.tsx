@@ -679,7 +679,7 @@ const ProluxProfileUI: React.FC<{
           ))}
         </div>
       ) : (
-        /* Detailed Mode - Original accordion style */
+        {/* Detailed Mode - Original accordion style */}
         <div className="space-y-1 max-h-[280px] overflow-y-auto pr-1">
           {currentPillar.sliders.map(slider => {
             const value = sliderValues[slider.key] ?? 5;
