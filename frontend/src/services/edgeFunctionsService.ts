@@ -88,9 +88,9 @@ const callEdgeFunction = async <T>(
     functionName === 'vision-analysis'
       ? 'process/analyze'
       : functionName === 'prompt-compiler'
-        ? 'process/generate'
+        ? 'process/compile'
         : functionName === 'generate-image'
-          ? 'process/generate'
+          ? 'process/generate-image'
           : functionName;
 
   const response = await fetch(`${BACKEND_URL}/api/${endpoint}`, {
