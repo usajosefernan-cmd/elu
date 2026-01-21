@@ -197,3 +197,5 @@
 ##     message: "Se corrigió el wiring del botón Upload Project y se añadió fallback real (no mock). Por favor prueba el flujo completo con login y sin login si aplica."
 ##   - agent: "testing"
 ##     message: "E2E testing completed. Upload flow partially working but VisionConfirmModal not appearing due to API quota limits. File input accessible, new wiring confirmed, archives functional, mobile responsive. See detailed findings below."
+##   - agent: "testing"
+##     message: "PERFORMANCE & CORRECTNESS TEST RESULTS: ✅ Login successful, ✅ Image upload working, ✅ Local preview appears immediately, ⚠️ VisionConfirmModal takes 13.96s (slower than expected <10s), ❌ User has 0 tokens blocking generation, ❌ Missing toast/overlay feedback, ❌ AUTO button not found in VisionModal, ❌ 'Auto en todo' button missing in PRO modal. Core flow works but UX feedback and performance need improvement."
