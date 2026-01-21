@@ -1035,6 +1035,24 @@ const App: React.FC = () => {
                                         </>
                                     )}
                                 </div>
+
+            {/* GLOBAL PROCESSING OVERLAY (upload/generate UX) */}
+            {showProcessingOverlay && (
+                <div className="fixed inset-0 z-[120]">
+                    <ProcessingOverlay
+                        profiles={[{ name: 'UPLOAD' }, { name: 'VISION' }, { name: 'COMPILE' }, { name: 'GENERATE' }]}
+                        status={processingPhase === 'upload' || processingPhase === 'vision' ? 'ANALYZING' : 'GENERATING'}
+                        logs={[
+                            phaseLabel,
+                            phaseEtaSeconds ? `ETA aproximada: ~${phaseEtaSeconds}s` : '',
+                            `Tiempo transcurrido: ${elapsedTime.toFixed(1)}s`,
+                            processingPhase ? `Fase: ${processingPhase.toUpperCase()}` : ''
+                        ].filter(Boolean) as string[]}
+                        progress={phaseProgress}
+                    />
+                </div>
+            )}
+
                                 {currentVar.prompt_payload.meta_style_vibe && (
                                     <p className="text-[9px] text-gray-500 mt-2 font-mono italic truncate">
                                         Vibe: {currentVar.prompt_payload.meta_style_vibe}
