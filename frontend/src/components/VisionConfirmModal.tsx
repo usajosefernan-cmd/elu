@@ -89,14 +89,7 @@ const CATEGORY_COLORS: Record<string, string> = {
   OTHER: 'bg-slate-500/20 text-slate-400 border-slate-500/30'
 };
 
-// 5 Intent Spectrum labels
-const INTENT_SPECTRUM = [
-  { key: 'fix', label: 'FIX', desc: 'Corrección mínima', color: 'emerald' },
-  { key: 'polished', label: 'PULIDO', desc: 'Retoque profesional', color: 'blue' },
-  { key: 'creative', label: 'CREATIVO', desc: 'Mejora artística', color: 'purple' },
-  { key: 'stylized', label: 'ESTILIZADO', desc: 'Look definido', color: 'amber' },
-  { key: 'aggressive', label: 'AGRESIVO', desc: 'Transformación total', color: 'red' }
-];
+// INTENT_SPECTRUM constant removed - now using IntentSpectrum component
 
 // Mini bar component for showing values
 const MiniBar: React.FC<{ value: number; max?: number; color: string }> = ({ value, max = 10, color }) => (
