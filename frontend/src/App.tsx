@@ -594,24 +594,36 @@ const App: React.FC = () => {
         
         // Build config based on mode
         let config: LuxConfig;
-        const autoSettings = visionAnalysis?.auto_settings || confirmConfig.settings;
+        
+        // PRIORITY: Use settings from confirmConfig (already has intensity/preset applied)
+        // Fallback: use auto_settings from vision analysis
+        const sliderSource = confirmConfig.settings || visionAnalysis?.auto_settings;
         
         if (confirmConfig.mode === 'auto' || confirmConfig.mode === 'intent') {
-            // Use auto_settings from vision analysis
-            const sliderConfig = {
-                photoscaler: autoSettings?.photoscaler || {},
-                stylescaler: autoSettings?.stylescaler || {},
-                lightscaler: autoSettings?.lightscaler || {}
-            };
+            // Check if sliderSource has the correct format (with .sliders array)
+            let sliderConfig: any;
+            
+            if (sliderSource?.photoscaler?.sliders) {
+                // Already in correct format from VisionConfirmModal
+                sliderConfig = sliderSource;
+                console.log('[LuxScaler] Using slider config from modal (with intensity/preset applied)');
+            } else {
+                // Convert from {slider_name: value} format to {sliders: [{name, value}]} format
+                sliderConfig = {
+                    photoscaler: { sliders: Object.entries(sliderSource?.photoscaler || {}).map(([name, value]) => ({ name, value })) },
+                    stylescaler: { sliders: Object.entries(sliderSource?.stylescaler || {}).map(([name, value]) => ({ name, value })) },
+                    lightscaler: { sliders: Object.entries(sliderSource?.lightscaler || {}).map(([name, value]) => ({ name, value })) }
+                };
+                console.log('[LuxScaler] Converted auto_settings to slider format');
+            }
+            
+            // Log actual values being sent
+            console.log('[LuxScaler] Final slider config:', JSON.stringify(sliderConfig).slice(0, 300) + '...');
             
             config = {
                 userPrompt: confirmConfig.customIntent || '',
                 mode: 'AUTO',
-                selectedPresetId: JSON.stringify({
-                    photoscaler: { sliders: Object.entries(sliderConfig.photoscaler).map(([name, value]) => ({ name, value })) },
-                    stylescaler: { sliders: Object.entries(sliderConfig.stylescaler).map(([name, value]) => ({ name, value })) },
-                    lightscaler: { sliders: Object.entries(sliderConfig.lightscaler).map(([name, value]) => ({ name, value })) }
-                }),
+                selectedPresetId: JSON.stringify(sliderConfig),
                 mixer: {
                     stylism: autoSettings?.stylescaler?.look_cine ?? 5,
                     atrezzo: autoSettings?.stylescaler?.limpieza_entorno ?? 5,
