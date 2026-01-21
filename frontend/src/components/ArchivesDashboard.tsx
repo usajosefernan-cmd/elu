@@ -523,6 +523,29 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                 </div>
                             )}
 
+                            {/* Prompt compilado */}
+                            {selectedVariation.prompt_payload?.compiledPrompt && (
+                                <div className="pt-2 border-t border-white/5">
+                                    <div className="flex items-center justify-between mb-1">
+                                        <p className="text-[9px] text-purple-400 uppercase font-bold">📝 Prompt Enviado</p>
+                                        <button
+                                            onClick={() => {
+                                                navigator.clipboard.writeText(selectedVariation.prompt_payload?.compiledPrompt || '');
+                                            }}
+                                            className="text-[8px] text-gray-500 hover:text-white"
+                                        >
+                                            Copiar
+                                        </button>
+                                    </div>
+                                    <div className="bg-black/40 rounded p-2 max-h-32 overflow-y-auto">
+                                        <p className="text-[8px] text-gray-400 whitespace-pre-wrap font-mono leading-relaxed">
+                                            {selectedVariation.prompt_payload.compiledPrompt.slice(0, 500)}
+                                            {selectedVariation.prompt_payload.compiledPrompt.length > 500 && '...'}
+                                        </p>
+                                    </div>
+                                </div>
+                            )}
+
                             {/* Acciones */}
                             <div className="pt-2 border-t border-white/5 space-y-2">
                                 <button
