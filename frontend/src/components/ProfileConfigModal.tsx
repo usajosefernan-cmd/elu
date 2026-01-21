@@ -511,9 +511,25 @@ const ProluxProfileUI: React.FC<{
   };
 
   const handleGenerate = () => {
+    // Construir configuración completa de 27 sliders para el prompt compiler
+    const buildPillar = (pillarKey: 'photoscaler' | 'stylescaler' | 'lightscaler') => ({
+      sliders: SLIDERS_27[pillarKey].map(s => ({
+        name: s.key,
+        value: sliderValues[s.key] ?? 0
+      }))
+    });
+
+    const sliderConfig = {
+      photoscaler: buildPillar('photoscaler'),
+      stylescaler: buildPillar('stylescaler'),
+      lightscaler: buildPillar('lightscaler'),
+    };
+
+    // Enviar configuración completa via selectedPresetId
     onConfirm({
       userPrompt: '',
-      mode: 'ADVANCED',
+      mode: 'PROLUX',  // Cambiar de 'ADVANCED' a 'PROLUX'
+      selectedPresetId: JSON.stringify(sliderConfig),
       mixer: {
         stylism: Math.round((sliderValues.vibracion_saturacion + sliderValues.paleta_tonos + sliderValues.estilo_render) / 3),
         atrezzo: Math.round((sliderValues.detalle_texturas + sliderValues.caracter_procesa) / 2),
