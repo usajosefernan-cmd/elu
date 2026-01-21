@@ -57,56 +57,65 @@ const callEdgeFunction = async <T>(
 ): Promise<T> => {
   const canUseSupabaseFn = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
-  if (canUseSupabaseFn) {
-    // Use Supabase Edge Functions
-    const response = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
+  // Helper: FastAPI fallback
+  const callFastApi = async (): Promise<T> => {
+    if (!BACKEND_URL) {
+      throw new Error('Missing VITE_BACKEND_URL (required for FastAPI fallback).');
+    }
+
+    // Map function name -> FastAPI endpoint
+    const endpoint =
+      functionName === 'vision-analysis'
+        ? 'process/analyze'
+        : functionName === 'prompt-compiler'
+          ? 'process/compile'
+          : functionName === 'generate-image'
+            ? 'process/generate-image'
+            : functionName;
+
+    const response = await fetch(`${BACKEND_URL}/api/${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        // NOTE: anon key works for functions if they're not enforcing auth.
-        // If function requires user JWT, we will switch to session access_token later.
-        'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify(body),
     });
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Edge Function Error: ${errorText}`);
+      throw new Error(`API Error: ${errorText}`);
     }
 
     return response.json();
+  };
+
+  if (canUseSupabaseFn) {
+    try {
+      // Use Supabase Edge Functions
+      const response = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          // NOTE: anon key works for functions if they're not enforcing auth.
+          // If function requires user JWT, we will switch to session access_token later.
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify(body),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Edge Function Error: ${errorText}`);
+      }
+
+      return response.json();
+    } catch (e) {
+      console.warn('[EdgeFunctions] Failed, falling back to FastAPI:', e);
+      return callFastApi();
+    }
   }
 
-  // Fallback to FastAPI backend
-  if (!BACKEND_URL) {
-    throw new Error('Missing VITE_BACKEND_URL (required for FastAPI fallback).');
-  }
-
-  // Map function name -> FastAPI endpoint
-  const endpoint =
-    functionName === 'vision-analysis'
-      ? 'process/analyze'
-      : functionName === 'prompt-compiler'
-        ? 'process/compile'
-        : functionName === 'generate-image'
-          ? 'process/generate-image'
-          : functionName;
-
-  const response = await fetch(`${BACKEND_URL}/api/${endpoint}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify(body),
-  });
-
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`API Error: ${errorText}`);
-  }
-
-  return response.json();
+  return callFastApi();
 };
 
 // =====================================================
