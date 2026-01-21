@@ -1276,6 +1276,31 @@ const App: React.FC = () => {
                 className="hidden"
             />
 
+            {/* GLOBAL INFO TOAST - Always available */}
+            <InfoToast
+                toast={toastState}
+                onClose={() => setToastState(s => ({ ...s, isOpen: false }))}
+            />
+
+            {/* GLOBAL PROCESSING OVERLAY - Shows during upload/analysis/generation */}
+            {showProcessingOverlay && (
+                <ProcessingOverlay
+                    phase={processingPhase}
+                    status={processingPhase === 'upload' || processingPhase === 'vision' ? 'ANALYZING' : 'GENERATING'}
+                    logs={[
+                        phaseLabel,
+                        `Tiempo: ${elapsedTime.toFixed(1)}s`
+                    ].filter(Boolean) as string[]}
+                    progress={phaseProgress}
+                    canClose={processingPhase === 'generate'}
+                    onCancel={() => {
+                        if (processingPhase === 'generate') {
+                            setShowProcessingOverlay(false);
+                        }
+                    }}
+                />
+            )}
+
             {/* SHARED MODALS */}
             
             {/* NEW: Vision Confirm Modal (Edge Function result) */}
