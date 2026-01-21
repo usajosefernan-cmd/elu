@@ -376,20 +376,14 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                     <div className="col-span-6 bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden flex flex-col">
                         {currentSession && selectedVariation ? (
                             <>
-                                {/* Toolbar minimalista */}
+                                {/* Toolbar simple */}
                                 <div className="p-2 border-b border-white/5 bg-black/20 flex items-center justify-between">
-                                    <span className="text-[10px] text-gray-500 font-mono">
-                                        {currentPercentage}% · {imgNativeSize.w}x{imgNativeSize.h}
+                                    <span className="text-[10px] text-gray-500">
+                                        {new Date(selectedVariation.created_at).toLocaleDateString('es-ES')}
                                     </span>
-                                    <div className="flex items-center gap-1">
-                                        <button
-                                            onClick={toggleZoom}
-                                            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all"
-                                            title={scale >= 0.99 ? 'Ajustar a pantalla' : 'Ver 1:1'}
-                                        >
-                                            {scale >= 0.99 ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
-                                        </button>
-                                    </div>
+                                    <span className="text-[10px] text-gray-600">
+                                        Desliza la barra para comparar
+                                    </span>
                                 </div>
 
                                 {/* Visor principal - ComparisonSlider ajustado al contenedor */}
