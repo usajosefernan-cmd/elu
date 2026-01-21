@@ -225,6 +225,44 @@ El resto de sliders quedan LIBRES para que el usuario los modifique.
 
 ## Changelog
 
+### v28.2 (2025-01-21) - FASE 4 & 5 COMPLETE
+- ✅ **Conflict Veto Engine** (conflict_veto_engine.py)
+  - 7 reglas de veto implementadas
+  - La Paradoja Forense, La Tiranía del Drama, Paradoja de Geometría, etc.
+  - Auto-resolución de conflictos entre sliders
+- ✅ **Block Injector** (block_injector.py)
+  - Inyección de bloques semánticos por pilar
+  - Traducción automática de valores 0-10 a instrucciones
+  - Fallback mappings si BD no disponible
+- ✅ **Semantic Sanitizer** (semantic_sanitizer.py)
+  - Eliminación de redundancias
+  - Limpieza de secciones vacías
+  - Validación de prompt
+- ✅ **Identity Lock Service** (identity_lock.py)
+  - Identity Lock dinámico según contexto
+  - Niveles: NONE, RELAXED, STANDARD, MAXIMUM
+  - Soporte para DNA Anchor
+- ✅ **DNA Anchor Generator** (dna_anchor_generator.py)
+  - Detección facial con face_recognition/OpenCV
+  - Crop facial 256x256 con margen 20%
+  - Anchor strength: weak/medium/strong/absolute
+- ✅ **Multimodal Prompt Injector** (multimodal_prompt_injector.py)
+  - Construcción de contenido multimodal
+  - Inyección de DNA Anchor como segunda imagen
+  - Instrucciones biométricas
+- ✅ **Context Cache Manager** (context_cache_manager.py)
+  - Estructura para Vertex AI caching
+  - Cache por usuario con TTL
+  - Estimación de tokens ahorrados
+- ✅ **Prompt Compiler Service v28.0** (prompt_compiler_service.py)
+  - Orquestación completa de todas las fases
+  - Debug info detallado con vetos, sanitization
+  - Soporte DNA Anchor multimodal
+- ✅ **Documento Maestro actualizado** (/app/BBLA/maestro arqu.md)
+  - FASE 4: El Cerebro añadida
+  - FASE 5: El Alma añadida
+  - Ejemplos de código Python
+
 ### v28.1 (2025-01-21)
 - ✅ Implementado Input Normalizer
 - ✅ Implementado Semantic Motor
