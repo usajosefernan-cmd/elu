@@ -101,3 +101,47 @@
 #====================================================================================================
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
+
+## user_problem_statement: "El botón Upload Project estaba asociado a wiring antiguo; verificar y corregir el flujo completo upload → visión → confirmación → generación usando Edge Functions con fallback a FastAPI."
+## backend:
+##   - task: "Fallback endpoints para prompt-compiler y generate-image"
+##     implemented: true
+##     working: true
+##     file: "backend/routes/process.py"
+##     stuck_count: 0
+##     priority: "high"
+##     needs_retesting: true
+##     status_history:
+##       - working: true
+##         agent: "main"
+##         comment: "Añadidos /api/process/compile y /api/process/generate-image para que el frontend no apunte a endpoints inexistentes. /api/process/analyze ajustado a contrato v28 (success/error + tokens_consumed). Probado con curl."
+## frontend:
+##   - task: "Upload Project wiring -> Brain pipeline (Edge Functions con fallback)"
+##     implemented: true
+##     working: "NA"
+##     file: "frontend/src/App.tsx, frontend/src/services/edgeFunctionsService.ts"
+##     stuck_count: 0
+##     priority: "high"
+##     needs_retesting: true
+##     status_history:
+##       - working: false
+##         agent: "user"
+##         comment: "Usuario reporta que 'Upload project' seguía asociado a edge antiguas / wiring viejo."
+##       - working: true
+##         agent: "main"
+##         comment: "edgeFunctionsService ahora intenta Supabase Functions y si falla cae automáticamente a FastAPI (sin mocks). Se añadió VITE_BACKEND_URL para fallback en navegador. App flow usa analyzeImageWithVision -> VisionConfirmModal -> processWithEdgeFunctions (compilePrompt + generateEnhancedImage)."
+## metadata:
+##   created_by: "main_agent"
+##   version: "1.0"
+##   test_sequence: 1
+##   run_ui: true
+## test_plan:
+##   current_focus:
+##     - "Upload Project end-to-end: upload → vision confirm modal → confirmar auto → ver preview generado"
+##     - "Verificar que si Edge Functions fallan, el fallback FastAPI se usa sin romper la UI"
+##   stuck_tasks: []
+##   test_all: false
+##   test_priority: "high_first"
+## agent_communication:
+##   - agent: "main"
+##     message: "Se corrigió el wiring del botón Upload Project y se añadió fallback real (no mock). Por favor prueba el flujo completo con login y sin login si aplica."
