@@ -725,6 +725,7 @@ const App: React.FC = () => {
             }
 
             setShowProcessingOverlay(false);
+            notify('LuxScaler', 'Tu preview ya está listo.');
             setStatus(AgentStatus.COMPLETED);
             setAgentMsg({ text: "¡Procesamiento completado!", type: 'success' });
             addSystemLog(`Tokens utilizados: ${generateResult.metadata?.tokens_charged ?? 0}`);
