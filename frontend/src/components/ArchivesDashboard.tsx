@@ -253,11 +253,10 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                         <img src={getDisplayUrl(selectedVariation.image_path)} className="max-w-full max-h-full object-contain" />
                                     ) : (
                                         <ComparisonSlider 
-                                            originalImage={currentSession.original_image_path} 
+                                            originalImage={getDisplayUrl(currentSession.original_image_path)} 
                                             processedImage={getDisplayUrl(selectedVariation.image_path)} 
                                             isLocked={false} 
                                             objectFit="contain"
-                                            className="max-w-full max-h-full"
                                         />
                                     )}
                                 </div>
