@@ -509,6 +509,19 @@ const App: React.FC = () => {
             // Store vision analysis
             setVisionAnalysis(visionResult.analysis);
 
+            // Compute default slider start values from AUTO suggested_settings
+            const ss = visionResult.analysis?.suggested_settings || {};
+            const defaultMixer = {
+                stylism: ss.estilo_autor ?? 5,
+                atrezzo: 5,
+                skin_bio: ss.styling_piel ?? 5,
+                lighting: ss.contraste ?? 5,
+                restoration: ss.limpieza_artefactos ?? 5,
+                upScaler: 1
+            };
+            // Store these so USER/PRO/PROLUX can start from AUTO by default
+            setVisionAnalysis((prev: any) => ({ ...prev, _defaultMixer: defaultMixer }));
+
             // Get current token balance
             const balance = await getBalance();
             setUserTokenBalance(balance);
