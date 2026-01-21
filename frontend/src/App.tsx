@@ -833,7 +833,13 @@ const App: React.FC = () => {
 
                 const nowIso = new Date().toISOString();
                 const id = `edge-${Date.now()}`;
-                const promptPayload = { prompt: generateResult.output?.text || '', compiledPrompt: promptResult.prompt };
+                const promptPayload = { 
+                    prompt: generateResult.output?.text || '', 
+                    compiledPrompt: promptResult.prompt,
+                    mode: config.mode || 'AUTO',
+                    selectedPresetId: config.selectedPresetId,
+                    mixer: config.mixer
+                };
 
                 setPreviews([{
                     id,
