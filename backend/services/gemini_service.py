@@ -87,7 +87,11 @@ class GeminiService:
                 contents_parts.append(types.Part.from_text(text=final_prompt))
                 
                 # B. Input Image (for Img-to-Img)
+                detected_aspect_ratio = "1:1"  # Default
                 if image_input:
+                    detected_aspect_ratio = self._get_image_aspect_ratio(image_input)
+                    print(f"GeminiService: Detected aspect ratio {detected_aspect_ratio}")
+                    
                     if image_input.startswith("data:image"):
                         try:
                             header, encoded = image_input.split(",", 1)
@@ -112,7 +116,7 @@ class GeminiService:
                     config=types.GenerateContentConfig(
                         response_modalities=['TEXT', 'IMAGE'], # CRITICAL per docs
                         image_config=types.ImageConfig(
-                            aspect_ratio="16:9", # Cinematic default
+                            aspect_ratio=detected_aspect_ratio, # Use detected aspect ratio
                             image_size="4K" if "pro" in current_model_name else None # 4K only on Pro
                         ),
                         safety_settings=[
