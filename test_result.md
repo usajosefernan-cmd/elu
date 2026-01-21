@@ -102,6 +102,20 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
+## update_2026_01_21_pro_macros:
+## frontend:
+##   - task: "PRO profile macros conceptuales (9) con mapping semántico a sliders"
+##     implemented: true
+##     working: "NA"
+##     files:
+##       - "frontend/src/components/ProfileConfigModal.tsx"
+##       - "frontend/src/App.tsx"
+##     notes:
+##       - "Implementadas 9 macros PRO según especificación (PhotoScaler/StyleScaler/LightScaler)."
+##       - "Cada macro inyecta su valor a su subset de sliders."
+##       - "SliderConfig se serializa en selectedPresetId (JSON) para no ampliar tipos aún."
+
+
 ## user_problem_statement: "El botón Upload Project estaba asociado a wiring antiguo; verificar y corregir el flujo completo upload → visión → confirmación → generación usando Edge Functions con fallback a FastAPI."
 ## backend:
 ##   - task: "Fallback endpoints para prompt-compiler y generate-image"
