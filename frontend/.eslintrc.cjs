@@ -20,6 +20,9 @@ module.exports = {
   ],
   settings: {
     react: { version: 'detect' },
+    'import/resolver': {
+      typescript: {},
+    },
   },
   rules: {
     'react/react-in-jsx-scope': 'off',
