@@ -616,7 +616,7 @@ export const ProfileConfigModal: React.FC<ProfileConfigModalProps> = ({
   const renderProfileUI = () => {
     switch (selectedProfile) {
       case 'auto':
-        return <AutoProfileUI onConfirm={onConfirm} />;
+        return <AutoProfileUI onConfirm={onConfirm} initialMixer={initialMixer} />;
       case 'user':
         return <UserProfileUI onConfirm={onConfirm} initialMixer={initialMixer} />;
       case 'pro':
