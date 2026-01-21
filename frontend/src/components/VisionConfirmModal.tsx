@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  X, Wand2, Edit3, Zap, Eye, AlertTriangle, Shield, 
-  ChevronDown, ChevronUp, Bookmark, Wrench, Sparkles, 
-  Palette, Camera, Film, User, Home
+  X, Wand2, Edit3, Zap, AlertTriangle, Shield, 
+  Bookmark, Wrench, Sparkles, Palette, Camera, Film, User, Home,
+  Eye, Thermometer, Focus, Users, Aperture, Sun
 } from 'lucide-react';
 import { getSystemPresets, SmartPreset, presetToSliderConfig } from '../services/smartPresetsService';
 
@@ -36,6 +36,8 @@ interface VisionAnalysis {
     has_person?: boolean;
     face_count?: number;
     lighting_type?: string;
+    composition_score?: number;
+    dominant_colors?: string[];
   };
   semantic_anchors?: string[];
   protocol_alerts?: string[];
@@ -77,7 +79,6 @@ const CATEGORY_COLORS: Record<string, string> = {
   OTHER: 'bg-slate-500/20 text-slate-400 border-slate-500/30'
 };
 
-// Mapeo de categoría a preset sugerido
 const CATEGORY_TO_PRESET: Record<string, string> = {
   SELFIE: 'preset_portrait_pro',
   PORTRAIT: 'preset_portrait_pro',
@@ -103,7 +104,7 @@ const PRESET_ICONS: Record<string, React.ReactNode> = {
 };
 
 // ===========================================
-// HELPER: Apply intent multiplier
+// HELPER
 // ===========================================
 const applyIntentToSliders = (config: any, intent: IntentLevel) => {
   const mult = INTENT_CONFIG[intent].mult;
@@ -116,6 +117,17 @@ const applyIntentToSliders = (config: any, intent: IntentLevel) => {
     lightscaler: { sliders: apply(config?.lightscaler?.sliders || []) }
   };
 };
+
+// Mini progress bar
+const MiniBar: React.FC<{ value: number; label: string; color: string }> = ({ value, label, color }) => (
+  <div className="flex items-center gap-2">
+    <span className="text-[9px] text-gray-500 w-16">{label}</span>
+    <div className="flex-1 h-1.5 bg-white/10 rounded-full overflow-hidden">
+      <div className={`h-full ${color} rounded-full`} style={{ width: `${(value / 10) * 100}%` }} />
+    </div>
+    <span className="text-[9px] text-gray-400 w-4 text-right">{value}</span>
+  </div>
+);
 
 // ===========================================
 // COMPONENT
@@ -130,18 +142,13 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
   tokensRequired,
   userTokens,
 }) => {
-  // State
   const [mode, setMode] = useState<'auto' | 'preset' | 'custom'>('auto');
   const [intentLevel, setIntentLevel] = useState<IntentLevel>('creative');
   const [customIntent, setCustomIntent] = useState('');
-  const [showDetails, setShowDetails] = useState(false);
-  
-  // Presets state
   const [allPresets, setAllPresets] = useState<SmartPreset[]>([]);
   const [selectedPreset, setSelectedPreset] = useState<SmartPreset | null>(null);
   const [suggestedPresetId, setSuggestedPresetId] = useState<string | null>(null);
 
-  // Load presets on mount
   useEffect(() => {
     const load = async () => {
       const presets = await getSystemPresets();
@@ -150,13 +157,10 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
     load();
   }, []);
 
-  // Set suggested preset based on category
   useEffect(() => {
     if (analysis?.category && allPresets.length > 0) {
       const suggestedId = CATEGORY_TO_PRESET[analysis.category] || 'preset_natural';
       setSuggestedPresetId(suggestedId);
-      
-      // Auto-select suggested preset if in preset mode
       if (mode === 'preset' && !selectedPreset) {
         const preset = allPresets.find(p => p.id === suggestedId);
         if (preset) setSelectedPreset(preset);
@@ -172,13 +176,12 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
   const autoSettings = analysis?.auto_settings;
   const protocolAlerts = analysis?.protocol_alerts || [];
   const identityLock = analysis?.category_rules?.identity_lock === 'strict';
+  const production = analysis?.production_analysis;
 
-  // Handle generate
   const handleGenerate = () => {
     let finalSettings: any;
     
     if (mode === 'auto') {
-      // Use auto_settings with intent multiplier
       const autoConfig = {
         photoscaler: { sliders: Object.entries(autoSettings?.photoscaler || {}).map(([name, value]) => ({ name, value: value as number })) },
         stylescaler: { sliders: Object.entries(autoSettings?.stylescaler || {}).map(([name, value]) => ({ name, value: value as number })) },
@@ -186,8 +189,8 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
       };
       finalSettings = applyIntentToSliders(autoConfig, intentLevel);
     } else if (mode === 'preset' && selectedPreset) {
-      const presetConfig = presetToSliderConfig(selectedPreset);
-      finalSettings = applyIntentToSliders(presetConfig, intentLevel);
+      // PRESET mode: use preset values directly WITHOUT intensity modifier
+      finalSettings = presetToSliderConfig(selectedPreset);
     } else if (mode === 'custom' && customIntent.trim()) {
       onConfirm({ mode: 'custom', customIntent: customIntent.trim() });
       return;
@@ -200,33 +203,22 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
     });
   };
 
-  // ===========================================
-  // RENDER
-  // ===========================================
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-2">
       <div className="absolute inset-0 bg-black/95 backdrop-blur-xl" onClick={onCancel} />
       
-      {/* MODAL CONTAINER - Fixed height, single screen */}
-      <div className="relative bg-gradient-to-b from-[#111] to-[#0a0a0a] border border-white/10 w-full max-w-sm rounded-xl shadow-2xl overflow-hidden flex flex-col" style={{ height: 'min(85vh, 600px)' }}>
+      <div className="relative bg-gradient-to-b from-[#111] to-[#0a0a0a] border border-white/10 w-full max-w-sm rounded-xl shadow-2xl overflow-hidden flex flex-col" style={{ maxHeight: '90vh' }}>
         
-        {/* ===== HEADER: Image + Category ===== */}
-        <div className="relative h-16 flex-shrink-0">
+        {/* ===== HEADER ===== */}
+        <div className="relative h-14 flex-shrink-0">
           <img src={imageUrl} alt="" className="w-full h-full object-cover opacity-40" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#111] to-transparent" />
           <button onClick={onCancel} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full hover:bg-black/70">
             <X size={14} className="text-white/70" />
           </button>
-          
-          {/* Category + Version + Identity Lock */}
-          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
-            <div className="flex items-center gap-1.5">
-              <div className={`px-2 py-0.5 rounded-full flex items-center gap-1 border text-[9px] font-bold ${CATEGORY_COLORS[category] || CATEGORY_COLORS.OTHER}`}>
-                {category}
-              </div>
-              <div className="px-1.5 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded-full">
-                <span className="text-[8px] font-bold text-emerald-400">v28.1</span>
-              </div>
+          <div className="absolute bottom-1.5 left-2 flex items-center gap-1.5">
+            <div className={`px-2 py-0.5 rounded-full flex items-center gap-1 border text-[9px] font-bold ${CATEGORY_COLORS[category] || CATEGORY_COLORS.OTHER}`}>
+              {category}
             </div>
             {identityLock && (
               <div className="px-1.5 py-0.5 bg-red-500/20 border border-red-500/30 rounded-full flex items-center gap-1">
@@ -239,59 +231,91 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
 
         {/* ===== PROTOCOL ALERTS ===== */}
         {protocolAlerts.length > 0 && (
-          <div className="px-2 py-1.5 bg-amber-500/10 border-b border-amber-500/20 flex-shrink-0">
+          <div className="px-2.5 py-1.5 bg-amber-500/10 border-b border-amber-500/20 flex-shrink-0">
             <div className="flex items-start gap-1.5">
               <AlertTriangle size={10} className="text-amber-400 flex-shrink-0 mt-0.5" />
-              <p className="text-[8px] text-amber-300 line-clamp-2">{protocolAlerts[0]}</p>
+              <p className="text-[9px] text-amber-300">{protocolAlerts[0]}</p>
             </div>
           </div>
         )}
 
-        {/* ===== MAIN CONTENT - Scrollable ===== */}
-        <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5 min-h-0">
+        {/* ===== SCROLLABLE CONTENT ===== */}
+        <div className="flex-1 overflow-y-auto p-2.5 space-y-2 min-h-0">
           
-          {/* Technical Summary - Collapsible */}
-          <div className="bg-white/[0.03] rounded-lg p-2 border border-white/5">
-            <button 
-              onClick={() => setShowDetails(!showDetails)}
-              className="w-full flex items-center justify-between"
-            >
-              <div className="flex items-center gap-2">
-                <Eye size={10} className="text-gray-400" />
-                <span className="text-[9px] text-gray-400 uppercase font-bold">Diagnóstico</span>
-              </div>
-              {showDetails ? <ChevronUp size={10} className="text-gray-500" /> : <ChevronDown size={10} className="text-gray-500" />}
-            </button>
-            
-            {/* Quick badges */}
-            <div className="flex flex-wrap gap-1 mt-1.5">
-              {tech && (
-                <>
-                  <span className={`px-1 py-0.5 rounded text-[7px] font-bold ${
-                    tech.noise_level > 6 ? 'bg-red-500/20 text-red-400' : 
-                    tech.noise_level > 3 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
-                  }`}>
-                    Ruido:{tech.noise_level}
-                  </span>
-                  <span className={`px-1 py-0.5 rounded text-[7px] font-bold ${
-                    tech.blur_level > 6 ? 'bg-red-500/20 text-red-400' : 
-                    tech.blur_level > 3 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
-                  }`}>
-                    Blur:{tech.blur_level}
-                  </span>
-                  {tech.has_person && (
-                    <span className="px-1 py-0.5 rounded text-[7px] font-bold bg-blue-500/20 text-blue-400">
-                      👤{tech.face_count || 1}
-                    </span>
-                  )}
-                </>
-              )}
+          {/* ===== VISION ANALYSIS - TODOS LOS DATOS ===== */}
+          <div className="bg-white/[0.03] rounded-lg p-2.5 border border-white/5 space-y-2">
+            <div className="flex items-center gap-1.5">
+              <Eye size={12} className="text-cyan-400" />
+              <span className="text-[10px] text-cyan-400 uppercase font-bold">Análisis de Visión</span>
             </div>
             
-            {/* Expanded details */}
-            {showDetails && analysis?.production_analysis && (
-              <div className="mt-2 pt-2 border-t border-white/5">
-                <p className="text-[9px] text-gray-300">"{analysis.production_analysis.target_vision}"</p>
+            {/* Production Analysis */}
+            {production && (
+              <div className="space-y-1">
+                <p className="text-[9px] text-gray-300">
+                  <span className="text-gray-500">Estado:</span> {production.current_quality}
+                </p>
+                <p className="text-[9px] text-white font-medium">
+                  <span className="text-gray-500">Objetivo:</span> {production.target_vision}
+                </p>
+                {production.gaps_detected && production.gaps_detected.length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-1">
+                    {production.gaps_detected.map((gap, i) => (
+                      <span key={i} className="px-1.5 py-0.5 bg-amber-500/10 text-amber-400 text-[8px] rounded">
+                        {gap.split(':')[0] || gap}
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Technical Diagnosis */}
+            {tech && (
+              <div className="pt-2 border-t border-white/5 space-y-1.5">
+                <p className="text-[8px] text-gray-500 uppercase">Diagnóstico Técnico</p>
+                
+                <div className="grid grid-cols-2 gap-x-3 gap-y-1">
+                  <MiniBar value={tech.noise_level || 0} label="Ruido" color={tech.noise_level > 6 ? 'bg-red-500' : tech.noise_level > 3 ? 'bg-yellow-500' : 'bg-green-500'} />
+                  <MiniBar value={tech.blur_level || 0} label="Blur" color={tech.blur_level > 6 ? 'bg-red-500' : tech.blur_level > 3 ? 'bg-yellow-500' : 'bg-green-500'} />
+                  <MiniBar value={tech.composition_score || 5} label="Composición" color="bg-purple-500" />
+                  <div className="flex items-center gap-2">
+                    <span className="text-[9px] text-gray-500 w-16">Exposición</span>
+                    <span className={`text-[9px] font-bold ${
+                      tech.exposure_issues === 'none' ? 'text-green-400' : 
+                      tech.exposure_issues === 'underexposed' ? 'text-blue-400' : 'text-orange-400'
+                    }`}>
+                      {tech.exposure_issues === 'none' ? 'OK' : tech.exposure_issues === 'underexposed' ? 'Oscura' : 'Clara'}
+                    </span>
+                  </div>
+                </div>
+                
+                {/* Additional info */}
+                <div className="flex flex-wrap gap-1.5 pt-1">
+                  {tech.has_person && (
+                    <span className="px-1.5 py-0.5 bg-blue-500/20 text-blue-400 text-[8px] rounded flex items-center gap-1">
+                      <Users size={8} /> {tech.face_count || 1} persona{(tech.face_count || 1) > 1 ? 's' : ''}
+                    </span>
+                  )}
+                  {tech.lighting_type && (
+                    <span className="px-1.5 py-0.5 bg-yellow-500/20 text-yellow-400 text-[8px] rounded flex items-center gap-1">
+                      <Sun size={8} /> {tech.lighting_type}
+                    </span>
+                  )}
+                  {tech.dominant_colors && tech.dominant_colors.length > 0 && (
+                    <span className="px-1.5 py-0.5 bg-pink-500/20 text-pink-400 text-[8px] rounded flex items-center gap-1">
+                      <Palette size={8} /> {tech.dominant_colors.slice(0, 2).join(', ')}
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+            
+            {/* Auto Settings Summary */}
+            {autoSettings && (
+              <div className="pt-2 border-t border-white/5">
+                <p className="text-[8px] text-gray-500 uppercase mb-1">Configuración Sugerida (AUTO)</p>
+                <p className="text-[9px] text-emerald-400 font-medium">{autoSettings.primary_intent_used}</p>
               </div>
             )}
           </div>
@@ -318,34 +342,35 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
             ))}
           </div>
 
-          {/* ===== INTENT SPECTRUM (Always visible for AUTO and PRESET) ===== */}
-          {mode !== 'custom' && (
-            <div className="bg-white/[0.03] rounded-lg p-2 border border-white/5">
-              <p className="text-[8px] text-gray-500 uppercase font-bold mb-1.5">Intensidad</p>
+          {/* ===== AUTO MODE: Intensity Spectrum ===== */}
+          {mode === 'auto' && (
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2.5 space-y-2">
+              <div className="flex items-center gap-1.5">
+                <Zap size={12} className="text-emerald-400" />
+                <span className="text-[10px] font-bold text-emerald-400">MODO AUTOMÁTICO</span>
+              </div>
+              
+              <p className="text-[9px] text-gray-400">Intensidad de transformación:</p>
+              
               <div className="flex gap-0.5">
                 {(Object.keys(INTENT_CONFIG) as IntentLevel[]).map(key => {
                   const cfg = INTENT_CONFIG[key];
                   const isSelected = intentLevel === key;
                   const colorClasses: Record<string, string> = {
-                    emerald: 'bg-emerald-500',
-                    blue: 'bg-blue-500',
-                    purple: 'bg-purple-500',
-                    amber: 'bg-amber-500',
-                    red: 'bg-red-500'
+                    emerald: 'bg-emerald-500', blue: 'bg-blue-500', purple: 'bg-purple-500',
+                    amber: 'bg-amber-500', red: 'bg-red-500'
                   };
                   
                   return (
                     <button
                       key={key}
                       onClick={() => setIntentLevel(key)}
-                      className={`flex-1 py-1 px-0.5 rounded text-center transition-all ${
-                        isSelected 
-                          ? `${colorClasses[cfg.color]} text-white` 
-                          : 'bg-white/5 text-gray-500 hover:bg-white/10'
+                      className={`flex-1 py-1.5 px-0.5 rounded text-center transition-all ${
+                        isSelected ? `${colorClasses[cfg.color]} text-white` : 'bg-white/5 text-gray-500 hover:bg-white/10'
                       }`}
                     >
                       <span className="text-[8px] font-bold block">{cfg.label}</span>
-                      {isSelected && <span className="text-[6px] opacity-75 block">{cfg.desc}</span>}
+                      {isSelected && <span className="text-[6px] opacity-75">{cfg.desc}</span>}
                     </button>
                   );
                 })}
@@ -353,30 +378,17 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
             </div>
           )}
 
-          {/* ===== AUTO MODE INFO ===== */}
-          {mode === 'auto' && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2">
-              <div className="flex items-center gap-1.5">
-                <Zap size={12} className="text-emerald-400" />
-                <span className="text-[10px] font-bold text-emerald-400">MODO AUTOMÁTICO</span>
-              </div>
-              <p className="text-[9px] text-gray-400 mt-1">
-                La IA aplicará: <span className="text-white">{autoSettings?.primary_intent_used || 'Mejora profesional'}</span>
-              </p>
-            </div>
-          )}
-
-          {/* ===== PRESET SELECTOR (Only in preset mode) ===== */}
+          {/* ===== PRESET MODE: Grid only, NO intensity ===== */}
           {mode === 'preset' && (
-            <div className="space-y-1.5">
-              {/* Suggested preset */}
-              {suggestedPresetId && (
-                <p className="text-[8px] text-gray-500 uppercase">
-                  Sugerido para {category}:
-                </p>
-              )}
+            <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-2.5 space-y-2">
+              <div className="flex items-center gap-1.5">
+                <Bookmark size={12} className="text-purple-400" />
+                <span className="text-[10px] font-bold text-purple-400">PRESETS</span>
+                {suggestedPresetId && (
+                  <span className="text-[8px] text-gray-500">• Sugerido: {allPresets.find(p => p.id === suggestedPresetId)?.name}</span>
+                )}
+              </div>
               
-              {/* Preset grid */}
               <div className="grid grid-cols-3 gap-1">
                 {allPresets.map(preset => {
                   const isSelected = selectedPreset?.id === preset.id;
@@ -390,51 +402,55 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
                         isSelected 
                           ? 'bg-purple-500/30 border-purple-400 ring-1 ring-purple-400/30' 
                           : isSuggested
-                            ? 'bg-amber-500/10 border-amber-500/30 hover:border-amber-400'
+                            ? 'bg-amber-500/10 border-amber-500/30'
                             : 'bg-white/[0.02] border-white/5 hover:border-white/20'
                       }`}
                     >
-                      <div className="flex items-center gap-1 mb-0.5">
+                      <div className="flex items-center gap-1">
                         {PRESET_ICONS[preset.id]}
                         <span className={`text-[8px] font-bold truncate ${isSelected ? 'text-purple-300' : 'text-gray-300'}`}>
                           {preset.name.split(' ')[0]}
                         </span>
                       </div>
                       {isSuggested && !isSelected && (
-                        <span className="text-[6px] text-amber-400">★ Sugerido</span>
+                        <span className="text-[6px] text-amber-400">★</span>
                       )}
                     </button>
                   );
                 })}
               </div>
               
-              {/* Selected preset info */}
               {selectedPreset && (
-                <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-2">
-                  <p className="text-[9px] text-gray-300">{selectedPreset.narrative_anchor}</p>
-                </div>
+                <p className="text-[9px] text-gray-400 pt-1 border-t border-white/5">
+                  {selectedPreset.narrative_anchor}
+                </p>
               )}
             </div>
           )}
 
-          {/* ===== CUSTOM INPUT ===== */}
+          {/* ===== CUSTOM MODE ===== */}
           {mode === 'custom' && (
-            <textarea
-              value={customIntent}
-              onChange={(e) => setCustomIntent(e.target.value)}
-              placeholder="Describe el look que quieres lograr..."
-              className="w-full h-20 px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[10px] text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50 resize-none"
-            />
+            <div className="bg-slate-500/10 border border-slate-500/20 rounded-lg p-2.5">
+              <div className="flex items-center gap-1.5 mb-2">
+                <Edit3 size={12} className="text-slate-400" />
+                <span className="text-[10px] font-bold text-slate-400">DESCRIPCIÓN PERSONALIZADA</span>
+              </div>
+              <textarea
+                value={customIntent}
+                onChange={(e) => setCustomIntent(e.target.value)}
+                placeholder="Describe el look que quieres lograr..."
+                className="w-full h-16 px-2 py-1.5 bg-black/30 border border-white/10 rounded-lg text-[10px] text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50 resize-none"
+              />
+            </div>
           )}
         </div>
 
-        {/* ===== FOOTER: Fixed at bottom ===== */}
+        {/* ===== FOOTER ===== */}
         <div className="p-2.5 border-t border-white/5 bg-black/40 flex-shrink-0 space-y-1.5">
-          {/* Generate button */}
           <button
             onClick={handleGenerate}
             disabled={!hasEnoughTokens || (mode === 'custom' && !customIntent.trim()) || (mode === 'preset' && !selectedPreset)}
-            className={`w-full py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+            className={`w-full py-2.5 rounded-lg font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
               hasEnoughTokens && (mode !== 'custom' || customIntent.trim()) && (mode !== 'preset' || selectedPreset)
                 ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:opacity-90'
                 : 'bg-gray-800 text-gray-500 cursor-not-allowed'
@@ -444,10 +460,9 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
             Generar · {tokensRequired} tokens
           </button>
           
-          {/* Advanced control link */}
           <button
             onClick={onCustomize}
-            className="w-full py-1 text-[9px] text-gray-500 hover:text-amber-400 transition-colors flex items-center justify-center gap-1"
+            className="w-full py-1 text-[9px] text-gray-500 hover:text-amber-400 transition-colors"
           >
             Control avanzado (27 sliders)
           </button>
