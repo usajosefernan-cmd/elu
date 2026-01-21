@@ -524,7 +524,7 @@ const ProluxProfileUI: React.FC<{
   });
   
   const [activePillar, setActivePillar] = useState<'photoscaler' | 'stylescaler' | 'lightscaler'>('photoscaler');
-  const [expandedSlider, setExpandedSlider] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'compact' | 'detailed'>('compact');
 
   const updateSlider = (key: string, value: number) => {
     setSliderValues(prev => ({ ...prev, [key]: value }));
@@ -562,6 +562,45 @@ const ProluxProfileUI: React.FC<{
   // Contar sliders activos (valor > 3)
   const activeCount = Object.values(sliderValues).filter(v => v > 3).length;
   const currentPillar = SLIDER_DEFINITIONS[activePillar];
+
+  // Compact slider component
+  const CompactSlider: React.FC<{ slider: typeof SLIDER_DEFINITIONS.photoscaler.sliders[0] }> = ({ slider }) => {
+    const value = sliderValues[slider.key] ?? 5;
+    const isActive = value > 3;
+    const color = value <= 3 ? 'bg-gray-600' : value <= 6 ? 'bg-blue-500' : value <= 8 ? 'bg-purple-500' : 'bg-lumen-gold';
+    
+    return (
+      <div className={`p-2 rounded-lg border transition-all ${isActive ? 'bg-white/5 border-white/10' : 'bg-white/[0.02] border-white/5'}`}>
+        <div className="flex items-center justify-between mb-1.5">
+          <span className={`text-[11px] font-medium truncate ${isActive ? 'text-white' : 'text-gray-500'}`} title={slider.desc}>
+            {slider.name}
+          </span>
+          <span className={`text-[10px] font-mono font-bold ${isActive ? 'text-lumen-gold' : 'text-gray-600'}`}>{value}</span>
+        </div>
+        <input
+          type="range"
+          min="1"
+          max="10"
+          value={value}
+          onChange={(e) => updateSlider(slider.key, parseInt(e.target.value))}
+          className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-lumen-gold"
+        />
+        <div className="flex justify-between mt-1">
+          {[1, 5, 10].map(v => (
+            <button
+              key={v}
+              onClick={() => updateSlider(slider.key, v)}
+              className={`w-5 h-5 rounded text-[8px] font-bold transition-all ${
+                value === v ? `${color} text-black` : 'bg-white/5 text-gray-500 hover:bg-white/10'
+              }`}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
+  };
 
   return (
     <div className="space-y-3">
