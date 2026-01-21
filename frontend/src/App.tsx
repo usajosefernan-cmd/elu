@@ -638,6 +638,7 @@ const App: React.FC = () => {
                 setProcessedImageUrl(normalizedImage);
             }
 
+            setShowProcessingOverlay(false);
             setStatus(AgentStatus.COMPLETED);
             setAgentMsg({ text: "¡Procesamiento completado!", type: 'success' });
             addSystemLog(`Tokens utilizados: ${generateResult.metadata?.tokens_charged ?? 0}`);
