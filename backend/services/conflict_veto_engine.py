@@ -23,10 +23,11 @@ class VetoRule:
 
 
 # =====================================================
-# REGLAS DE ORO (VETOS) - Según documento maestro
+# REGLAS DE ORO (VETOS) - Según documento maestro v29
 # =====================================================
 
 VETO_RULES: List[VetoRule] = [
+    # REGLA ORIGINAL 1: La Paradoja Forense
     VetoRule(
         name="La Paradoja Forense",
         trigger_condition=lambda s: s.get('limpieza_artefactos', 0) == 10,
@@ -43,6 +44,7 @@ VETO_RULES: List[VetoRule] = [
             ),
         ]
     ),
+    # REGLA ORIGINAL 2: La Tiranía del Drama
     VetoRule(
         name="La Tiranía del Drama",
         trigger_condition=lambda s: s.get('dramatismo_contraste', 0) == 10,
@@ -54,6 +56,7 @@ VETO_RULES: List[VetoRule] = [
             ),
         ]
     ),
+    # REGLA ORIGINAL 3: Paradoja de Geometría
     VetoRule(
         name="Paradoja de Geometría",
         trigger_condition=lambda s: (
@@ -68,6 +71,84 @@ VETO_RULES: List[VetoRule] = [
             ),
         ]
     ),
+    # NUEVA REGLA v29: Atmósfera mata Nitidez
+    VetoRule(
+        name="Niebla vs Nitidez",
+        trigger_condition=lambda s: s.get('atmosfera', 0) > 5,
+        veto_actions=[
+            VetoAction(
+                slider_name='optica',
+                force_value=0,
+                reason="Atmósfera alta anula Nitidez/Optica - no puedes tener niebla Y nitidez."
+            ),
+            VetoAction(
+                slider_name='optica_nitidez',
+                force_value=0,
+                reason="Atmósfera alta anula Nitidez."
+            ),
+            VetoAction(
+                slider_name='enfoque',
+                force_value=0,
+                reason="Atmósfera alta anula Enfoque - la niebla difumina todo."
+            ),
+        ]
+    ),
+    # NUEVA REGLA v29: High Key mata Sombras
+    VetoRule(
+        name="High Key vs Vantablack",
+        trigger_condition=lambda s: s.get('fill_light', 0) > 6 or s.get('luz_relleno', 0) > 6,
+        veto_actions=[
+            VetoAction(
+                slider_name='sombras',
+                force_value=0,
+                reason="High Key (fill light alto) anula Vantablack/Sombras oscuras."
+            ),
+        ]
+    ),
+    # NUEVA REGLA v29: High Key limita Contraste
+    VetoRule(
+        name="High Key Limita Contraste",
+        trigger_condition=lambda s: s.get('fill_light', 0) > 6 or s.get('luz_relleno', 0) > 6,
+        veto_actions=[
+            VetoAction(
+                slider_name='contraste',
+                force_value=5,  # Limita a 5 máximo
+                reason="High Key limita contraste máximo a 5."
+            ),
+        ]
+    ),
+    # NUEVA REGLA v29: Look Cine vs Estilo Autor (prioridad al más alto)
+    VetoRule(
+        name="Cine vs Autor - Prioridad Cine",
+        trigger_condition=lambda s: (
+            s.get('look_cine', 0) > 0 and 
+            s.get('estilo_autor', 0) > 0 and
+            s.get('look_cine', 0) >= s.get('estilo_autor', 0)
+        ),
+        veto_actions=[
+            VetoAction(
+                slider_name='estilo_autor',
+                force_value=0,
+                reason="Look Cine y Estilo Autor son incompatibles. Prioridad: Cine (valor más alto)."
+            ),
+        ]
+    ),
+    VetoRule(
+        name="Cine vs Autor - Prioridad Autor",
+        trigger_condition=lambda s: (
+            s.get('look_cine', 0) > 0 and 
+            s.get('estilo_autor', 0) > 0 and
+            s.get('estilo_autor', 0) > s.get('look_cine', 0)
+        ),
+        veto_actions=[
+            VetoAction(
+                slider_name='look_cine',
+                force_value=0,
+                reason="Look Cine y Estilo Autor son incompatibles. Prioridad: Autor (valor más alto)."
+            ),
+        ]
+    ),
+    # REGLA: Claridad vs Atmósfera
     VetoRule(
         name="Claridad vs Atmósfera",
         trigger_condition=lambda s: (
@@ -82,6 +163,7 @@ VETO_RULES: List[VetoRule] = [
             ),
         ]
     ),
+    # REGLA: Piel Sintética vs Grano
     VetoRule(
         name="Piel Sintética vs Grano",
         trigger_condition=lambda s: s.get('styling_piel', 0) == 10,
@@ -93,6 +175,7 @@ VETO_RULES: List[VetoRule] = [
             ),
         ]
     ),
+    # REGLA: Cronos Congela Todo
     VetoRule(
         name="Cronos Congela Todo",
         trigger_condition=lambda s: s.get('chronos', 0) == 10,
@@ -104,6 +187,7 @@ VETO_RULES: List[VetoRule] = [
             ),
         ]
     ),
+    # REGLA: Síntesis ADN vs Preservación
     VetoRule(
         name="Síntesis ADN vs Preservación",
         trigger_condition=lambda s: s.get('sintesis_adn', 0) == 10,
@@ -112,6 +196,18 @@ VETO_RULES: List[VetoRule] = [
                 slider_name='limpieza_artefactos',
                 force_value=8,
                 reason="Síntesis máxima requiere limpieza agresiva del material base."
+            ),
+        ]
+    ),
+    # NUEVA REGLA v29: Volumetría requiere Atmósfera
+    VetoRule(
+        name="Volumetría sin Atmósfera",
+        trigger_condition=lambda s: s.get('volumetria', 0) > 7 and s.get('atmosfera', 0) < 3,
+        veto_actions=[
+            VetoAction(
+                slider_name='atmosfera',
+                force_value=4,
+                reason="Volumetría alta necesita atmósfera para rayos de luz visibles."
             ),
         ]
     ),
