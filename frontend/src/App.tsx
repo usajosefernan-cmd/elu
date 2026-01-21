@@ -1244,19 +1244,22 @@ const App: React.FC = () => {
 
             {/* GLOBAL PROCESSING OVERLAY (upload/generate UX) */}
             {showProcessingOverlay && (
-                <div className="fixed inset-0 z-[120]">
-                    <ProcessingOverlay
-                        profiles={[{ name: 'UPLOAD' }, { name: 'VISION' }, { name: 'COMPILE' }, { name: 'GENERATE' }]}
-                        status={processingPhase === 'upload' || processingPhase === 'vision' ? 'ANALYZING' : 'GENERATING'}
-                        logs={[
-                            phaseLabel,
-                            phaseEtaSeconds ? `ETA aproximada: ~${phaseEtaSeconds}s` : '',
-                            `Tiempo transcurrido: ${elapsedTime.toFixed(1)}s`,
-                            processingPhase ? `Fase: ${processingPhase.toUpperCase()}` : ''
-                        ].filter(Boolean) as string[]}
-                        progress={phaseProgress}
-                    />
-                </div>
+                <ProcessingOverlay
+                    phase={processingPhase}
+                    status={processingPhase === 'upload' || processingPhase === 'vision' ? 'ANALYZING' : 'GENERATING'}
+                    logs={[
+                        phaseLabel,
+                        `Tiempo: ${elapsedTime.toFixed(1)}s`
+                    ].filter(Boolean) as string[]}
+                    progress={phaseProgress}
+                    canClose={processingPhase === 'generate'}
+                    onCancel={() => {
+                        // Solo permitir cerrar durante generación
+                        if (processingPhase === 'generate') {
+                            setShowProcessingOverlay(false);
+                        }
+                    }}
+                />
             )}
 
                                 {currentVar.prompt_payload.meta_style_vibe && (
