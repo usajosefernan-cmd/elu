@@ -1,15 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { 
-  Check, X, Sparkles, Wand2, Edit3, 
-  Camera, Palette, Sun, ChevronRight, Zap,
-  Eye, AlertTriangle, User, Layers, ChevronDown, ChevronUp,
-  Shield, Home, Utensils, Mountain, Calendar, FileText, Cat, Brush,
-  Users, Package, Info, Bookmark
+  X, Wand2, Edit3, Zap, Eye, AlertTriangle, Shield, 
+  ChevronDown, ChevronUp, Bookmark, Wrench, Sparkles, 
+  Palette, Camera, Film, User, Home
 } from 'lucide-react';
-import { SmartPresetSelector } from './SmartPresetSelector';
-import { IntentSpectrum, IntentLevel, applyIntentToSliders } from './IntentSpectrum';
-import { SmartPreset, presetToSliderConfig } from '../services/smartPresetsService';
+import { getSystemPresets, SmartPreset, presetToSliderConfig } from '../services/smartPresetsService';
 
+// ===========================================
+// TYPES
+// ===========================================
 interface VisionAnalysis {
   category?: string;
   category_confidence?: number;
@@ -36,14 +35,11 @@ interface VisionAnalysis {
     exposure_issues?: string;
     has_person?: boolean;
     face_count?: number;
-    dominant_colors?: string[];
     lighting_type?: string;
-    composition_score?: number;
   };
   semantic_anchors?: string[];
   protocol_alerts?: string[];
   aspect_ratio?: number;
-  _defaultMixer?: any;
 }
 
 interface VisionConfirmModalProps {
@@ -57,23 +53,19 @@ interface VisionConfirmModalProps {
   userTokens: number;
 }
 
-// Category icons mapping
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  SELFIE: <User size={14} />,
-  PORTRAIT: <Camera size={14} />,
-  GROUP: <Users size={14} />,
-  REAL_ESTATE: <Home size={14} />,
-  PRODUCT: <Package size={14} />,
-  FOOD: <Utensils size={14} />,
-  LANDSCAPE: <Mountain size={14} />,
-  EVENT: <Calendar size={14} />,
-  DOCUMENT: <FileText size={14} />,
-  PET: <Cat size={14} />,
-  ART: <Brush size={14} />,
-  OTHER: <Layers size={14} />
+// ===========================================
+// CONSTANTS
+// ===========================================
+type IntentLevel = 'fix' | 'polished' | 'creative' | 'stylized' | 'aggressive';
+
+const INTENT_CONFIG: Record<IntentLevel, { label: string; desc: string; color: string; mult: number }> = {
+  fix: { label: 'FIX', desc: 'Mínimo', color: 'emerald', mult: 0.3 },
+  polished: { label: 'PULIDO', desc: 'Pro', color: 'blue', mult: 0.6 },
+  creative: { label: 'CREATIVO', desc: 'Arte', color: 'purple', mult: 1.0 },
+  stylized: { label: 'ESTILO', desc: 'Look', color: 'amber', mult: 1.3 },
+  aggressive: { label: 'RADICAL', desc: 'Total', color: 'red', mult: 1.6 },
 };
 
-// Category colors
 const CATEGORY_COLORS: Record<string, string> = {
   SELFIE: 'bg-pink-500/20 text-pink-400 border-pink-500/30',
   PORTRAIT: 'bg-purple-500/20 text-purple-400 border-purple-500/30',
@@ -82,28 +74,52 @@ const CATEGORY_COLORS: Record<string, string> = {
   PRODUCT: 'bg-amber-500/20 text-amber-400 border-amber-500/30',
   FOOD: 'bg-orange-500/20 text-orange-400 border-orange-500/30',
   LANDSCAPE: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/30',
-  EVENT: 'bg-rose-500/20 text-rose-400 border-rose-500/30',
-  DOCUMENT: 'bg-gray-500/20 text-gray-400 border-gray-500/30',
-  PET: 'bg-lime-500/20 text-lime-400 border-lime-500/30',
-  ART: 'bg-violet-500/20 text-violet-400 border-violet-500/30',
   OTHER: 'bg-slate-500/20 text-slate-400 border-slate-500/30'
 };
 
-// INTENT_SPECTRUM constant removed - now using IntentSpectrum component
+// Mapeo de categoría a preset sugerido
+const CATEGORY_TO_PRESET: Record<string, string> = {
+  SELFIE: 'preset_portrait_pro',
+  PORTRAIT: 'preset_portrait_pro',
+  GROUP: 'preset_natural',
+  REAL_ESTATE: 'preset_real_estate',
+  PRODUCT: 'preset_editorial',
+  FOOD: 'preset_editorial',
+  LANDSCAPE: 'preset_cinematic',
+  EVENT: 'preset_natural',
+  DOCUMENT: 'preset_restoration',
+  PET: 'preset_natural',
+  ART: 'preset_cinematic',
+  OTHER: 'preset_natural'
+};
 
-// Mini bar component for showing values
-const MiniBar: React.FC<{ value: number; max?: number; color: string }> = ({ value, max = 10, color }) => (
-  <div className="flex items-center gap-1.5">
-    <div className="w-12 h-1 bg-white/10 rounded-full overflow-hidden">
-      <div 
-        className={`h-full ${color} rounded-full transition-all`} 
-        style={{ width: `${(value / max) * 100}%` }} 
-      />
-    </div>
-    <span className="text-[8px] font-mono text-gray-500 w-3">{value}</span>
-  </div>
-);
+const PRESET_ICONS: Record<string, React.ReactNode> = {
+  'preset_natural': <Sparkles size={12} className="text-emerald-400" />,
+  'preset_editorial': <Camera size={12} className="text-purple-400" />,
+  'preset_cinematic': <Film size={12} className="text-amber-400" />,
+  'preset_portrait_pro': <User size={12} className="text-pink-400" />,
+  'preset_real_estate': <Home size={12} className="text-cyan-400" />,
+  'preset_restoration': <Wrench size={12} className="text-orange-400" />
+};
 
+// ===========================================
+// HELPER: Apply intent multiplier
+// ===========================================
+const applyIntentToSliders = (config: any, intent: IntentLevel) => {
+  const mult = INTENT_CONFIG[intent].mult;
+  const apply = (sliders: Array<{ name: string; value: number }>) =>
+    sliders.map(s => ({ name: s.name, value: Math.min(10, Math.max(0, Math.round(s.value * mult))) }));
+  
+  return {
+    photoscaler: { sliders: apply(config?.photoscaler?.sliders || []) },
+    stylescaler: { sliders: apply(config?.stylescaler?.sliders || []) },
+    lightscaler: { sliders: apply(config?.lightscaler?.sliders || []) }
+  };
+};
+
+// ===========================================
+// COMPONENT
+// ===========================================
 export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
   isVisible,
   imageUrl,
@@ -114,324 +130,330 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
   tokensRequired,
   userTokens,
 }) => {
-  const [selectedIntent, setSelectedIntent] = useState<number>(0);
-  const [customIntent, setCustomIntent] = useState('');
+  // State
   const [mode, setMode] = useState<'auto' | 'preset' | 'custom'>('auto');
-  const [showFullAnalysis, setShowFullAnalysis] = useState(false);
   const [intentLevel, setIntentLevel] = useState<IntentLevel>('creative');
+  const [customIntent, setCustomIntent] = useState('');
+  const [showDetails, setShowDetails] = useState(false);
+  
+  // Presets state
+  const [allPresets, setAllPresets] = useState<SmartPreset[]>([]);
   const [selectedPreset, setSelectedPreset] = useState<SmartPreset | null>(null);
-  const [selectedPresetConfig, setSelectedPresetConfig] = useState<any>(null);
+  const [suggestedPresetId, setSuggestedPresetId] = useState<string | null>(null);
+
+  // Load presets on mount
+  useEffect(() => {
+    const load = async () => {
+      const presets = await getSystemPresets();
+      setAllPresets(presets);
+    };
+    load();
+  }, []);
+
+  // Set suggested preset based on category
+  useEffect(() => {
+    if (analysis?.category && allPresets.length > 0) {
+      const suggestedId = CATEGORY_TO_PRESET[analysis.category] || 'preset_natural';
+      setSuggestedPresetId(suggestedId);
+      
+      // Auto-select suggested preset if in preset mode
+      if (mode === 'preset' && !selectedPreset) {
+        const preset = allPresets.find(p => p.id === suggestedId);
+        if (preset) setSelectedPreset(preset);
+      }
+    }
+  }, [analysis?.category, allPresets, mode]);
 
   if (!isVisible) return null;
 
   const hasEnoughTokens = userTokens >= tokensRequired;
-  
-  const intents = analysis?.intents_detected || [
-    "1. 🎬 Mejora Estándar - Calidad profesional",
-    "2. 💎 Retrato Limpio - Look pulido",
-    "3. 📸 Luz Natural - Mejora suave",
-    "4. ✨ Colores Vibrantes - Pop y contraste",
-    "5. 🎨 Edición Artística - Tratamiento creativo"
-  ];
-
+  const category = analysis?.category || 'OTHER';
   const tech = analysis?.technical_diagnosis;
   const autoSettings = analysis?.auto_settings;
-  const category = analysis?.category || 'OTHER';
-  const categoryRules = analysis?.category_rules;
   const protocolAlerts = analysis?.protocol_alerts || [];
+  const identityLock = analysis?.category_rules?.identity_lock === 'strict';
 
-  const handlePresetSelect = (preset: SmartPreset, config: any) => {
-    setSelectedPreset(preset);
-    setSelectedPresetConfig(config);
-    setMode('preset');
-  };
-
+  // Handle generate
   const handleGenerate = () => {
-    let finalSettings = analysis?.auto_settings;
+    let finalSettings: any;
     
-    if (mode === 'preset' && selectedPresetConfig) {
-      // Apply intent multiplier to preset config
-      finalSettings = applyIntentToSliders(selectedPresetConfig, intentLevel);
-    } else if (mode === 'auto') {
-      // Apply intent multiplier to auto settings
+    if (mode === 'auto') {
+      // Use auto_settings with intent multiplier
       const autoConfig = {
         photoscaler: { sliders: Object.entries(autoSettings?.photoscaler || {}).map(([name, value]) => ({ name, value: value as number })) },
         stylescaler: { sliders: Object.entries(autoSettings?.stylescaler || {}).map(([name, value]) => ({ name, value: value as number })) },
         lightscaler: { sliders: Object.entries(autoSettings?.lightscaler || {}).map(([name, value]) => ({ name, value: value as number })) }
       };
       finalSettings = applyIntentToSliders(autoConfig, intentLevel);
+    } else if (mode === 'preset' && selectedPreset) {
+      const presetConfig = presetToSliderConfig(selectedPreset);
+      finalSettings = applyIntentToSliders(presetConfig, intentLevel);
+    } else if (mode === 'custom' && customIntent.trim()) {
+      onConfirm({ mode: 'custom', customIntent: customIntent.trim() });
+      return;
     }
     
-    if (mode === 'custom' && customIntent.trim()) {
-      onConfirm({ mode: 'custom', customIntent: customIntent.trim() });
-    } else {
-      onConfirm({ 
-        mode: mode === 'preset' ? 'intent' : 'auto', 
-        intentIndex: selectedIntent, 
-        settings: finalSettings,
-        customIntent: selectedPreset?.narrative_anchor
-      });
-    }
+    onConfirm({ 
+      mode: mode === 'preset' ? 'intent' : 'auto', 
+      settings: finalSettings,
+      customIntent: selectedPreset?.narrative_anchor
+    });
   };
 
+  // ===========================================
+  // RENDER
+  // ===========================================
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-2">
       <div className="absolute inset-0 bg-black/95 backdrop-blur-xl" onClick={onCancel} />
       
-      <div className="relative bg-gradient-to-b from-[#111] to-[#0a0a0a] border border-white/10 w-full max-w-md max-h-[92vh] rounded-xl shadow-2xl overflow-hidden flex flex-col">
+      {/* MODAL CONTAINER - Fixed height, single screen */}
+      <div className="relative bg-gradient-to-b from-[#111] to-[#0a0a0a] border border-white/10 w-full max-w-sm rounded-xl shadow-2xl overflow-hidden flex flex-col" style={{ height: 'min(85vh, 600px)' }}>
         
-        {/* Header con imagen y categoría */}
-        <div className="relative h-20 flex-shrink-0">
-          <img src={imageUrl} alt="" className="w-full h-full object-cover opacity-50" />
+        {/* ===== HEADER: Image + Category ===== */}
+        <div className="relative h-16 flex-shrink-0">
+          <img src={imageUrl} alt="" className="w-full h-full object-cover opacity-40" />
           <div className="absolute inset-0 bg-gradient-to-t from-[#111] to-transparent" />
           <button onClick={onCancel} className="absolute top-2 right-2 p-1.5 bg-black/50 rounded-full hover:bg-black/70">
             <X size={14} className="text-white/70" />
           </button>
           
-          {/* Category badge */}
-          <div className="absolute bottom-2 left-3 flex items-center gap-2">
-            <div className={`px-2 py-1 rounded-full flex items-center gap-1.5 border ${CATEGORY_COLORS[category]}`}>
-              {CATEGORY_ICONS[category]}
-              <span className="text-[9px] font-bold uppercase">{category}</span>
+          {/* Category + Version + Identity Lock */}
+          <div className="absolute bottom-1.5 left-2 right-2 flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <div className={`px-2 py-0.5 rounded-full flex items-center gap-1 border text-[9px] font-bold ${CATEGORY_COLORS[category] || CATEGORY_COLORS.OTHER}`}>
+                {category}
+              </div>
+              <div className="px-1.5 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded-full">
+                <span className="text-[8px] font-bold text-emerald-400">v28.1</span>
+              </div>
             </div>
-            <div className="px-2 py-0.5 bg-emerald-500/20 border border-emerald-500/30 rounded-full flex items-center gap-1">
-              <Eye size={10} className="text-emerald-400" />
-              <span className="text-[8px] font-bold text-emerald-400">v28.1</span>
-            </div>
+            {identityLock && (
+              <div className="px-1.5 py-0.5 bg-red-500/20 border border-red-500/30 rounded-full flex items-center gap-1">
+                <Shield size={8} className="text-red-400" />
+                <span className="text-[7px] font-bold text-red-400">ID LOCK</span>
+              </div>
+            )}
           </div>
-          
-          {/* Identity Lock indicator */}
-          {categoryRules?.identity_lock === 'strict' && (
-            <div className="absolute bottom-2 right-3 px-2 py-0.5 bg-red-500/20 border border-red-500/30 rounded-full flex items-center gap-1">
-              <Shield size={10} className="text-red-400" />
-              <span className="text-[8px] font-bold text-red-400">ID LOCK</span>
-            </div>
-          )}
         </div>
 
-        {/* Protocol Alerts */}
+        {/* ===== PROTOCOL ALERTS ===== */}
         {protocolAlerts.length > 0 && (
-          <div className="px-3 py-2 bg-amber-500/10 border-b border-amber-500/20 flex-shrink-0">
-            <div className="flex items-start gap-2">
-              <AlertTriangle size={12} className="text-amber-400 flex-shrink-0 mt-0.5" />
-              <div className="text-[9px] text-amber-300 space-y-0.5">
-                {protocolAlerts.map((alert, i) => (
-                  <p key={i}>{alert}</p>
-                ))}
-              </div>
+          <div className="px-2 py-1.5 bg-amber-500/10 border-b border-amber-500/20 flex-shrink-0">
+            <div className="flex items-start gap-1.5">
+              <AlertTriangle size={10} className="text-amber-400 flex-shrink-0 mt-0.5" />
+              <p className="text-[8px] text-amber-300 line-clamp-2">{protocolAlerts[0]}</p>
             </div>
           </div>
         )}
 
-        {/* Content scrollable */}
-        <div className="flex-1 overflow-y-auto p-3 space-y-3 min-h-0">
+        {/* ===== MAIN CONTENT - Scrollable ===== */}
+        <div className="flex-1 overflow-y-auto p-2.5 space-y-2.5 min-h-0">
           
-          {/* Diagnóstico técnico compacto */}
-          <div className="bg-white/[0.03] rounded-lg p-2.5 border border-white/5">
+          {/* Technical Summary - Collapsible */}
+          <div className="bg-white/[0.03] rounded-lg p-2 border border-white/5">
             <button 
-              onClick={() => setShowFullAnalysis(!showFullAnalysis)}
+              onClick={() => setShowDetails(!showDetails)}
               className="w-full flex items-center justify-between"
             >
-              <span className="text-[10px] text-gray-400 uppercase font-bold">Diagnóstico</span>
-              {showFullAnalysis ? <ChevronUp size={12} className="text-gray-500" /> : <ChevronDown size={12} className="text-gray-500" />}
+              <div className="flex items-center gap-2">
+                <Eye size={10} className="text-gray-400" />
+                <span className="text-[9px] text-gray-400 uppercase font-bold">Diagnóstico</span>
+              </div>
+              {showDetails ? <ChevronUp size={10} className="text-gray-500" /> : <ChevronDown size={10} className="text-gray-500" />}
             </button>
             
-            {/* Summary badges */}
-            <div className="flex flex-wrap gap-1.5 mt-2">
+            {/* Quick badges */}
+            <div className="flex flex-wrap gap-1 mt-1.5">
               {tech && (
                 <>
-                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${
+                  <span className={`px-1 py-0.5 rounded text-[7px] font-bold ${
                     tech.noise_level > 6 ? 'bg-red-500/20 text-red-400' : 
                     tech.noise_level > 3 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
                   }`}>
-                    Ruido: {tech.noise_level}/10
+                    Ruido:{tech.noise_level}
                   </span>
-                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${
+                  <span className={`px-1 py-0.5 rounded text-[7px] font-bold ${
                     tech.blur_level > 6 ? 'bg-red-500/20 text-red-400' : 
                     tech.blur_level > 3 ? 'bg-yellow-500/20 text-yellow-400' : 'bg-green-500/20 text-green-400'
                   }`}>
-                    Blur: {tech.blur_level}/10
+                    Blur:{tech.blur_level}
                   </span>
-                  {tech.exposure_issues && tech.exposure_issues !== 'none' && (
-                    <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-orange-500/20 text-orange-400">
-                      {tech.exposure_issues === 'underexposed' ? '⬇️ Sub' : '⬆️ Sobre'}
-                    </span>
-                  )}
-                  <span className={`px-1.5 py-0.5 rounded text-[8px] font-bold ${
-                    tech.has_person ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400'
-                  }`}>
-                    {tech.has_person ? `👤 ${tech.face_count || 1}` : '🖼️ Sin persona'}
-                  </span>
-                  {tech.lighting_type && (
-                    <span className="px-1.5 py-0.5 rounded text-[8px] font-bold bg-purple-500/20 text-purple-400">
-                      💡 {tech.lighting_type}
+                  {tech.has_person && (
+                    <span className="px-1 py-0.5 rounded text-[7px] font-bold bg-blue-500/20 text-blue-400">
+                      👤{tech.face_count || 1}
                     </span>
                   )}
                 </>
               )}
             </div>
-
-            {/* Expanded: full slider config */}
-            {showFullAnalysis && autoSettings && (
-              <div className="mt-3 pt-2 border-t border-white/5 space-y-2">
-                <p className="text-[9px] text-gray-500 uppercase">Config AUTO sugerida:</p>
-                
-                {(['photoscaler', 'stylescaler', 'lightscaler'] as const).map(pillar => {
-                  const settings = autoSettings[pillar] || {};
-                  const icon = pillar === 'photoscaler' ? '📷' : pillar === 'stylescaler' ? '🎨' : '☀️';
-                  const color = pillar === 'photoscaler' ? 'bg-cyan-500' : pillar === 'stylescaler' ? 'bg-pink-500' : 'bg-orange-500';
-                  const label = pillar === 'photoscaler' ? 'PHOTO' : pillar === 'stylescaler' ? 'STYLE' : 'LIGHT';
-                  
-                  return (
-                    <div key={pillar} className="space-y-0.5">
-                      <p className={`text-[8px] font-bold ${
-                        pillar === 'photoscaler' ? 'text-cyan-400' : 
-                        pillar === 'stylescaler' ? 'text-pink-400' : 'text-orange-400'
-                      }`}>{icon} {label}</p>
-                      <div className="grid grid-cols-3 gap-x-2 gap-y-0.5">
-                        {Object.entries(settings).slice(0, 9).map(([k, v]) => (
-                          <div key={k} className="flex items-center justify-between">
-                            <span className="text-[7px] text-gray-500 truncate w-12">{k.slice(0, 8)}</span>
-                            <MiniBar value={v as number} color={color} />
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  );
-                })}
+            
+            {/* Expanded details */}
+            {showDetails && analysis?.production_analysis && (
+              <div className="mt-2 pt-2 border-t border-white/5">
+                <p className="text-[9px] text-gray-300">"{analysis.production_analysis.target_vision}"</p>
               </div>
             )}
           </div>
 
-          {/* Director creativo */}
-          {analysis?.production_analysis && (
-            <div className="bg-white/[0.03] rounded-lg p-2.5 border border-white/5">
-              <p className="text-[10px] text-gray-400 uppercase font-bold mb-1.5">🎬 Director Creativo</p>
-              <p className="text-xs text-gray-300 leading-relaxed">
-                "{analysis.production_analysis.target_vision}"
-              </p>
-              {analysis.production_analysis.gaps_detected && analysis.production_analysis.gaps_detected.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1">
-                  {analysis.production_analysis.gaps_detected.slice(0, 4).map((gap, i) => (
-                    <span key={i} className="px-1.5 py-0.5 bg-amber-500/10 text-amber-400 text-[8px] rounded truncate max-w-[120px]">
-                      {gap.split(':')[0] || gap}
-                    </span>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* 5 Intent Spectrum - Using new component */}
-          <div className="bg-white/[0.03] rounded-lg p-2.5 border border-white/5">
-            <IntentSpectrum 
-              selected={intentLevel}
-              onSelect={setIntentLevel}
-            />
-          </div>
-
-          {/* Smart Presets */}
-          <div className="bg-white/[0.03] rounded-lg p-2.5 border border-white/5">
-            <SmartPresetSelector
-              onSelect={handlePresetSelect}
-              autoSettings={autoSettings}
-              selectedPresetId={selectedPreset?.id}
-              compact={false}
-            />
-          </div>
-
-          {/* Mode selector */}
+          {/* ===== MODE SELECTOR ===== */}
           <div className="flex gap-1 p-0.5 bg-white/5 rounded-lg">
             {[
-              { key: 'auto', label: '⚡ AUTO', desc: 'IA decide' },
-              { key: 'preset', label: '📁 PRESET', desc: 'Preset elegido' },
-              { key: 'custom', label: '✏️ CUSTOM', desc: 'Tu descripción' }
+              { key: 'auto', icon: <Zap size={10} />, label: 'AUTO' },
+              { key: 'preset', icon: <Bookmark size={10} />, label: 'PRESET' },
+              { key: 'custom', icon: <Edit3 size={10} />, label: 'CUSTOM' }
             ].map(m => (
               <button
                 key={m.key}
                 onClick={() => setMode(m.key as any)}
-                className={`flex-1 py-1.5 px-2 rounded text-[10px] font-bold transition-all ${
+                className={`flex-1 py-1.5 px-2 rounded flex items-center justify-center gap-1 text-[9px] font-bold transition-all ${
                   mode === m.key 
                     ? 'bg-amber-500 text-black' 
                     : 'text-gray-500 hover:text-white hover:bg-white/5'
                 }`}
               >
+                {m.icon}
                 {m.label}
               </button>
             ))}
           </div>
 
-          {/* AUTO info */}
-          {mode === 'auto' && (
-            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2.5">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Zap size={12} className="text-emerald-400" />
-                <span className="text-[10px] font-bold text-emerald-400">AUTOMÁTICO</span>
+          {/* ===== INTENT SPECTRUM (Always visible for AUTO and PRESET) ===== */}
+          {mode !== 'custom' && (
+            <div className="bg-white/[0.03] rounded-lg p-2 border border-white/5">
+              <p className="text-[8px] text-gray-500 uppercase font-bold mb-1.5">Intensidad</p>
+              <div className="flex gap-0.5">
+                {(Object.keys(INTENT_CONFIG) as IntentLevel[]).map(key => {
+                  const cfg = INTENT_CONFIG[key];
+                  const isSelected = intentLevel === key;
+                  const colorClasses: Record<string, string> = {
+                    emerald: 'bg-emerald-500',
+                    blue: 'bg-blue-500',
+                    purple: 'bg-purple-500',
+                    amber: 'bg-amber-500',
+                    red: 'bg-red-500'
+                  };
+                  
+                  return (
+                    <button
+                      key={key}
+                      onClick={() => setIntentLevel(key)}
+                      className={`flex-1 py-1 px-0.5 rounded text-center transition-all ${
+                        isSelected 
+                          ? `${colorClasses[cfg.color]} text-white` 
+                          : 'bg-white/5 text-gray-500 hover:bg-white/10'
+                      }`}
+                    >
+                      <span className="text-[8px] font-bold block">{cfg.label}</span>
+                      {isSelected && <span className="text-[6px] opacity-75 block">{cfg.desc}</span>}
+                    </button>
+                  );
+                })}
               </div>
-              <p className="text-[10px] text-gray-400">
-                Aplicará: <span className="text-white">{autoSettings?.primary_intent_used || intents[0]?.split(' - ')[0]}</span>
-              </p>
-              <p className="text-[9px] text-gray-500 mt-1">
-                Intensidad: <span className="text-amber-400">{intentLevel.toUpperCase()}</span>
+            </div>
+          )}
+
+          {/* ===== AUTO MODE INFO ===== */}
+          {mode === 'auto' && (
+            <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-lg p-2">
+              <div className="flex items-center gap-1.5">
+                <Zap size={12} className="text-emerald-400" />
+                <span className="text-[10px] font-bold text-emerald-400">MODO AUTOMÁTICO</span>
+              </div>
+              <p className="text-[9px] text-gray-400 mt-1">
+                La IA aplicará: <span className="text-white">{autoSettings?.primary_intent_used || 'Mejora profesional'}</span>
               </p>
             </div>
           )}
 
-          {/* Preset info */}
-          {mode === 'preset' && selectedPreset && (
-            <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-2.5">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Bookmark size={12} className="text-purple-400" />
-                <span className="text-[10px] font-bold text-purple-400">{selectedPreset.name}</span>
-              </div>
-              {selectedPreset.narrative_anchor && (
-                <p className="text-[10px] text-gray-400">
-                  {selectedPreset.narrative_anchor}
+          {/* ===== PRESET SELECTOR (Only in preset mode) ===== */}
+          {mode === 'preset' && (
+            <div className="space-y-1.5">
+              {/* Suggested preset */}
+              {suggestedPresetId && (
+                <p className="text-[8px] text-gray-500 uppercase">
+                  Sugerido para {category}:
                 </p>
               )}
-              <p className="text-[9px] text-gray-500 mt-1">
-                Intensidad: <span className="text-amber-400">{intentLevel.toUpperCase()}</span>
-              </p>
+              
+              {/* Preset grid */}
+              <div className="grid grid-cols-3 gap-1">
+                {allPresets.map(preset => {
+                  const isSelected = selectedPreset?.id === preset.id;
+                  const isSuggested = preset.id === suggestedPresetId;
+                  
+                  return (
+                    <button
+                      key={preset.id}
+                      onClick={() => setSelectedPreset(preset)}
+                      className={`p-1.5 rounded-lg border transition-all text-left ${
+                        isSelected 
+                          ? 'bg-purple-500/30 border-purple-400 ring-1 ring-purple-400/30' 
+                          : isSuggested
+                            ? 'bg-amber-500/10 border-amber-500/30 hover:border-amber-400'
+                            : 'bg-white/[0.02] border-white/5 hover:border-white/20'
+                      }`}
+                    >
+                      <div className="flex items-center gap-1 mb-0.5">
+                        {PRESET_ICONS[preset.id]}
+                        <span className={`text-[8px] font-bold truncate ${isSelected ? 'text-purple-300' : 'text-gray-300'}`}>
+                          {preset.name.split(' ')[0]}
+                        </span>
+                      </div>
+                      {isSuggested && !isSelected && (
+                        <span className="text-[6px] text-amber-400">★ Sugerido</span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              {/* Selected preset info */}
+              {selectedPreset && (
+                <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-2">
+                  <p className="text-[9px] text-gray-300">{selectedPreset.narrative_anchor}</p>
+                </div>
+              )}
             </div>
           )}
 
-          {/* Custom input */}
+          {/* ===== CUSTOM INPUT ===== */}
           {mode === 'custom' && (
             <textarea
               value={customIntent}
               onChange={(e) => setCustomIntent(e.target.value)}
-              placeholder="Describe el look que quieres..."
-              className="w-full h-20 px-2.5 py-2 bg-white/5 border border-white/10 rounded-lg text-xs text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50 resize-none"
+              placeholder="Describe el look que quieres lograr..."
+              className="w-full h-20 px-2 py-1.5 bg-white/5 border border-white/10 rounded-lg text-[10px] text-white placeholder-gray-500 focus:outline-none focus:border-amber-500/50 resize-none"
             />
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-3 border-t border-white/5 bg-black/40 flex-shrink-0 space-y-2">
+        {/* ===== FOOTER: Fixed at bottom ===== */}
+        <div className="p-2.5 border-t border-white/5 bg-black/40 flex-shrink-0 space-y-1.5">
+          {/* Generate button */}
           <button
             onClick={handleGenerate}
-            disabled={!hasEnoughTokens || (mode === 'custom' && !customIntent.trim())}
-            className={`w-full py-2.5 rounded-lg font-bold text-sm uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
-              hasEnoughTokens && (mode !== 'custom' || customIntent.trim())
+            disabled={!hasEnoughTokens || (mode === 'custom' && !customIntent.trim()) || (mode === 'preset' && !selectedPreset)}
+            className={`w-full py-2 rounded-lg font-bold text-xs uppercase tracking-wider transition-all flex items-center justify-center gap-2 ${
+              hasEnoughTokens && (mode !== 'custom' || customIntent.trim()) && (mode !== 'preset' || selectedPreset)
                 ? 'bg-gradient-to-r from-amber-500 to-yellow-500 text-black hover:opacity-90'
                 : 'bg-gray-800 text-gray-500 cursor-not-allowed'
             }`}
           >
-            <Wand2 size={16} />
+            <Wand2 size={14} />
             Generar · {tokensRequired} tokens
           </button>
           
+          {/* Advanced control link */}
           <button
             onClick={onCustomize}
-            className="w-full py-1.5 text-[10px] text-gray-500 hover:text-amber-400 transition-colors flex items-center justify-center gap-1"
+            className="w-full py-1 text-[9px] text-gray-500 hover:text-amber-400 transition-colors flex items-center justify-center gap-1"
           >
-            <Edit3 size={10} />
             Control avanzado (27 sliders)
-            <ChevronRight size={10} />
           </button>
 
           {!hasEnoughTokens && (
-            <p className="text-[10px] text-red-400 text-center">
+            <p className="text-[8px] text-red-400 text-center">
               Tokens insuficientes ({userTokens} disponibles)
             </p>
           )}
