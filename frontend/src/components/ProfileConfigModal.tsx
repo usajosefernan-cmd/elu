@@ -274,8 +274,10 @@ const PRO_MACROS = {
 const ProProfileUI: React.FC<{ 
   onConfirm: (config: LuxConfig) => void;
   initialMixer?: LuxMixer;
-}> = ({ onConfirm, initialMixer }) => {
-  const [macroValues, setMacroValues] = useState<Record<string, number>>({
+  useAutoAll?: boolean;
+  onAutoAll?: () => void;
+}> = ({ onConfirm, initialMixer, useAutoAll = true, onAutoAll }) => {
+  const defaults = {
     restauracion: initialMixer?.restoration ?? 5,
     fidelidad: initialMixer?.restoration ?? 5,
     caracter: initialMixer?.restoration ?? 5,
@@ -285,7 +287,16 @@ const ProProfileUI: React.FC<{
     volumen: initialMixer?.lighting ?? 5,
     drama: initialMixer?.lighting ?? 5,
     atmosfera: initialMixer?.lighting ?? 5,
-  });
+  };
+
+  const [macroValues, setMacroValues] = useState<Record<string, number>>(defaults);
+
+  useEffect(() => {
+    if (useAutoAll) {
+      setMacroValues(defaults);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [useAutoAll, initialMixer?.restoration, initialMixer?.skin_bio, initialMixer?.stylism, initialMixer?.lighting]);
 
   const allMacros = [
     ...PRO_MACROS.photoscaler,
