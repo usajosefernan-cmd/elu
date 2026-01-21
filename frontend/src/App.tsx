@@ -149,6 +149,14 @@ const App: React.FC = () => {
 
     // UX overlay (upload/generate progress)
     const [showProcessingOverlay, setShowProcessingOverlay] = useState(false);
+
+    // small informational toast (on every user action)
+    const [toastState, setToastState] = useState<ToastState>({
+        isOpen: false,
+        title: '',
+        message: '',
+        type: 'info'
+    });
     const [processingPhase, setProcessingPhase] = useState<'upload' | 'vision' | 'compile' | 'generate' | null>(null);
     const [phaseStartedAt, setPhaseStartedAt] = useState<number | null>(null);
     const [phaseEtaSeconds, setPhaseEtaSeconds] = useState<number | null>(null);
