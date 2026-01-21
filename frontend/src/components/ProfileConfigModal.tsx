@@ -337,7 +337,19 @@ const ProProfileUI: React.FC<{
 
   return (
     <div className="space-y-4">
-      <div className="text-center mb-4">
+      <div className="flex items-center justify-between gap-2">
+        <button
+          onClick={onAutoAll}
+          className="px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-[10px] text-gray-200 uppercase tracking-widest hover:bg-white/10"
+        >
+          Auto en todo
+        </button>
+        <div className="text-[10px] text-gray-500 uppercase tracking-widest">
+          Estado: {useAutoAll ? 'AUTO' : 'MANUAL'}
+        </div>
+      </div>
+
+      <div className="text-center mb-2">
         <h3 className="text-xl font-bold text-white mb-1">PRO · 9 Macros Conceptuales</h3>
         <p className="text-xs text-gray-400">Cada macro controla un subset semántico de sliders</p>
       </div>
