@@ -1,7 +1,6 @@
 import asyncio
 from typing import Dict, Optional, List
 from services.supabase_service import supabase_db
-from services.hierarchy_resolver import resolve_conflicts
 
 class PromptCompilerService:
     def __init__(self):
@@ -9,17 +8,14 @@ class PromptCompilerService:
         self._last_fetch = 0
         
     async def _ensure_mappings_loaded(self):
-        # Simple cache - could add TTL if needed
         if self._mappings_cache:
             return
 
         print("PromptCompiler: Loading semantic mappings from Supabase...")
         try:
-            # Fetch all mappings
             response = supabase_db.client.table("slider_semantic_mappings").select("*").execute()
             data = response.data
             
-            # Organize by pillar -> slider
             self._mappings_cache = {}
             for item in data:
                 p = item['pillar_name']
@@ -31,9 +27,14 @@ class PromptCompilerService:
             print(f"PromptCompiler: Loaded {len(data)} mappings.")
         except Exception as e:
             print(f"PromptCompiler: Error loading mappings: {e}")
-            self._mappings_cache = {} # Avoid infinite retries/errors
+            self._mappings_cache = {}
 
     def _get_instruction(self, pillar: str, slider: str, value: int) -> str:
+        """
+        Maps slider value (1-10) to instruction text.
+        1-2: LOW, 3-5: MED, 6-8: HIGH, 9-10: FORCE
+        Value 0 or missing = OFF
+        """
         if not self._mappings_cache:
             return ""
             
@@ -41,114 +42,145 @@ class PromptCompilerService:
         if not mapping:
             return ""
 
-        if value == 0: return mapping.get('instruction_off', "")
-        if 1 <= value <= 3: return mapping.get('instruction_low', "")
-        if 4 <= value <= 6: return mapping.get('instruction_med', "")
-        if 7 <= value <= 9: return mapping.get('instruction_high', "")
-        if value >= 10: return mapping.get('instruction_force', "")
+        # New scale: 1-10 (0 = off)
+        if value <= 0: return mapping.get('instruction_off', "")
+        if value <= 2: return mapping.get('instruction_low', "")
+        if value <= 5: return mapping.get('instruction_med', "")
+        if value <= 8: return mapping.get('instruction_high', "")
+        if value >= 9: return mapping.get('instruction_force', "")
         
         return ""
 
-    async def compile_prompt(self, config: dict, vision_summary: dict = None) -> str:
+    async def compile_prompt(self, config: dict, vision_data: dict = None) -> str:
         """
-        Compiles the Universal Prompt using Supabase mappings and v28 logic.
+        Compiles Universal Prompt from slider config and vision data.
+        Now accepts the new vision format with intents and auto_settings.
         """
         await self._ensure_mappings_loaded()
-        
-        # 1. Logic Layer: Resolve Conflicts
-        config = resolve_conflicts(config)
 
-        # 2. Identity Lock Logic - SIEMPRE ACTIVO excepto cuando reencuadre_ia > 5
-        geom_val = 0
+        # Extract settings - support both old and new format
+        if config.get('photoscaler') and isinstance(config['photoscaler'], dict):
+            if 'sliders' in config['photoscaler']:
+                # Old format: { photoscaler: { sliders: [{name, value}] } }
+                slider_config = config
+            else:
+                # New format: { photoscaler: { slider_name: value } }
+                slider_config = self._convert_new_format(config)
+        else:
+            slider_config = self._convert_new_format(config.get('auto_settings', {}))
+
+        # Identity Lock - only disable if reencuadre_ia > 5
         reframe_val = 0
-        # Safe access to sliders
-        if 'photoscaler' in config and 'sliders' in config['photoscaler']:
-            for s in config['photoscaler']['sliders']:
-                if s['name'] == 'geometria': geom_val = s['value']
+        if 'stylescaler' in slider_config and 'sliders' in slider_config['stylescaler']:
+            for s in slider_config['stylescaler']['sliders']:
+                if s['name'] == 'reencuadre_ia': 
+                    reframe_val = s['value']
         
-        if 'stylescaler' in config and 'sliders' in config['stylescaler']:
-            for s in config['stylescaler']['sliders']:
-                if s['name'] == 'reencuadre_ia': reframe_val = s['value']
-        
-        # Solo desactivar Identity Lock si reencuadre_ia está muy alto
-        # Geometria NO debería afectar la identidad facial
-        reframe_active = reframe_val > 5
-        
+        identity_lock = reframe_val <= 5
+
         identity_block = """CRITICAL: IDENTITY LOCK ACTIVE - ABSOLUTE FACE PRESERVATION.
-DO NOT change facial structure, bone structure, eye shape, nose shape, lip shape, or ear shape.
-DO NOT change face proportions, face width, or face length.
-DO NOT change skin tone significantly or add/remove facial features.
-The person in the OUTPUT must be IDENTICAL to the person in the INPUT.
-Texture/color/lighting changes are allowed. Geometry changes to the BACKGROUND are allowed.
+DO NOT change facial structure, bone structure, eye shape, nose shape, lip shape.
+DO NOT change face proportions or skin tone significantly.
+The person in OUTPUT must be IDENTICAL to INPUT.
+Texture/color/lighting changes allowed. Background geometry changes allowed.
 FACIAL GEOMETRY MUST BE PIXEL-PERFECT TO SOURCE."""
         
-        if reframe_active:
-            identity_block = """REFRAME MODE ACTIVE: Limited structural changes allowed for recomposition.
-PRESERVE facial identity but allow background/composition changes.
-Face structure must remain recognizable - only position may change."""
+        if not identity_lock:
+            identity_block = """REFRAME MODE: Limited structural changes for recomposition.
+Facial identity must remain recognizable. Position may change."""
 
-        # 3. Vision Summary
-        vision_text = "No prior vision analysis."
-        if vision_summary:
-            anchors = ", ".join(vision_summary.get("semantic_anchors", []))
-            tech = vision_summary.get("technical_assessment", {})
-            vision_text = f"""
-            NARRATIVE ANCHORS: {anchors}
-            TECHNICAL SPECS: Noise={tech.get('noise_level', 'N/A')}, Blur={tech.get('blur_level', 'N/A')}, Damage={tech.get('damage_level', 'N/A')}
-            """
+        # Vision context
+        vision_context = "No prior analysis."
+        intent_context = ""
+        if vision_data:
+            if 'production_analysis' in vision_data:
+                pa = vision_data['production_analysis']
+                vision_context = f"""
+CURRENT: {pa.get('current_quality', 'Unknown')}
+TARGET: {pa.get('target_vision', 'Professional enhancement')}"""
+            
+            if 'auto_settings' in vision_data:
+                intent_context = f"SELECTED INTENT: {vision_data['auto_settings'].get('primary_intent_used', 'Auto')}"
+            
+            if 'technical_diagnosis' in vision_data:
+                td = vision_data['technical_diagnosis']
+                vision_context += f"""
+TECH: Noise={td.get('noise_level', 'N/A')}/10, Blur={td.get('blur_level', 'N/A')}/10"""
 
-        # 4. Build Pillar Blocks
+        # Build instruction blocks
         def get_block(pillar_name):
-            p_data = config.get(pillar_name)
-            if not p_data or p_data.get('mode') == 'off':
-                return "[INACTIVE]"
+            p_data = slider_config.get(pillar_name)
+            if not p_data:
+                return "[STANDARD]"
             
             block = ""
-            if 'sliders' in p_data:
-                for slider in p_data['sliders']:
-                    val = slider['value']
-                    if val == 0: continue # Skip OFF
-                    
-                    instruction = self._get_instruction(pillar_name, slider['name'], val)
-                    if instruction:
-                        block += f"- {instruction}\n"
-            return block
+            sliders = p_data.get('sliders', [])
+            for slider in sliders:
+                val = slider.get('value', 0)
+                if val <= 0: continue
+                
+                instruction = self._get_instruction(pillar_name, slider['name'], val)
+                if instruction:
+                    # Add intensity indicator
+                    intensity = "●" if val >= 9 else "◐" if val >= 6 else "○"
+                    block += f"[{intensity}{val}] {instruction}\n"
+            return block if block else "[STANDARD]"
 
         photoscaler_block = get_block('photoscaler')
         stylescaler_block = get_block('stylescaler')
         lightscaler_block = get_block('lightscaler')
 
-        # 5. Assemble Template
+        # Assemble final prompt
         prompt = f"""
-[SYSTEM OVERRIDE: UNIVERSAL FORENSIC RE-SHOOT & OPTICAL SYNTHESIS PROTOCOL v28.0]
-[ROLE: REALITY RECONSTRUCTION ENGINE]
-[SOURCE: SUPABASE SEMANTIC MAPPINGS]
+[LUXSCALER v28.1 - UNIVERSAL PRODUCTION PROTOCOL]
+[ROLE: HIGH-END PHOTO PRODUCTION ENGINE]
+{intent_context}
 
-INPUT CONTEXT: {vision_text}
-
-=== PHASE 0: STRUCTURAL INTEGRITY (IDENTITY LOCK) ===
+=== PHASE 0: IDENTITY LOCK ===
 {identity_block}
 
-=== PHASE 1: CORE DIAGNOSIS & RE-SYNTHESIS STRATEGY ===
-IF INPUT IS BLURRY/NOISY/DAMAGED -> ACTIVATE "COMPLETE RE-SYNTHESIS".
-IGNORE source artifacts. HALLUCINATE high-frequency details.
-VIRTUAL RE-SHOOT: Simulate 1/8000s shutter (zero blur).
-CRITICAL: All enhancements must preserve the EXACT SAME PERSON.
+=== PHASE 1: PRODUCTION CONTEXT ===
+{vision_context}
 
-=== PHASE 2: SUBJECT & ANATOMY ===
-[INSTRUCTION: Restore faces with "Portrait-Level" fidelity. SAME PERSON.]
-{stylescaler_block}
-
-=== PHASE 3: OPTICS, PHYSICS & LIGHTING ===
-GEOMETRY & RESTORATION (BACKGROUND ONLY - DO NOT MODIFY FACE GEOMETRY):
+=== PHASE 2: CAMERA & OPTICS (PhotoScaler) ===
 {photoscaler_block}
 
-LIGHTING & TONE:
+=== PHASE 3: ART DIRECTION (StyleScaler) ===
+{stylescaler_block}
+
+=== PHASE 4: LIGHTING (LightScaler) ===
 {lightscaler_block}
 
-=== NEGATIVE PROMPT ===
-damaged, blurry, noisy, distorted faces, bad anatomy, text, watermarks, jpeg artifacts, shifting eyes, changing facial features, morphing bone structure, different pose, different person, face swap, age change, gender change, ethnicity change, different identity.
+=== PHASE 5: EXECUTION ===
+Execute all instructions while PRESERVING the subject's identity.
+Output should look like a $100,000 professional production.
+Maintain natural appearance unless FORCE instructions are present.
+
+=== NEGATIVE ===
+different person, face swap, age change, gender change, distorted anatomy, 
+bad hands, extra limbs, watermarks, text, compression artifacts.
 """
         return prompt
+
+    def _convert_new_format(self, settings: dict) -> dict:
+        """
+        Converts new format { pillar: { slider: value } } 
+        to old format { pillar: { sliders: [{name, value}] } }
+        """
+        result = {}
+        for pillar in ['photoscaler', 'stylescaler', 'lightscaler']:
+            pillar_data = settings.get(pillar, {})
+            if isinstance(pillar_data, dict) and 'sliders' not in pillar_data:
+                # New format - convert
+                result[pillar] = {
+                    'sliders': [
+                        {'name': k, 'value': v} 
+                        for k, v in pillar_data.items()
+                        if isinstance(v, (int, float))
+                    ]
+                }
+            else:
+                result[pillar] = pillar_data
+        return result
 
 prompt_compiler = PromptCompilerService()
