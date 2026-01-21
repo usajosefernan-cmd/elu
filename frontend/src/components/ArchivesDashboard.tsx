@@ -223,8 +223,11 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
 
     const zoomPercentage = Math.round(scale * 100);
 
+    // Toggle para mostrar/ocultar panel de info
+    const [showInfo, setShowInfo] = useState(false);
+
     return (
-        <div className="w-full h-full flex flex-col max-w-[1600px] mx-auto px-4 md:px-6">
+        <div className="w-full h-screen flex flex-col bg-[#0a0a0a]">
             <MasterConfigModal
                 isOpen={isMasterConfigOpen}
                 onClose={() => setIsMasterConfigOpen(false)}
@@ -233,20 +236,30 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                 baseConfig={selectedVariation?.prompt_payload?.mixer as LuxMixer}
             />
 
-            {/* Header */}
-            <div className="flex items-center justify-between py-4 border-b border-white/5 mb-4">
-                <div className="flex items-center gap-4">
-                    <button onClick={onBack} className="p-2 hover:bg-white/5 rounded-lg transition-colors">
-                        <ArrowLeft className="w-5 h-5 text-gray-400" />
+            {/* Header compacto */}
+            <div className="flex items-center justify-between px-4 py-2 border-b border-white/5 bg-black/40">
+                <div className="flex items-center gap-3">
+                    <button onClick={onBack} className="p-1.5 hover:bg-white/5 rounded-lg transition-colors">
+                        <ArrowLeft className="w-4 h-4 text-gray-400" />
                     </button>
-                    <div>
-                        <h1 className="text-lg font-black text-white tracking-tight">Archivo</h1>
-                        <p className="text-[10px] text-gray-500">{sessions.length} sesiones</p>
-                    </div>
+                    <span className="text-sm font-bold text-white">Archivo</span>
+                    <span className="text-[10px] text-gray-500">({sessions.length})</span>
                 </div>
-                <button onClick={loadSessions} className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors">
-                    <RefreshCw className={`w-4 h-4 text-gray-400 ${isLoading ? 'animate-spin' : ''}`} />
-                </button>
+                <div className="flex items-center gap-2">
+                    {selectedVariation && (
+                        <button 
+                            onClick={() => setShowInfo(!showInfo)}
+                            className={`px-2 py-1 rounded text-[10px] font-bold uppercase transition-all ${
+                                showInfo ? 'bg-lumen-gold text-black' : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                            }`}
+                        >
+                            INFO
+                        </button>
+                    )}
+                    <button onClick={loadSessions} className="p-1.5 bg-white/5 hover:bg-white/10 rounded-lg transition-colors">
+                        <RefreshCw className={`w-3.5 h-3.5 text-gray-400 ${isLoading ? 'animate-spin' : ''}`} />
+                    </button>
+                </div>
             </div>
 
             {isLoading ? (
@@ -259,76 +272,62 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                     <p className="text-sm">No hay sesiones guardadas</p>
                 </div>
             ) : (
-                <div className="flex-1 grid grid-cols-12 gap-4 min-h-0 overflow-hidden">
+                <div className="flex-1 flex min-h-0 overflow-hidden">
                     
-                    {/* Left: Lista de sesiones */}
-                    <div className="col-span-3 bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden flex flex-col">
-                        <div className="p-3 border-b border-white/5 bg-black/20">
-                            <span className="text-[10px] text-gray-500 uppercase tracking-widest">Sesiones</span>
-                        </div>
-                        <div className="flex-1 overflow-y-auto p-2 space-y-2">
-                            {sessions.map(session => (
-                                <button
-                                    key={session.id}
-                                    onClick={() => {
-                                        setSelectedSessionId(session.id);
-                                        setSelectedVariation(session.variations?.[0] || null);
-                                    }}
-                                    className={`w-full p-2 rounded-lg transition-all flex items-center gap-3 ${
-                                        selectedSessionId === session.id 
-                                            ? 'bg-lumen-gold/10 border border-lumen-gold/30' 
-                                            : 'bg-white/5 border border-transparent hover:border-white/10'
-                                    }`}
-                                >
-                                    <div className="w-12 h-12 rounded-lg overflow-hidden bg-black/50 flex-shrink-0">
-                                        <img 
-                                            src={getSmallThumb(session.original_image_path)} 
-                                            alt="" 
-                                            className="w-full h-full object-cover"
-                                            loading="lazy"
-                                        />
-                                    </div>
-                                    <div className="flex-1 min-w-0 text-left">
-                                        <p className="text-xs text-white font-medium truncate">
-                                            {new Date(session.created_at).toLocaleDateString('es-ES', { day: '2-digit', month: 'short' })}
-                                        </p>
-                                        <p className="text-[10px] text-gray-500">
-                                            {session.variations?.length || 0} variaciones
-                                        </p>
-                                    </div>
-                                </button>
-                            ))}
-                        </div>
+                    {/* Sidebar izquierdo minimalista - Solo thumbnails */}
+                    <div className="w-20 bg-black/40 border-r border-white/5 overflow-y-auto py-2 px-1.5 space-y-1.5">
+                        {sessions.map(session => (
+                            <button
+                                key={session.id}
+                                onClick={() => {
+                                    setSelectedSessionId(session.id);
+                                    setSelectedVariation(session.variations?.[0] || null);
+                                }}
+                                className={`w-full aspect-square rounded-lg overflow-hidden border-2 transition-all ${
+                                    selectedSessionId === session.id 
+                                        ? 'border-lumen-gold' 
+                                        : 'border-transparent hover:border-white/20'
+                                }`}
+                                title={new Date(session.created_at).toLocaleDateString('es-ES')}
+                            >
+                                <img 
+                                    src={getSmallThumb(session.original_image_path)} 
+                                    alt="" 
+                                    className="w-full h-full object-cover"
+                                    loading="lazy"
+                                />
+                            </button>
+                        ))}
                     </div>
 
-                    {/* Center: Visor con zoom y comparación */}
-                    <div className="col-span-6 bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden flex flex-col">
+                    {/* Visor principal - Maximizado */}
+                    <div className="flex-1 flex flex-col min-w-0">
                         {currentSession && selectedVariation ? (
                             <>
-                                {/* Toolbar con controles de zoom */}
-                                <div className="p-2 border-b border-white/5 bg-black/20 flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <button onClick={zoomOut} className="p-1.5 rounded bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white">
-                                            <ZoomOut className="w-4 h-4" />
+                                {/* Toolbar de zoom minimalista */}
+                                <div className="flex items-center justify-between px-3 py-1.5 border-b border-white/5 bg-black/20">
+                                    <div className="flex items-center gap-1.5">
+                                        <button onClick={zoomOut} className="p-1 rounded bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white">
+                                            <ZoomOut className="w-3.5 h-3.5" />
                                         </button>
-                                        <span className="text-[10px] text-gray-400 font-mono w-12 text-center">{zoomPercentage}%</span>
-                                        <button onClick={zoomIn} className="p-1.5 rounded bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white">
-                                            <ZoomIn className="w-4 h-4" />
+                                        <span className="text-[10px] text-gray-400 font-mono w-10 text-center">{zoomPercentage}%</span>
+                                        <button onClick={zoomIn} className="p-1 rounded bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white">
+                                            <ZoomIn className="w-3.5 h-3.5" />
                                         </button>
-                                        <button onClick={fitToContainer} className="p-1.5 rounded bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-[10px] px-2">
+                                        <button onClick={fitToContainer} className="p-1 rounded bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-[9px] px-1.5">
                                             FIT
                                         </button>
                                     </div>
-                                    <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                                    <div className="flex items-center gap-1 text-[9px] text-gray-500">
                                         <Move className="w-3 h-3" />
-                                        Arrastra para mover
+                                        <span className="hidden sm:inline">Arrastra para mover</span>
                                     </div>
                                 </div>
 
-                                {/* Visor principal */}
+                                {/* Visor de comparación */}
                                 <div 
                                     ref={containerRef}
-                                    className="flex-1 bg-[#080808] relative overflow-hidden select-none"
+                                    className="flex-1 bg-[#050505] relative overflow-hidden select-none"
                                     style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
                                     onWheel={handleWheel}
                                     onMouseDown={handleMouseDown}
@@ -352,7 +351,7 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                             height: displaySize.h || 'auto',
                                         }}
                                     >
-                                        {/* Imagen DESPUÉS (base) - This is the reference for dimensions */}
+                                        {/* Imagen DESPUÉS (base) */}
                                         <img
                                             src={getDisplayUrl(selectedVariation.image_path)}
                                             alt="Después"
@@ -366,7 +365,7 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                             draggable={false}
                                         />
                                         
-                                        {/* Imagen ANTES (overlay con clip) - FORCED to same dimensions */}
+                                        {/* Imagen ANTES (overlay con clip) */}
                                         <div 
                                             className="absolute inset-0"
                                             style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
@@ -386,32 +385,33 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                         
                                         {/* Línea del slider */}
                                         <div 
-                                            className="slider-handle absolute top-0 bottom-0 w-1 bg-white shadow-lg cursor-ew-resize z-20"
+                                            className="slider-handle absolute top-0 bottom-0 w-0.5 bg-white shadow-lg cursor-ew-resize z-20"
                                             style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
                                         >
-                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 backdrop-blur rounded-full flex items-center justify-center border-2 border-white">
-                                                <span className="text-white text-lg">⟷</span>
+                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-8 h-8 bg-black/60 backdrop-blur rounded-full flex items-center justify-center border border-white/50">
+                                                <span className="text-white text-sm">⟷</span>
                                             </div>
                                         </div>
                                     </div>
                                     
                                     {/* Labels */}
-                                    <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 rounded text-[10px] text-white font-bold z-10">
+                                    <div className="absolute top-2 left-2 px-1.5 py-0.5 bg-black/70 rounded text-[9px] text-white font-bold z-10">
                                         ANTES
                                     </div>
-                                    <div className="absolute top-3 right-3 px-2 py-1 bg-black/60 rounded text-[10px] text-lumen-gold font-bold z-10">
+                                    <div className="absolute top-2 right-2 px-1.5 py-0.5 bg-black/70 rounded text-[9px] text-lumen-gold font-bold z-10">
                                         DESPUÉS
                                     </div>
                                 </div>
 
-                                {/* Variaciones */}
-                                <div className="p-3 border-t border-white/5 bg-black/20">
-                                    <div className="flex gap-2 overflow-x-auto pb-1">
-                                        {currentSession.variations?.map((v, idx) => (
+                                {/* Variaciones - Strip horizontal abajo */}
+                                {currentSession.variations && currentSession.variations.length > 1 && (
+                                    <div className="flex items-center gap-1.5 px-3 py-2 border-t border-white/5 bg-black/40">
+                                        <span className="text-[9px] text-gray-500 uppercase mr-2">Variaciones:</span>
+                                        {currentSession.variations.map((v, idx) => (
                                             <button
                                                 key={v.id}
                                                 onClick={() => setSelectedVariation(v)}
-                                                className={`flex-shrink-0 w-14 h-14 rounded-lg overflow-hidden border-2 transition-all ${
+                                                className={`w-10 h-10 rounded overflow-hidden border-2 transition-all flex-shrink-0 ${
                                                     selectedVariation?.id === v.id 
                                                         ? 'border-lumen-gold' 
                                                         : 'border-transparent hover:border-white/30'
@@ -426,7 +426,7 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                             </button>
                                         ))}
                                     </div>
-                                </div>
+                                )}
                             </>
                         ) : (
                             <div className="flex-1 flex flex-col items-center justify-center text-gray-600">
@@ -436,81 +436,60 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                         )}
                     </div>
 
-                    {/* Right: Panel de información */}
-                    <div className="col-span-3 bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden flex flex-col">
-                        <div className="p-3 border-b border-white/5 bg-black/20">
-                            <span className="text-[10px] text-gray-500 uppercase tracking-widest">Ajustes Usados</span>
-                        </div>
-                        
-                        {selectedVariation ? (
-                            <div className="flex-1 overflow-y-auto p-3 space-y-4">
-                                {/* Info básica */}
-                                <div className="space-y-2">
-                                    <div className="flex justify-between text-[10px]">
-                                        <span className="text-gray-500">Tipo</span>
-                                        <span className="text-white font-medium">{selectedVariation.type}</span>
-                                    </div>
-                                    <div className="flex justify-between text-[10px]">
-                                        <span className="text-gray-500">Fecha</span>
-                                        <span className="text-white">{new Date(selectedVariation.created_at).toLocaleString('es-ES')}</span>
-                                    </div>
-                                    {selectedVariation.prompt_payload?.mode && (
-                                        <div className="flex justify-between text-[10px]">
-                                            <span className="text-gray-500">Modo</span>
-                                            <span className="text-lumen-gold font-bold">{selectedVariation.prompt_payload.mode}</span>
-                                        </div>
-                                    )}
+                    {/* Panel de info - Colapsable */}
+                    {showInfo && selectedVariation && (
+                        <div className="w-56 bg-black/40 border-l border-white/5 overflow-y-auto p-3 space-y-3">
+                            {/* Info básica */}
+                            <div className="space-y-1.5">
+                                <div className="flex justify-between text-[10px]">
+                                    <span className="text-gray-500">Tipo</span>
+                                    <span className="text-white font-medium">{selectedVariation.type}</span>
                                 </div>
-
-                                {/* Mixer/Ajustes visuales */}
-                                {selectedVariation.prompt_payload?.mixer && (
-                                    <div className="space-y-2 pt-3 border-t border-white/5">
-                                        <p className="text-[9px] text-gray-600 uppercase tracking-widest mb-2">Parámetros</p>
-                                        <MixerBar label="Estilo" value={selectedVariation.prompt_payload.mixer.stylism || 5} color="text-pink-400" icon={Palette} />
-                                        <MixerBar label="Entorno" value={selectedVariation.prompt_payload.mixer.atrezzo || 5} color="text-blue-400" icon={Home} />
-                                        <MixerBar label="Piel" value={selectedVariation.prompt_payload.mixer.skin_bio || 5} color="text-teal-400" icon={User} />
-                                        <MixerBar label="Luz" value={selectedVariation.prompt_payload.mixer.lighting || 5} color="text-orange-400" icon={Sun} />
-                                        <MixerBar label="Restaurar" value={selectedVariation.prompt_payload.mixer.restoration || 5} color="text-green-400" icon={Sparkles} />
+                                <div className="flex justify-between text-[10px]">
+                                    <span className="text-gray-500">Fecha</span>
+                                    <span className="text-white">{new Date(selectedVariation.created_at).toLocaleDateString('es-ES')}</span>
+                                </div>
+                                {selectedVariation.prompt_payload?.mode && (
+                                    <div className="flex justify-between text-[10px]">
+                                        <span className="text-gray-500">Modo</span>
+                                        <span className="text-lumen-gold font-bold">{selectedVariation.prompt_payload.mode}</span>
                                     </div>
                                 )}
+                            </div>
 
-                                {/* Intent/Style usado */}
-                                {selectedVariation.prompt_payload?.meta_style_vibe && (
-                                    <div className="pt-3 border-t border-white/5">
-                                        <p className="text-[9px] text-gray-600 uppercase tracking-widest mb-2">Intent</p>
-                                        <p className="text-xs text-gray-300 italic leading-relaxed bg-white/5 p-2 rounded-lg">
-                                            "{selectedVariation.prompt_payload.meta_style_vibe}"
-                                        </p>
-                                    </div>
-                                )}
+                            {/* Mixer */}
+                            {selectedVariation.prompt_payload?.mixer && (
+                                <div className="space-y-1.5 pt-2 border-t border-white/5">
+                                    <p className="text-[9px] text-gray-600 uppercase">Parámetros</p>
+                                    <MixerBar label="Estilo" value={selectedVariation.prompt_payload.mixer.stylism || 5} color="text-pink-400" icon={Palette} />
+                                    <MixerBar label="Entorno" value={selectedVariation.prompt_payload.mixer.atrezzo || 5} color="text-blue-400" icon={Home} />
+                                    <MixerBar label="Piel" value={selectedVariation.prompt_payload.mixer.skin_bio || 5} color="text-teal-400" icon={User} />
+                                    <MixerBar label="Luz" value={selectedVariation.prompt_payload.mixer.lighting || 5} color="text-orange-400" icon={Sun} />
+                                </div>
+                            )}
 
-                                {/* Botón copiar config */}
+                            {/* Acciones */}
+                            <div className="pt-2 border-t border-white/5 space-y-2">
                                 <button
                                     onClick={copyConfigToClipboard}
-                                    className="w-full py-2 bg-white/5 hover:bg-white/10 rounded-lg text-[10px] text-gray-400 flex items-center justify-center gap-2 transition-all"
+                                    className="w-full py-1.5 bg-white/5 hover:bg-white/10 rounded text-[10px] text-gray-400 flex items-center justify-center gap-1.5 transition-all"
                                 >
                                     <Copy className="w-3 h-3" />
-                                    Copiar configuración
+                                    Copiar config
                                 </button>
-
-                                {/* Producir Master */}
                                 {!isMaster && (
                                     <button
                                         onClick={() => setIsMasterConfigOpen(true)}
                                         disabled={isProcessingMatrix}
-                                        className="w-full py-3 bg-lumen-gold text-black rounded-lg text-xs font-bold uppercase hover:bg-white transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                        className="w-full py-2 bg-lumen-gold text-black rounded text-[10px] font-bold uppercase hover:bg-white transition-all flex items-center justify-center gap-1.5 disabled:opacity-50"
                                     >
-                                        <Crown className="w-4 h-4" />
-                                        Generar Master 4K
+                                        <Crown className="w-3 h-3" />
+                                        Master 4K
                                     </button>
                                 )}
                             </div>
-                        ) : (
-                            <div className="flex-1 flex items-center justify-center text-gray-600">
-                                <p className="text-[10px]">Sin selección</p>
-                            </div>
-                        )}
-                    </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
