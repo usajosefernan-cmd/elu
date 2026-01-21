@@ -55,12 +55,16 @@ const callEdgeFunction = async <T>(
   functionName: string,
   body: Record<string, any>
 ): Promise<T> => {
-  if (USE_EDGE_FUNCTIONS) {
+  const canUseSupabaseFn = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
+
+  if (canUseSupabaseFn) {
     // Use Supabase Edge Functions
     const response = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        // NOTE: anon key works for functions if they're not enforcing auth.
+        // If function requires user JWT, we will switch to session access_token later.
         'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
       },
       body: JSON.stringify(body),
@@ -72,27 +76,37 @@ const callEdgeFunction = async <T>(
     }
 
     return response.json();
-  } else {
-    // Fallback to FastAPI backend
-    const endpoint = functionName === 'vision-analysis' ? 'process/analyze' :
-                     functionName === 'prompt-compiler' ? 'process/compile' :
-                     functionName === 'generate-image' ? 'process/generate' : functionName;
-    
-    const response = await fetch(`${API_BASE}/${endpoint}`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      throw new Error(`API Error: ${errorText}`);
-    }
-
-    return response.json();
   }
+
+  // Fallback to FastAPI backend
+  if (!BACKEND_URL) {
+    throw new Error('Missing VITE_BACKEND_URL (required for FastAPI fallback).');
+  }
+
+  // Map function name -> FastAPI endpoint
+  const endpoint =
+    functionName === 'vision-analysis'
+      ? 'process/analyze'
+      : functionName === 'prompt-compiler'
+        ? 'process/compile'
+        : functionName === 'generate-image'
+          ? 'process/generate'
+          : functionName;
+
+  const response = await fetch(`${BACKEND_URL}/api/${endpoint}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`API Error: ${errorText}`);
+  }
+
+  return response.json();
 };
 
 // =====================================================
