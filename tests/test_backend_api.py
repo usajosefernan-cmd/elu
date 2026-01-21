@@ -165,14 +165,28 @@ class TestProcessGenerateImage:
 class TestAuthentication:
     """Test authentication endpoints"""
     
-    def test_auth_login_endpoint_exists(self):
-        """Test that auth login endpoint exists"""
-        # Note: This app uses Supabase auth, so we test the endpoint structure
-        response = requests.get(f"{BASE_URL}/api/auth/me", timeout=10)
+    def test_auth_login_endpoint(self):
+        """Test that auth login endpoint works with test credentials"""
+        payload = {
+            "email": TEST_USER_EMAIL,
+            "password": TEST_USER_PASSWORD
+        }
         
-        # Should return 401 or similar without auth, not 404
-        print(f"✅ Auth endpoint responds with status: {response.status_code}")
-        assert response.status_code != 404, "Auth endpoint not found"
+        response = requests.post(
+            f"{BASE_URL}/api/auth/login",
+            json=payload,
+            timeout=10
+        )
+        
+        print(f"✅ Auth login endpoint responds with status: {response.status_code}")
+        
+        # Should return 200 for valid credentials or 401 for invalid
+        assert response.status_code in [200, 401, 422], f"Unexpected status: {response.status_code}"
+        
+        if response.status_code == 200:
+            data = response.json()
+            assert data.get("success") == True
+            print(f"   - Login successful, userId: {data.get('userId', 'N/A')}")
 
 
 if __name__ == "__main__":
