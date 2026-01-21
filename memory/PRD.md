@@ -131,10 +131,13 @@ Usuario confirma → Edge: prompt-compiler → Edge: generate-image → Resultad
 ### P0 - Alta Prioridad
 - [x] Crear Edge Functions (vision-analysis, prompt-compiler, generate-image)
 - [x] VisionConfirmModal con análisis de visión
+- [x] **PROLUX UI compacta** - Grid de 27 sliders con toggle compacto/detallado
+- [x] **Archives Viewer** - Comparación antes/después alineada con zoom/pan
 - [ ] **DEPLOY Edge Functions** (requiere Docker en local) - Ver `/app/BBLA/DEPLOY_EDGE_FUNCTIONS.md`
 
 ### P1 - Media Prioridad  
-- [ ] Poblar tabla `slider_semantic_mappings` con los 27 sliders
+- [ ] Responsividad móvil completa de la aplicación
+- [ ] Estructura de carpetas de almacenamiento (`STORAGE_STRUCTURE.md`)
 - [ ] Integración Stripe para pagos reales
 - [ ] Sistema de presets de usuario
 
@@ -142,6 +145,7 @@ Usuario confirma → Edge: prompt-compiler → Edge: generate-image → Resultad
 - [ ] In-painting y refining features
 - [ ] Galería de imágenes del usuario
 - [ ] API batch processing para PROLUX
+- [ ] Supabase Edge Functions (BLOQUEADO - BOOT_ERROR)
 
 ---
 
