@@ -848,6 +848,7 @@ const App: React.FC = () => {
         setStagedMasterImageUrl(null);
         setInputImageUrl(null);
         setProcessedImageUrl(null);
+        setShowConfigWizard(false);
         setPreviews([]);
         setStatus(AgentStatus.IDLE);
         setAgentMsg({ text: "", type: 'info' });
