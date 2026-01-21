@@ -93,7 +93,6 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
             setFeedbackText(selectedVariation.feedback || '');
             setIsProcessingMatrix(false);
             setProcessingStatus('');
-            setViewMode('thumb'); // Reset to thumbnail when selecting new variation
         }
     }, [selectedVariation]);
 
