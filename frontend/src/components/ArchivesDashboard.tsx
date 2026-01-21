@@ -1,13 +1,11 @@
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { getGenerations, deleteGeneration, submitVariationFeedback } from '../services/historyService';
 import { GenerationSession, ArchivedVariation } from '../types';
-import { Trash2, ArrowLeft, FolderOpen, Activity, Crown, ZoomIn, Layers, Loader2, Check, Sliders, Cpu, Grid, Sparkles, ShieldCheck, Microscope, Info, Copy, ScanLine, Palette, Sun, Maximize, RefreshCw, Home, User, Camera, ChevronRight } from 'lucide-react';
+import { Trash2, ArrowLeft, FolderOpen, Crown, ZoomIn, ZoomOut, Loader2, Sliders, Sparkles, Copy, Palette, Sun, Maximize, Minimize, RefreshCw, Home, User, Camera, Hand } from 'lucide-react';
 import { ComparisonSlider } from './ComparisonSlider';
-import { ImageInspectorModal } from './ImageInspectorModal';
 import { getDisplayUrl, getMasterUrl, getThumbnailUrl } from '../utils/imageUtils';
 import { generateMaster } from '../services/geminiService';
-import { spendLumens } from '../services/paymentService';
 import { MasterConfigModal } from './MasterConfigModal';
 import { LuxMixer } from '../types';
 
@@ -33,7 +31,6 @@ const MixerBar: React.FC<{ label: string; value: number; color: string; icon: an
 // Función para generar URL de thumbnail pequeño
 const getSmallThumb = (url: string) => {
     if (!url) return '';
-    // Supabase storage transform para thumbnail pequeño
     if (url.includes('supabase.co')) {
         const separator = url.includes('?') ? '&' : '?';
         return `${url}${separator}width=300&quality=60`;
@@ -57,12 +54,21 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
     const [selectedVariation, setSelectedVariation] = useState<ArchivedVariation | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const [isZoomModalOpen, setIsZoomModalOpen] = useState(false);
     const [feedbackText, setFeedbackText] = useState('');
     const [isMasterConfigOpen, setIsMasterConfigOpen] = useState(false);
-
     const [isProcessingMatrix, setIsProcessingMatrix] = useState(false);
     const [processingStatus, setProcessingStatus] = useState('');
+
+    // ZOOM/PAN STATE
+    const containerRef = useRef<HTMLDivElement>(null);
+    const [imgNativeSize, setImgNativeSize] = useState({ w: 1, h: 1 });
+    const [scale, setScale] = useState(1);
+    const [translate, setTranslate] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const [fitScale, setFitScale] = useState(1);
+    const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null);
+    const [isImageLoaded, setIsImageLoaded] = useState(false);
 
     const currentSession = useMemo(() =>
         sessions.find(s => s.id === selectedSessionId),
@@ -93,15 +99,191 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
             setFeedbackText(selectedVariation.feedback || '');
             setIsProcessingMatrix(false);
             setProcessingStatus('');
+            setIsImageLoaded(false);
+            // Reset zoom when changing variation
+            setScale(1);
+            setTranslate({ x: 0, y: 0 });
         }
     }, [selectedVariation]);
+
+    // Initialize zoom when image loads
+    const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+        const img = e.currentTarget;
+        setImgNativeSize({ w: img.naturalWidth, h: img.naturalHeight });
+        setIsImageLoaded(true);
+
+        if (containerRef.current) {
+            const { clientWidth, clientHeight } = containerRef.current;
+            const scaleX = clientWidth / img.naturalWidth;
+            const scaleY = clientHeight / img.naturalHeight;
+            const newFitScale = Math.min(scaleX, scaleY, 1);
+            setFitScale(newFitScale);
+            setScale(newFitScale);
+
+            const displayW = img.naturalWidth * newFitScale;
+            const displayH = img.naturalHeight * newFitScale;
+            setTranslate({
+                x: (clientWidth - displayW) / 2,
+                y: (clientHeight - displayH) / 2
+            });
+        }
+    }, []);
+
+    // Clamp translate to boundaries
+    const clampAndSetTranslate = useCallback((x: number, y: number, currentScale: number) => {
+        if (!containerRef.current) return;
+        const { clientWidth, clientHeight } = containerRef.current;
+        const imgW = imgNativeSize.w * currentScale;
+        const imgH = imgNativeSize.h * currentScale;
+
+        let newX = x;
+        if (imgW <= clientWidth) {
+            newX = (clientWidth - imgW) / 2;
+        } else {
+            const minX = clientWidth - imgW;
+            const maxX = 0;
+            newX = Math.min(maxX + 50, Math.max(newX, minX - 50));
+        }
+
+        let newY = y;
+        if (imgH <= clientHeight) {
+            newY = (clientHeight - imgH) / 2;
+        } else {
+            const minY = clientHeight - imgH;
+            const maxY = 0;
+            newY = Math.min(maxY + 50, Math.max(newY, minY - 50));
+        }
+
+        setTranslate({ x: newX, y: newY });
+    }, [imgNativeSize]);
+
+    // Wheel zoom
+    const handleWheel = useCallback((e: React.WheelEvent) => {
+        if (!isImageLoaded) return;
+        const rect = containerRef.current?.getBoundingClientRect();
+        if (!rect) return;
+
+        const delta = -e.deltaY * 0.001;
+        let newScale = scale + delta;
+        newScale = Math.min(2.0, Math.max(fitScale * 0.5, newScale));
+
+        const mouseX = e.clientX - rect.left - translate.x;
+        const mouseY = e.clientY - rect.top - translate.y;
+        const scaleRatio = newScale / scale;
+
+        const newTranslateX = e.clientX - rect.left - (mouseX * scaleRatio);
+        const newTranslateY = e.clientY - rect.top - (mouseY * scaleRatio);
+
+        setScale(newScale);
+        clampAndSetTranslate(newTranslateX, newTranslateY, newScale);
+    }, [isImageLoaded, scale, fitScale, translate, clampAndSetTranslate]);
+
+    // Pan
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        setIsDragging(true);
+        setDragStart({ x: e.clientX - translate.x, y: e.clientY - translate.y });
+    }, [translate]);
+
+    const handleMouseMove = useCallback((e: React.MouseEvent) => {
+        if (!isDragging) return;
+        const newX = e.clientX - dragStart.x;
+        const newY = e.clientY - dragStart.y;
+        clampAndSetTranslate(newX, newY, scale);
+    }, [isDragging, dragStart, scale, clampAndSetTranslate]);
+
+    const handleMouseUp = useCallback(() => {
+        setIsDragging(false);
+    }, []);
+
+    // Touch handlers
+    const handleTouchStart = useCallback((e: React.TouchEvent) => {
+        if (e.touches.length === 2) {
+            const dist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+            setLastTouchDistance(dist);
+        } else if (e.touches.length === 1) {
+            setIsDragging(true);
+            setDragStart({
+                x: e.touches[0].clientX - translate.x,
+                y: e.touches[0].clientY - translate.y
+            });
+        }
+    }, [translate]);
+
+    const handleTouchMove = useCallback((e: React.TouchEvent) => {
+        if (!isImageLoaded) return;
+
+        if (e.touches.length === 2) {
+            const dist = Math.hypot(
+                e.touches[0].clientX - e.touches[1].clientX,
+                e.touches[0].clientY - e.touches[1].clientY
+            );
+
+            if (lastTouchDistance) {
+                const delta = dist - lastTouchDistance;
+                const zoomFactor = delta * 0.003;
+                let newScale = scale + zoomFactor;
+                newScale = Math.min(2.0, Math.max(fitScale * 0.5, newScale));
+
+                if (containerRef.current) {
+                    const rect = containerRef.current.getBoundingClientRect();
+                    const centerX = rect.width / 2;
+                    const centerY = rect.height / 2;
+                    const imgX = centerX - translate.x;
+                    const imgY = centerY - translate.y;
+                    const scaleRatio = newScale / scale;
+                    const newTx = centerX - (imgX * scaleRatio);
+                    const newTy = centerY - (imgY * scaleRatio);
+                    setScale(newScale);
+                    clampAndSetTranslate(newTx, newTy, newScale);
+                }
+            }
+            setLastTouchDistance(dist);
+
+        } else if (e.touches.length === 1 && isDragging) {
+            const newX = e.touches[0].clientX - dragStart.x;
+            const newY = e.touches[0].clientY - dragStart.y;
+            clampAndSetTranslate(newX, newY, scale);
+        }
+    }, [isImageLoaded, lastTouchDistance, scale, fitScale, translate, isDragging, dragStart, clampAndSetTranslate]);
+
+    const handleTouchEnd = useCallback(() => {
+        setIsDragging(false);
+        setLastTouchDistance(null);
+    }, []);
+
+    // Toggle zoom
+    const toggleZoom = useCallback(() => {
+        if (scale >= 0.99) {
+            setScale(fitScale);
+            if (containerRef.current) {
+                const { clientWidth, clientHeight } = containerRef.current;
+                const displayW = imgNativeSize.w * fitScale;
+                const displayH = imgNativeSize.h * fitScale;
+                setTranslate({
+                    x: (clientWidth - displayW) / 2,
+                    y: (clientHeight - displayH) / 2
+                });
+            }
+        } else {
+            setScale(1);
+            if (containerRef.current) {
+                const { clientWidth, clientHeight } = containerRef.current;
+                setTranslate({
+                    x: (clientWidth - imgNativeSize.w) / 2,
+                    y: (clientHeight - imgNativeSize.h) / 2
+                });
+            }
+        }
+    }, [scale, fitScale, imgNativeSize]);
 
     const handleConfirmMaster = async (config: any) => {
         if (!selectedVariation || !currentSession) return;
         setIsMasterConfigOpen(false);
         setIsProcessingMatrix(true);
         setProcessingStatus("Generando Master 4K...");
-        // ... rest of master generation logic
     };
 
     const copyConfigToClipboard = () => {
@@ -110,38 +292,10 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
         }
     };
 
-    // Extraer ajustes de la variación seleccionada
-    const getSliderSettings = () => {
-        if (!selectedVariation?.prompt_payload) return null;
-        const payload = selectedVariation.prompt_payload;
-        
-        // Intentar obtener sliderConfig del selectedPresetId
-        if (payload.selectedPresetId) {
-            try {
-                return JSON.parse(payload.selectedPresetId);
-            } catch { }
-        }
-        
-        // Fallback al mixer
-        return payload.mixer ? { mixer: payload.mixer } : null;
-    };
-
-    const sliderSettings = getSliderSettings();
+    const currentPercentage = Math.round(scale * 100);
 
     return (
         <div className="w-full h-full flex flex-col max-w-[1600px] mx-auto px-4 md:px-6">
-            <ImageInspectorModal
-                isOpen={isZoomModalOpen}
-                onClose={() => setIsZoomModalOpen(false)}
-                processedImage={getMasterUrl(selectedVariation?.image_path || '')}
-                originalImage={getMediumPreview(currentSession?.original_image_path || '')}
-                title={isMaster ? "Master 4K" : "Preview 2K"}
-                variation={selectedVariation}
-                generation={currentSession}
-                onGenerateMaster={handleConfirmMaster}
-                isProcessing={isProcessingMatrix}
-            />
-
             <MasterConfigModal
                 isOpen={isMasterConfigOpen}
                 onClose={() => setIsMasterConfigOpen(false)}
@@ -178,7 +332,7 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
             ) : (
                 <div className="flex-1 grid grid-cols-12 gap-4 min-h-0 overflow-hidden">
                     
-                    {/* Left: Lista de sesiones (thumbnails pequeños) */}
+                    {/* Left: Lista de sesiones */}
                     <div className="col-span-3 bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden flex flex-col">
                         <div className="p-3 border-b border-white/5 bg-black/20">
                             <span className="text-[10px] text-gray-500 uppercase tracking-widest">Sesiones</span>
@@ -197,7 +351,6 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                             : 'bg-white/5 border border-transparent hover:border-white/10'
                                     }`}
                                 >
-                                    {/* Thumbnail pequeño - carga rápida */}
                                     <div className="w-12 h-12 rounded-lg overflow-hidden bg-black/50 flex-shrink-0">
                                         <img 
                                             src={getSmallThumb(session.original_image_path)} 
@@ -219,44 +372,83 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                         </div>
                     </div>
 
-                    {/* Center: Vista principal */}
+                    {/* Center: Visor con zoom/pan/comparación integrado */}
                     <div className="col-span-6 bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden flex flex-col">
                         {currentSession && selectedVariation ? (
                             <>
-                                {/* Toolbar */}
-                                <div className="p-3 border-b border-white/5 bg-black/20 flex items-center justify-between">
-                                    <span className="text-[10px] text-gray-500">
-                                        {new Date(selectedVariation.created_at).toLocaleString('es-ES')}
+                                {/* Toolbar minimalista */}
+                                <div className="p-2 border-b border-white/5 bg-black/20 flex items-center justify-between">
+                                    <span className="text-[10px] text-gray-500 font-mono">
+                                        {currentPercentage}% · {imgNativeSize.w}x{imgNativeSize.h}
                                     </span>
-                                    <button
-                                        onClick={() => setIsZoomModalOpen(true)}
-                                        className="px-4 py-2 rounded-lg text-[10px] font-bold bg-lumen-gold/10 text-lumen-gold hover:bg-lumen-gold hover:text-black transition-all flex items-center gap-2"
-                                    >
-                                        <Maximize className="w-3 h-3" />
-                                        1:1 Comparar
-                                    </button>
-                                </div>
-
-                                {/* Image View - Siempre thumbnail, clic para 1:1 */}
-                                <div 
-                                    className="flex-1 flex items-center justify-center p-4 bg-[#0a0a0a] relative overflow-hidden cursor-pointer group"
-                                    onClick={() => setIsZoomModalOpen(true)}
-                                >
-                                    <img 
-                                        src={getMediumPreview(selectedVariation.image_path)} 
-                                        alt="" 
-                                        className="max-w-full max-h-full object-contain rounded-lg group-hover:opacity-90 transition-opacity"
-                                        loading="lazy"
-                                    />
-                                    <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-                                        <div className="px-4 py-2 bg-black/80 backdrop-blur rounded-full text-xs text-white font-bold flex items-center gap-2">
-                                            <Maximize className="w-4 h-4" />
-                                            Ver 1:1 con comparador
-                                        </div>
+                                    <div className="flex items-center gap-1">
+                                        <button
+                                            onClick={toggleZoom}
+                                            className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-all"
+                                            title={scale >= 0.99 ? 'Ajustar a pantalla' : 'Ver 1:1'}
+                                        >
+                                            {scale >= 0.99 ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
+                                        </button>
                                     </div>
                                 </div>
 
-                                {/* Variaciones de esta sesión */}
+                                {/* Visor principal con zoom/pan */}
+                                <div 
+                                    ref={containerRef}
+                                    className="flex-1 bg-[#080808] relative overflow-hidden touch-none"
+                                    style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+                                    onWheel={handleWheel}
+                                    onMouseDown={handleMouseDown}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onMouseLeave={handleMouseUp}
+                                    onTouchStart={handleTouchStart}
+                                    onTouchMove={handleTouchMove}
+                                    onTouchEnd={handleTouchEnd}
+                                >
+                                    {!isImageLoaded && (
+                                        <div className="absolute inset-0 flex items-center justify-center">
+                                            <Loader2 className="w-6 h-6 text-lumen-gold animate-spin" />
+                                        </div>
+                                    )}
+                                    
+                                    <div
+                                        style={{
+                                            transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
+                                            width: imgNativeSize.w || 'auto',
+                                            height: imgNativeSize.h || 'auto',
+                                            transformOrigin: '0 0',
+                                            willChange: 'transform'
+                                        }}
+                                        className="relative"
+                                    >
+                                        <ComparisonSlider
+                                            originalImage={getDisplayUrl(currentSession.original_image_path)}
+                                            processedImage={getDisplayUrl(selectedVariation.image_path)}
+                                            isLocked={false}
+                                            objectFit="cover"
+                                            onAspectRatioChange={(ratio) => {
+                                                // Optional: handle aspect ratio
+                                            }}
+                                        />
+                                        {/* Hidden image for size detection */}
+                                        <img 
+                                            src={getDisplayUrl(selectedVariation.image_path)}
+                                            onLoad={handleImageLoad}
+                                            className="absolute opacity-0 pointer-events-none"
+                                            alt=""
+                                        />
+                                    </div>
+
+                                    {/* Hint */}
+                                    {!isDragging && scale <= fitScale * 1.1 && (
+                                        <div className="absolute bottom-3 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-black/60 backdrop-blur rounded-full text-[9px] text-gray-400 flex items-center gap-2 pointer-events-none">
+                                            <Hand className="w-3 h-3" /> Scroll para zoom · Arrastra para mover
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Variaciones */}
                                 <div className="p-3 border-t border-white/5 bg-black/20">
                                     <div className="flex gap-2 overflow-x-auto pb-1">
                                         {currentSession.variations?.map((v, idx) => (
