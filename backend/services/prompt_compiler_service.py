@@ -136,6 +136,14 @@ TECH: Noise={td.get('noise_level', 'N/A')}/10, Blur={td.get('blur_level', 'N/A')
 [ROLE: HIGH-END PHOTO PRODUCTION ENGINE]
 {intent_context}
 
+=== CRITICAL: ASPECT RATIO LOCK ===
+OUTPUT MUST HAVE EXACTLY THE SAME DIMENSIONS AND ASPECT RATIO AS INPUT.
+DO NOT crop, extend, pad, or change the frame in any way.
+Every pixel position in output must correspond to the same position in input.
+If input is 1080x1920 (9:16), output MUST be 1080x1920 (9:16).
+If input is 4:3, output MUST be 4:3.
+NO EXCEPTIONS. This is required for before/after comparison overlay.
+
 === PHASE 0: IDENTITY LOCK ===
 {identity_block}
 
@@ -152,13 +160,18 @@ TECH: Noise={td.get('noise_level', 'N/A')}/10, Blur={td.get('blur_level', 'N/A')
 {lightscaler_block}
 
 === PHASE 5: EXECUTION ===
-Execute all instructions while PRESERVING the subject's identity.
+Execute all instructions while PRESERVING:
+1. The subject's identity (same person)
+2. The exact aspect ratio and dimensions of the input
+3. The pixel-to-pixel correspondence for overlay comparison
+
 Output should look like a $100,000 professional production.
 Maintain natural appearance unless FORCE instructions are present.
 
 === NEGATIVE ===
 different person, face swap, age change, gender change, distorted anatomy, 
-bad hands, extra limbs, watermarks, text, compression artifacts.
+bad hands, extra limbs, watermarks, text, compression artifacts,
+different aspect ratio, cropped, extended, padded, different dimensions.
 """
         return prompt
 
