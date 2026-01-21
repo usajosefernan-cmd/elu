@@ -866,8 +866,8 @@ const App: React.FC = () => {
             {/* 2. STUDIO WORKSPACE (ACTIVE STATE) */}
             {inputImageUrl && (
                 <>
-                    {/* GENERATION DASHBOARD (NEW) */}
-                    {status === AgentStatus.GENERATING_PREVIEWS && (
+                    {/* GENERATION DASHBOARD (LEGACY) */}
+                    {!showProcessingOverlay && status === AgentStatus.GENERATING_PREVIEWS && (
                         <div className="mx-4 md:mx-0 mb-4 bg-[#0A0A0F] border border-white/10 rounded-xl p-4 animate-in fade-in slide-in-from-top-5">
                             {/* ... existing dashboard code ... */}
                             <div className="flex items-center justify-between mb-2">
