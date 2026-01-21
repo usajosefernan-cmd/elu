@@ -329,43 +329,29 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
             </div>
           )}
 
-          {/* 5 Intent Spectrum */}
+          {/* 5 Intent Spectrum - Using new component */}
           <div className="bg-white/[0.03] rounded-lg p-2.5 border border-white/5">
-            <p className="text-[10px] text-gray-400 uppercase font-bold mb-2">Intensidad de Transformación</p>
-            <div className="flex gap-1">
-              {INTENT_SPECTRUM.map((spec, idx) => {
-                const isSelected = selectedSpectrum === idx;
-                const bgColors: Record<string, string> = {
-                  emerald: 'bg-emerald-500',
-                  blue: 'bg-blue-500',
-                  purple: 'bg-purple-500',
-                  amber: 'bg-amber-500',
-                  red: 'bg-red-500'
-                };
-                
-                return (
-                  <button
-                    key={spec.key}
-                    onClick={() => setSelectedSpectrum(idx)}
-                    className={`flex-1 py-1.5 px-1 rounded text-center transition-all ${
-                      isSelected 
-                        ? `${bgColors[spec.color]} text-white` 
-                        : 'bg-white/5 text-gray-500 hover:bg-white/10'
-                    }`}
-                  >
-                    <span className="text-[8px] font-bold block">{spec.label}</span>
-                    {isSelected && <span className="text-[7px] opacity-75 block">{spec.desc}</span>}
-                  </button>
-                );
-              })}
-            </div>
+            <IntentSpectrum 
+              selected={intentLevel}
+              onSelect={setIntentLevel}
+            />
+          </div>
+
+          {/* Smart Presets */}
+          <div className="bg-white/[0.03] rounded-lg p-2.5 border border-white/5">
+            <SmartPresetSelector
+              onSelect={handlePresetSelect}
+              autoSettings={autoSettings}
+              selectedPresetId={selectedPreset?.id}
+              compact={false}
+            />
           </div>
 
           {/* Mode selector */}
           <div className="flex gap-1 p-0.5 bg-white/5 rounded-lg">
             {[
               { key: 'auto', label: '⚡ AUTO', desc: 'IA decide' },
-              { key: 'select', label: '🎯 ELEGIR', desc: 'Elige intent' },
+              { key: 'preset', label: '📁 PRESET', desc: 'Preset elegido' },
               { key: 'custom', label: '✏️ CUSTOM', desc: 'Tu descripción' }
             ].map(m => (
               <button
@@ -393,31 +379,30 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
                 Aplicará: <span className="text-white">{autoSettings?.primary_intent_used || intents[0]?.split(' - ')[0]}</span>
               </p>
               <p className="text-[9px] text-gray-500 mt-1">
-                Intensidad: <span className="text-amber-400">{INTENT_SPECTRUM[selectedSpectrum].label}</span>
+                Intensidad: <span className="text-amber-400">{intentLevel.toUpperCase()}</span>
               </p>
             </div>
           )}
 
-          {/* Intent selector */}
-          {mode === 'select' && (
-            <div className="space-y-1 max-h-32 overflow-y-auto">
-              {intents.map((intent, idx) => {
-                const isSelected = selectedIntent === idx;
-                const parts = intent.match(/^\d+\.\s*(.+?)\s*-\s*(.+)$/);
-                const headline = parts ? parts[1] : intent;
-                const desc = parts ? parts[2] : '';
-                
-                return (
-                  <button
-                    key={idx}
-                    onClick={() => setSelectedIntent(idx)}
-                    className={`w-full p-2 rounded-lg text-left transition-all ${
-                      isSelected 
-                        ? 'bg-amber-500/20 border border-amber-500/50' 
-                        : 'bg-white/[0.02] border border-white/5 hover:border-white/20'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
+          {/* Preset info */}
+          {mode === 'preset' && selectedPreset && (
+            <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-2.5">
+              <div className="flex items-center gap-1.5 mb-1">
+                <Bookmark size={12} className="text-purple-400" />
+                <span className="text-[10px] font-bold text-purple-400">{selectedPreset.name}</span>
+              </div>
+              {selectedPreset.narrative_anchor && (
+                <p className="text-[10px] text-gray-400">
+                  {selectedPreset.narrative_anchor}
+                </p>
+              )}
+              <p className="text-[9px] text-gray-500 mt-1">
+                Intensidad: <span className="text-amber-400">{intentLevel.toUpperCase()}</span>
+              </p>
+            </div>
+          )}
+
+          {/* Intent selector - removed, replaced by presets */}
                       <div className="flex-1 min-w-0">
                         <p className={`text-xs font-bold truncate ${isSelected ? 'text-amber-400' : 'text-white'}`}>
                           {headline}
