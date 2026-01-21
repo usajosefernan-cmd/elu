@@ -4,7 +4,7 @@ import base64
 import httpx
 import json
 import os
-from services.key_manager import get_next_api_key
+from services.key_manager import key_manager
 
 # Creative Director Vision Prompt v28.1
 CREATIVE_DIRECTOR_PROMPT = """
