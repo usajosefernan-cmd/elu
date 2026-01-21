@@ -468,7 +468,9 @@ const App: React.FC = () => {
             setStatus(AgentStatus.ANALYZING);
             setAgentMsg({ text: "Gemini 2.5 Flash: Analizando imagen...", type: 'info' });
 
-            const { blob: visionBlob, aspectRatio: ratio } = await compressAndResizeImage(file, { maxDimension: 1024, quality: 0.78 });
+            // Vision input: user-requested quality ("19.5MP 80% JPEG")
+            // Approx = 5400x3600px (~19.4MP)
+            const { blob: visionBlob, aspectRatio: ratio } = await compressAndResizeImage(file, { maxDimension: 5400, quality: 0.80 });
             setAspectRatio(ratio);
 
             const visionBase64 = await new Promise<string>((resolve, reject) => {
