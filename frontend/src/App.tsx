@@ -1200,32 +1200,6 @@ const App: React.FC = () => {
                                     )}
                                 </div>
 
-            {/* INFO TOAST */}
-            <InfoToast
-                toast={toastState}
-                onClose={() => setToastState(s => ({ ...s, isOpen: false }))}
-            />
-
-            {/* GLOBAL PROCESSING OVERLAY (upload/generate UX) */}
-            {showProcessingOverlay && (
-                <ProcessingOverlay
-                    phase={processingPhase}
-                    status={processingPhase === 'upload' || processingPhase === 'vision' ? 'ANALYZING' : 'GENERATING'}
-                    logs={[
-                        phaseLabel,
-                        `Tiempo: ${elapsedTime.toFixed(1)}s`
-                    ].filter(Boolean) as string[]}
-                    progress={phaseProgress}
-                    canClose={processingPhase === 'generate'}
-                    onCancel={() => {
-                        // Solo permitir cerrar durante generación
-                        if (processingPhase === 'generate') {
-                            setShowProcessingOverlay(false);
-                        }
-                    }}
-                />
-            )}
-
                                 {currentVar.prompt_payload.meta_style_vibe && (
                                     <p className="text-[9px] text-gray-500 mt-2 font-mono italic truncate">
                                         Vibe: {currentVar.prompt_payload.meta_style_vibe}
