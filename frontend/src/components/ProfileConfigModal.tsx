@@ -584,6 +584,15 @@ interface ProfileConfigModalProps {
   imageUrl: string;
   initialMixer?: LuxMixer;
   initialSuggestedSettings?: Record<string, number>;
+
+  const [useAutoAll, setUseAutoAll] = useState(true);
+
+  const applyAutoToAll = () => {
+    // When user wants AUTO everywhere, we reset the local macro/slider states to AUTO defaults.
+    // We approximate via initialMixer / initialSuggestedSettings.
+    setUseAutoAll(true);
+  };
+
   onConfirm: (config: LuxConfig) => void;
   onCancel: () => void;
   onUpgrade: () => void;
