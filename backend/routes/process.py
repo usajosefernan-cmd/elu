@@ -12,9 +12,97 @@ router = APIRouter(prefix="/process", tags=["process"])
 @router.post("/analyze")
 async def analyze_input(body: dict = Body(...)):
     image_url = body.get('imageUrl')
-    if not image_url: return {"success": False, "message": "No image URL provided"}
+    if not image_url:
+        return {"success": False, "error": "No image URL provided", "thumbnail_used": False, "tokens_consumed": 0}
+
     analysis = await vision_service.analyze_image(image_url)
-    return {"success": True, "analysis": analysis}
+    if isinstance(analysis, dict) and analysis.get('error'):
+        return {"success": False, "error": analysis.get('error'), "thumbnail_used": False, "tokens_consumed": 0}
+
+    return {"success": True, "analysis": analysis, "thumbnail_used": False, "tokens_consumed": 0}
+
+@router.post("/compile")
+async def compile_prompt_endpoint(body: dict = Body(...)):
+    """FastAPI fallback endpoint matching the v28 Edge Function `prompt-compiler` contract."""
+    config = body.get('config') or {}
+    vision_analysis = body.get('visionAnalysis')
+    user_mode = body.get('userMode', 'auto')
+
+    prompt = await prompt_compiler.compile_prompt(config, vision_analysis)
+
+    # Simple metadata (kept compatible with frontend expectations)
+    active_sliders = 0
+    for pillar_name, pillar in (config or {}).items():
+        if isinstance(pillar, dict) and 'sliders' in pillar:
+            for s in pillar.get('sliders', []) or []:
+                try:
+                    if int(s.get('value', 0)) > 0:
+                        active_sliders += 1
+                except Exception:
+                    continue
+
+    geom_val = 0
+    reframe_val = 0
+    if isinstance(config.get('photoscaler'), dict):
+        for s in config.get('photoscaler', {}).get('sliders', []) or []:
+            if s.get('name') == 'geometria':
+                geom_val = int(s.get('value', 0) or 0)
+    if isinstance(config.get('stylescaler'), dict):
+        for s in config.get('stylescaler', {}).get('sliders', []) or []:
+            if s.get('name') == 'reencuadre_ia':
+                reframe_val = int(s.get('value', 0) or 0)
+
+    identity_lock = not ((geom_val > 0) or (reframe_val > 0))
+
+    return {
+        "success": True,
+        "prompt": prompt,
+        "metadata": {
+            "vetos_applied": [],
+            "active_sliders": active_sliders,
+            "identity_lock": identity_lock,
+            "user_mode": user_mode,
+        }
+    }
+
+
+@router.post("/generate-image")
+async def generate_image_endpoint(body: dict = Body(...)):
+    """FastAPI fallback endpoint matching the v28 Edge Function `generate-image` contract."""
+    image_url = body.get('imageUrl')
+    compiled_prompt = body.get('compiledPrompt', '')
+    user_mode = body.get('userMode', 'auto')
+
+    # Model selection aligned with existing FastAPI generator
+    model_name = 'gemini-2.5-flash-image'
+    if user_mode in ('pro', 'prolux'):
+        model_name = 'gemini-3-pro-image-preview'
+
+    result = await gemini_service.generate_content(
+        model_name,
+        compiled_prompt,
+        "",  # user_input_text
+        image_url
+    )
+
+    if result.get('error'):
+        return {"success": False, "error": result['error']}
+
+    return {
+        "success": True,
+        "output": {
+            "text": result.get('text', ''),
+            "image": result.get('image_base64'),
+            "hasWatermark": True,
+        },
+        "metadata": {
+            "model_used": result.get('model', model_name),
+            "tokens_consumed": 0,
+            "tokens_charged": 0,
+            "output_type": body.get('outputType', 'preview_watermark'),
+        }
+    }
+
 
 @router.post("/generate")
 async def generate(body: dict = Body(...)):
