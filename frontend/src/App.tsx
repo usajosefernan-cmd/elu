@@ -474,6 +474,9 @@ const App: React.FC = () => {
             const visionResult = await analyzeImageWithVision(uploadedPublicUrl, userProfile?.id);
             setPhaseProgress(100);
 
+            // ask notification permission early
+            await requestNotifications();
+
             if (!visionResult.success) {
                 throw new Error(visionResult.error || "Análisis de visión falló");
             }
