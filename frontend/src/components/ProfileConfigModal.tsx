@@ -106,12 +106,17 @@ const AutoProfileUI: React.FC<{
 const UserProfileUI: React.FC<{ 
   onConfirm: (config: LuxConfig) => void;
   initialMixer?: LuxMixer;
-}> = ({ onConfirm, initialMixer }) => {
+  initialSettings?: any;
+}> = ({ onConfirm, initialMixer, initialSettings }) => {
   const [pillars, setPillars] = useState({
-    photo: initialMixer?.restoration || 5,
-    style: initialMixer?.stylism || 5,
-    light: initialMixer?.lighting || 5
+    photo: initialSettings?.photoscaler ? Math.round(Object.values(initialSettings.photoscaler).reduce((a: number, b: any) => a + b, 0) / 9) : (initialMixer?.restoration || 5),
+    style: initialSettings?.stylescaler ? Math.round(Object.values(initialSettings.stylescaler).reduce((a: number, b: any) => a + b, 0) / 9) : (initialMixer?.stylism || 5),
+    light: initialSettings?.lightscaler ? Math.round(Object.values(initialSettings.lightscaler).reduce((a: number, b: any) => a + b, 0) / 9) : (initialMixer?.lighting || 5)
   });
+
+  const setAll = (value: number) => {
+    setPillars({ photo: value, style: value, light: value });
+  };
 
   const handleGenerate = () => {
     onConfirm({
@@ -137,34 +142,58 @@ const UserProfileUI: React.FC<{
     onChange: (v: number) => void;
     color: string;
   }) => (
-    <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-      <div className="flex items-center justify-between mb-3">
+    <div className="bg-white/5 rounded-xl p-3 border border-white/10">
+      <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           <div className={`${color}`}>{icon}</div>
-          <span className="text-sm font-bold text-white uppercase tracking-wider">{label}</span>
+          <span className="text-xs font-bold text-white uppercase tracking-wider">{label}</span>
         </div>
-        <span className="text-lg font-mono font-bold text-white">{value}</span>
+        <span className="text-sm font-mono font-bold text-white">{value}</span>
       </div>
-      <input
-        type="range"
-        min="0"
-        max="10"
-        value={value}
-        onChange={(e) => onChange(parseInt(e.target.value))}
-        className="w-full h-2 bg-white/10 rounded-full appearance-none cursor-pointer accent-lumen-gold"
-      />
-      <div className="flex justify-between text-[9px] text-gray-600 mt-1">
-        <span>Sutil</span>
-        <span>Intenso</span>
+      <div className="flex items-center gap-2">
+        <input
+          type="range"
+          min="1"
+          max="10"
+          value={value}
+          onChange={(e) => onChange(parseInt(e.target.value))}
+          className="flex-1 h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-lumen-gold"
+        />
+        <div className="flex gap-1">
+          {[1, 5, 10].map(v => (
+            <button
+              key={v}
+              onClick={() => onChange(v)}
+              className={`w-6 h-6 rounded text-[9px] font-bold transition-all ${
+                value === v ? 'bg-lumen-gold text-black' : 'bg-white/5 text-gray-400 hover:bg-white/10'
+              }`}
+            >
+              {v}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
 
   return (
-    <div className="space-y-4">
-      <div className="text-center mb-6">
-        <h3 className="text-xl font-bold text-white mb-1">Control por Pilares</h3>
+    <div className="space-y-3">
+      <div className="text-center mb-4">
+        <h3 className="text-lg font-bold text-white mb-1">Control por Pilares</h3>
         <p className="text-xs text-gray-400">Ajusta la intensidad de cada motor</p>
+      </div>
+
+      {/* Quick presets */}
+      <div className="flex gap-2 mb-3">
+        <button onClick={() => setAll(5)} className="flex-1 py-1.5 bg-white/5 text-gray-400 text-[10px] font-bold uppercase rounded-lg hover:bg-white/10">
+          Todo 5
+        </button>
+        <button onClick={() => setAll(7)} className="flex-1 py-1.5 bg-white/5 text-gray-400 text-[10px] font-bold uppercase rounded-lg hover:bg-white/10">
+          Todo 7
+        </button>
+        <button onClick={() => setAll(10)} className="flex-1 py-1.5 bg-white/5 text-gray-400 text-[10px] font-bold uppercase rounded-lg hover:bg-white/10">
+          Máximo
+        </button>
       </div>
 
       <PillarSlider
@@ -193,7 +222,7 @@ const UserProfileUI: React.FC<{
 
       <button
         onClick={handleGenerate}
-        className="w-full mt-6 px-6 py-4 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-400 transition-all text-sm uppercase tracking-widest"
+        className="w-full mt-4 px-6 py-3 bg-blue-500 text-white font-bold rounded-xl hover:bg-blue-400 transition-all text-sm uppercase tracking-widest"
       >
         Generar Preview
       </button>
