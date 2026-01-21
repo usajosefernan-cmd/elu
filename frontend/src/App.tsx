@@ -606,6 +606,7 @@ const App: React.FC = () => {
                     outputType: 'preview_watermark',
                 }
             );
+            setPhaseProgress(100);
 
             if (!generateResult.success) {
                 throw new Error(generateResult.error || "Error generando imagen");
