@@ -207,6 +207,7 @@ const App: React.FC = () => {
 
     const fileInputRef = useRef<HTMLInputElement>(null);
     const generatedObjectUrlsRef = useRef<string[]>([]);
+    const masterUploadPromiseRef = useRef<Promise<string> | null>(null);
 
     // Update elapsed display while overlay visible
     useEffect(() => {
@@ -448,6 +449,7 @@ const App: React.FC = () => {
         }
 
         // 2. VISION FIRST (base64) — fastest path, no Storage propagation wait
+        // Use a compressed blob for base64 to keep this fast even for big images.
         try {
             setToastState({
                 isOpen: true,
@@ -463,11 +465,14 @@ const App: React.FC = () => {
             setStatus(AgentStatus.ANALYZING);
             setAgentMsg({ text: "Gemini 2.5 Flash: Analizando imagen...", type: 'info' });
 
+            const { blob: visionBlob, aspectRatio: ratio } = await compressAndResizeImage(file, { maxDimension: 1024, quality: 0.78 });
+            setAspectRatio(ratio);
+
             const visionBase64 = await new Promise<string>((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onloadend = () => resolve(reader.result as string);
                 reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
-                reader.readAsDataURL(file);
+                reader.readAsDataURL(visionBlob);
             });
 
             const visionResult = await analyzeImageBase64WithVision(visionBase64, userProfile?.id);
@@ -485,13 +490,22 @@ const App: React.FC = () => {
             (async () => {
                 try {
                     const userId = userProfile ? userProfile.id : 'guest_analysis';
-                    const { blob: visionBlob } = await compressAndResizeImage(file, { maxDimension: 2048, quality: 0.78 });
-                    const publicThumb = await uploadImageToStorage(visionBlob, userId);
-                    setStagedImageUrl(publicThumb);
 
-                    const { blob: masterBlob } = await compressAndResizeImage(file, { maxDimension: 8192, quality: 0.9 });
-                    const masterUrl = await uploadImageToStorage(masterBlob, userId);
-                    setStagedMasterImageUrl(masterUrl);
+                    const thumbPromise = (async () => {
+                        const { blob: thumbBlob } = await compressAndResizeImage(file, { maxDimension: 2048, quality: 0.78 });
+                        const publicThumb = await uploadImageToStorage(thumbBlob, userId);
+                        setStagedImageUrl(publicThumb);
+                        return publicThumb;
+                    })();
+
+                    masterUploadPromiseRef.current = (async () => {
+                        const { blob: masterBlob } = await compressAndResizeImage(file, { maxDimension: 8192, quality: 0.9 });
+                        const masterUrl = await uploadImageToStorage(masterBlob, userId);
+                        setStagedMasterImageUrl(masterUrl);
+                        return masterUrl;
+                    })();
+
+                    await thumbPromise;
                 } catch (e) {
                     console.warn('Background upload failed:', e);
                 }
@@ -541,7 +555,17 @@ const App: React.FC = () => {
     // NEW: Handler for Profile Config Modal (v28)
     const handleProfileConfigConfirm = async (config: LuxConfig) => {
         setShowProfileSelector(false);
-        const finalInputUrl = stagedMasterImageUrl || stagedImageUrl || inputImageUrl;
+        let finalInputUrl = stagedMasterImageUrl || stagedImageUrl || inputImageUrl;
+        if (!finalInputUrl && masterUploadPromiseRef.current) {
+            setShowProcessingOverlay(true);
+            setProcessingPhase('upload');
+            setPhaseStartedAt(Date.now());
+            setPhaseEtaSeconds(10);
+            setPhaseProgress(10);
+            setPhaseLabel('Subiendo original para generar...');
+            try { finalInputUrl = await masterUploadPromiseRef.current; } catch { /* ignore */ }
+        }
+
         if (finalInputUrl) {
             setInputImageUrl(finalInputUrl);
             // IMPORTANT: Use the v28 Brain pipeline (Edge Functions w/ fallback)
@@ -553,7 +577,7 @@ const App: React.FC = () => {
             setPhaseLabel('Compilando prompt (Brain) — ~1–2s');
             setElapsedTime(0);
 
-            await processWithEdgeFunctions(finalInputUrl!, config);
+            await processWithEdgeFunctions(finalInputUrl, config);
         }
     };
 
@@ -598,10 +622,19 @@ const App: React.FC = () => {
 
             // Process with Edge Functions
             // commit staged URLs to session, but keep legacy workspace hidden during overlay
-            const finalInputUrl = stagedMasterImageUrl || stagedImageUrl || inputImageUrl;
-            if (finalInputUrl) setInputImageUrl(finalInputUrl);
+            // Ensure we have a public URL for generation (wait for background upload if needed)
+            let finalInputUrl = stagedMasterImageUrl || stagedImageUrl || inputImageUrl;
+            if (!finalInputUrl && masterUploadPromiseRef.current) {
+                setProcessingPhase('upload');
+                setPhaseLabel('Subiendo original para generar...');
+                try { finalInputUrl = await masterUploadPromiseRef.current; } catch { /* ignore */ }
+            }
+            if (!finalInputUrl) {
+                throw new Error('No hay URL de imagen disponible para generar.');
+            }
+            setInputImageUrl(finalInputUrl);
 
-            await processWithEdgeFunctions(finalInputUrl!, config);
+            await processWithEdgeFunctions(finalInputUrl, config);
         }
     };
 
@@ -885,6 +918,7 @@ const App: React.FC = () => {
     const resetFlow = () => {
         setStagedImageUrl(null);
         setStagedMasterImageUrl(null);
+        masterUploadPromiseRef.current = null;
         setInputImageUrl(null);
         setProcessedImageUrl(null);
         setShowConfigWizard(false);
