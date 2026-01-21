@@ -625,20 +625,19 @@ export const ProfileConfigModal: React.FC<ProfileConfigModalProps> = ({
   onCancel,
   onUpgrade
 }) => {
+  // TODOS los hooks DEBEN estar ANTES de cualquier return condicional
   const [selectedProfile, setSelectedProfile] = useState<UserProfileType>(currentProfile);
+  const [useAutoAll, setUseAutoAll] = useState(true);
 
   useEffect(() => {
     setSelectedProfile(currentProfile);
   }, [currentProfile]);
 
+  // Ahora podemos hacer el return condicional
   if (!isVisible) return null;
-
-
-  const [useAutoAll, setUseAutoAll] = useState(true);
 
   const applyAutoToAll = () => {
     setUseAutoAll(true);
-    // Per-profile UIs will read initialMixer/initialSuggestedSettings when useAutoAll=true
   };
 
   const canAccessProfile = (profile: UserProfileType): boolean => {
