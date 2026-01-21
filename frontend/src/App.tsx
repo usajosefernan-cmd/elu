@@ -1264,7 +1264,7 @@ const App: React.FC = () => {
             {/* NEW: Vision Confirm Modal (Edge Function result) */}
             <VisionConfirmModal
                 isVisible={showVisionConfirm}
-                imageUrl={inputImageUrl || ''}
+                imageUrl={stagedImageUrl || inputImageUrl || ''}
                 analysis={visionAnalysis}
                 onConfirm={handleVisionConfirm}
                 onCustomize={handleVisionCustomize}
