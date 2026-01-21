@@ -3,6 +3,54 @@
 ## Descripción General
 LuxScaler es una aplicación de procesamiento de imágenes con IA que utiliza Google Gemini para transformar fotos en producciones de alta calidad con aspecto profesional.
 
+## Modal Unificado v28.1
+
+### Estructura
+```
+┌─────────────────────────────────┐
+│ [img] Categoría            [X]  │
+├─────────────────────────────────┤
+│ Diagnóstico: R:5 B:3 C:7   [▼]  │
+├─────────────────────────────────┤
+│ Modo                            │
+│ [AUTO] [USER] [PRO] [PROLUX]    │
+├─────────────────────────────────┤
+│ Intensidad (solo AUTO)          │
+│ [Min][Sutil][Normal][Fuerte][Max]│
+├─────────────────────────────────┤
+│ Preset base (USER/PRO/PROLUX)   │
+│ [Ninguno][Natural][Editorial]...│
+├─────────────────────────────────┤
+│ Ajustes (sliders según perfil)  │
+│ ▼ Imagen                        │
+│   Limpieza ────●──── 7          │
+│   Enfoque  ──●────── 4 🔒       │
+│ ▼ Estilo                        │
+│ ▼ Luz                           │
+├─────────────────────────────────┤
+│ [      Generar (10 tokens)     ]│
+└─────────────────────────────────┘
+```
+
+### Perfiles de Usuario
+| Perfil | Sliders Visibles | Descripción |
+|--------|-----------------|-------------|
+| AUTO   | 0 (solo intensidad) | IA decide todo |
+| USER   | 6 básicos | Control simple |
+| PRO    | 15 sliders | Control avanzado |
+| PROLUX | 27 sliders | Control total |
+
+### Presets con Sliders Bloqueados
+Los presets cargan valores en ciertos sliders y los BLOQUEAN:
+- **Natural**: grano_filmico, look_cine, atmosfera
+- **Editorial**: look_cine, styling_piel, styling_pelo, contraste
+- **Cine**: look_cine, grano_filmico, atmosfera, contraste, estilo_autor
+- **Retrato**: styling_piel, styling_pelo, maquillaje, key_light, fill_light
+- **Inmueble**: geometria, limpieza_entorno, key_light, fill_light
+- **Restaurar**: limpieza_artefactos, enfoque, sintesis_adn, resolucion
+
+El resto de sliders quedan LIBRES para que el usuario los modifique.
+
 ## Arquitectura Implementada
 
 ### Backend (FastAPI)
