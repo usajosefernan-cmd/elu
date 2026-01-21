@@ -577,21 +577,36 @@ const App: React.FC = () => {
             navigate('/result');
 
             // Step 1: Compile prompt (Edge Functions w/ fallback)
-            const sliderConfig = {
-                photoscaler: { sliders: [
-                    // NOTE: for MVP wiring, we map a couple of semantic sliders.
-                    { name: 'limpieza_artefactos', value: config.mixer?.restoration ?? 0 },
-                    { name: 'enfoque', value: config.mixer?.restoration ?? 0 },
-                ]},
-                stylescaler: { sliders: [
-                    { name: 'estilo_autor', value: config.mixer?.stylism ?? 0 },
-                    { name: 'styling_piel', value: config.mixer?.skin_bio ?? 0 },
-                ]},
-                lightscaler: { sliders: [
-                    { name: 'brillo_exposicion', value: config.mixer?.lighting ?? 0 },
-                    { name: 'contraste', value: config.mixer?.lighting ?? 0 },
-                ]},
-            };
+            // PRO mode may provide an explicit semantic sliderConfig serialized in selectedPresetId
+            let sliderConfig: any = null;
+            if (config?.mode === 'PRO' && config?.selectedPresetId) {
+                try {
+                    const parsed = JSON.parse(config.selectedPresetId);
+                    if (parsed?.photoscaler && parsed?.stylescaler && parsed?.lightscaler) {
+                        sliderConfig = parsed;
+                    }
+                } catch {
+                    // ignore
+                }
+            }
+
+            if (!sliderConfig) {
+                // Default mapping (AUTO/USER) from mixer
+                sliderConfig = {
+                    photoscaler: { sliders: [
+                        { name: 'limpieza_artefactos', value: config.mixer?.restoration ?? 0 },
+                        { name: 'enfoque', value: config.mixer?.restoration ?? 0 },
+                    ]},
+                    stylescaler: { sliders: [
+                        { name: 'estilo_autor', value: config.mixer?.stylism ?? 0 },
+                        { name: 'styling_piel', value: config.mixer?.skin_bio ?? 0 },
+                    ]},
+                    lightscaler: { sliders: [
+                        { name: 'brillo_exposicion', value: config.mixer?.lighting ?? 0 },
+                        { name: 'contraste', value: config.mixer?.lighting ?? 0 },
+                    ]},
+                };
+            }
 
             const promptResult = await compilePrompt(
                 sliderConfig,
