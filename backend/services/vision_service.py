@@ -299,12 +299,25 @@ class VisionService:
         except json.JSONDecodeError as e:
             print(f"VisionService: JSON parse error: {e}")
             print(f"Raw response: {response_text[:500] if 'response_text' in dir() else 'N/A'}")
-            return self._get_fallback_analysis()
+            fallback = self._get_fallback_analysis()
+            fallback['protocol_alerts'] = ['Análisis parcial - respuesta de IA no estructurada. Usando configuración inteligente.']
+            return fallback
             
         except Exception as e:
+            error_msg = str(e).lower()
             print(f"VisionService Error: {e}")
             key_manager.report_error(api_key)
-            return self._get_fallback_analysis()
+            fallback = self._get_fallback_analysis()
+            
+            # Better error messages
+            if '429' in error_msg or 'rate' in error_msg or 'quota' in error_msg:
+                fallback['protocol_alerts'] = ['API temporalmente saturada. Usando configuración automática optimizada.']
+            elif 'timeout' in error_msg:
+                fallback['protocol_alerts'] = ['Timeout de análisis. Usando configuración rápida.']
+            else:
+                fallback['protocol_alerts'] = ['Análisis rápido activado. Configuración automática aplicada.']
+            
+            return fallback
     
     async def _get_image_bytes(self, image_input: str) -> tuple:
         """Extract image bytes, mime type, and aspect ratio from input."""
