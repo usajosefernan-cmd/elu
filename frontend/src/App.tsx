@@ -1029,42 +1029,6 @@ const App: React.FC = () => {
             {/* 2. STUDIO WORKSPACE (ACTIVE STATE) */}
             {inputImageUrl && (
                 <>
-                    {/* GENERATION DASHBOARD (LEGACY) */}
-                    {!showProcessingOverlay && status === AgentStatus.GENERATING_PREVIEWS && (
-                        <div className="mx-4 md:mx-0 mb-4 bg-[#0A0A0F] border border-white/10 rounded-xl p-4 animate-in fade-in slide-in-from-top-5">
-                            {/* ... existing dashboard code ... */}
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-3">
-                                    <Loader2 className="w-5 h-5 text-lumen-gold animate-spin" />
-                                    <div>
-                                        <h3 className="text-sm font-bold text-white tracking-widest">PROCESANDO ESTUDIO</h3>
-                                        <p className="text-[10px] text-gray-400 font-mono">
-                                            {queuePosition ? `En Cola: ${queuePosition}` : 'Motores de Física Activos'}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div className="text-right">
-                                    <div className="text-2xl font-black text-white font-mono leading-none">
-                                        {elapsedTime.toFixed(1)}<span className="text-xs text-gray-500 ml-1">s</span>
-                                    </div>
-                                </div>
-                            </div>
-                            {/* PROGRESS BAR & LOGS */}
-                            <div className="w-full h-1 bg-white/10 rounded-full overflow-hidden mb-2">
-                                <div
-                                    className="h-full bg-lumen-gold transition-all duration-300 ease-out"
-                                    style={{ width: `${Math.min((elapsedTime / 45) * 100, 95)}%` }}
-                                />
-                            </div>
-                            <div className="h-6 overflow-hidden relative">
-                                <div className="absolute inset-0 flex items-center text-[10px] text-gray-400 font-mono animate-pulse">
-                                    <Terminal className="w-3 h-3 mr-2" />
-                                    {systemLogs.slice(-1)[0] || "Iniciando protocolos..."}
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
                     {/* GRID CONTROLS (NEW) */}
                     <div className="flex items-center justify-between mb-4 px-2">
                         <div className="flex items-center gap-2">
