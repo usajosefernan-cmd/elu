@@ -471,7 +471,7 @@ class VisionService:
                 "composition_score": 5
             },
             "semantic_anchors": [],
-            "protocol_alerts": ["Analysis failed - using safe defaults"],
+            "protocol_alerts": [],  # Se añaden mensajes específicos en el catch
             "aspect_ratio": 1.0
         }
 
