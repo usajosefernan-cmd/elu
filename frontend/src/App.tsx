@@ -440,6 +440,11 @@ const App: React.FC = () => {
 
         // 2. CALL "Brain" pipeline (Edge Functions w/ fallback to FastAPI)
         try {
+            setToastState({
+                isOpen: true,
+                title: 'Análisis de visión',
+                message: 'Usando Gemini 2.5 Flash (rápido).'
+            });
             setProcessingPhase('vision');
             setPhaseStartedAt(Date.now());
             setPhaseEtaSeconds(8);
