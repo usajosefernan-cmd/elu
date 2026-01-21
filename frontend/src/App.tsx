@@ -527,22 +527,12 @@ const App: React.FC = () => {
             return;
         }
 
-            if (analysis.safety_check?.is_nsfw) {
-                alert("Bloqueo de Seguridad: Contenido no permitido.");
-                resetFlow();
-                return;
-            }
-
-            setAnalysisResult(analysis);
-            setStatus(AgentStatus.CONFIGURING);
-            setShowConfigWizard(true);
+            // Legacy analysis is disabled in v28 flow
+            return;
 
         } catch (analysisError: any) {
-            console.warn("Vision Analysis Failed (Falling back to manual):", analysisError);
-            // Even if analysis fails, we have the image, so we can proceed to Manual Mode
-            setAgentMsg({ text: "Análisis Automático falló. Modo Manual activado.", type: 'error' });
-            setStatus(AgentStatus.CONFIGURING);
-            setShowConfigWizard(true);
+            // Legacy analysis is disabled in v28 flow
+            return;
         }
     };
 
