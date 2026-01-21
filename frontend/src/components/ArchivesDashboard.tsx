@@ -1,8 +1,8 @@
 
-import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { getGenerations, deleteGeneration, submitVariationFeedback } from '../services/historyService';
 import { GenerationSession, ArchivedVariation } from '../types';
-import { Trash2, ArrowLeft, FolderOpen, Crown, ZoomIn, ZoomOut, Loader2, Sliders, Sparkles, Copy, Palette, Sun, Maximize, Minimize, RefreshCw, Home, User, Camera, Hand } from 'lucide-react';
+import { Trash2, ArrowLeft, FolderOpen, Crown, Loader2, Sparkles, Copy, Palette, Sun, RefreshCw, Home, User, Camera } from 'lucide-react';
 import { ComparisonSlider } from './ComparisonSlider';
 import { getDisplayUrl, getMasterUrl, getThumbnailUrl } from '../utils/imageUtils';
 import { generateMaster } from '../services/geminiService';
