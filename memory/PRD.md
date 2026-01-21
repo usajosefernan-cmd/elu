@@ -5,7 +5,15 @@ LuxScaler es una aplicación de procesamiento de imágenes impulsada por IA que 
 
 ---
 
-## ✅ Funcionalidades Implementadas (Sesión 2026-01-20)
+## ✅ Funcionalidades Implementadas (Sesión 2026-01-21)
+
+### FIXES CRÍTICOS ESTA SESIÓN:
+1. **✅ ProcessingOverlay aparece INMEDIATAMENTE** - Movido fuera del bloque condicional
+2. **✅ Error de React Hooks corregido** en ProfileConfigModal.tsx
+3. **✅ Menú limpio** - Eliminados enlaces PHOTO, STYLE, LIGHT, UP
+4. **✅ Sistema de notificaciones mejorado** - Toast con iconos y duración variable
+5. **✅ Navegación a /result** solo cuando hay imagen generada (evita grid vacío)
+6. **✅ Mobile-first** - Dock inferior con Inicio | Upload | Archivo
 
 ### 1. Sistema de Autenticación (Supabase)
 - **Login/Registro** funcional con Supabase Auth
