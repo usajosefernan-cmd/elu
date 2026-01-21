@@ -7,54 +7,43 @@ LuxScaler es una aplicación de procesamiento de imágenes impulsada por IA que 
 
 ## ✅ Funcionalidades Implementadas (Sesión 2026-01-21)
 
-### FIXES CRÍTICOS ESTA SESIÓN:
-1. **✅ ProcessingOverlay aparece INMEDIATAMENTE** - Movido fuera del bloque condicional
-2. **✅ Error de React Hooks corregido** en ProfileConfigModal.tsx
-3. **✅ Menú limpio** - Eliminados enlaces PHOTO, STYLE, LIGHT, UP
-4. **✅ Sistema de notificaciones mejorado** - Toast con iconos y duración variable
-5. **✅ Navegación a /result** solo cuando hay imagen generada (evita grid vacío)
-6. **✅ Mobile-first** - Dock inferior con Inicio | Upload | Archivo
+### CAMBIOS PRINCIPALES ESTA SESIÓN:
 
-### 1. Sistema de Autenticación (Supabase)
-- **Login/Registro** funcional con Supabase Auth
-- **Perfil de usuario** almacenado en tabla `user_profiles`
-- **Admin user**: `usajosefernan@gmail.com` con perfil PROLUX
+#### 1. **Sistema de Visión "Creative Director" (NUEVO)**
+- Nuevo prompt de visión tipo "Director Creativo"
+- Detecta 5 intents/titulares estilo revista (ej: "Vanity Fair Editorial", "Grunge Rock Portrait")
+- Devuelve `auto_settings` con los 27 sliders pre-configurados
+- Análisis de "gaps" Amateur vs Pro (Lighting, Set, Optics, Timing)
 
-### 2. Sistema de Perfiles de Usuario (4 Niveles)
-| Perfil | Descripción | UI |
-|--------|-------------|-----|
-| **AUTO** | Por defecto, IA decide todo | Sin controles visibles |
-| **USER** | Control básico | 3 Sliders por pilar |
-| **PRO** | Control avanzado | 9 Macros temáticos |
-| **PROLUX** | Control total + Admin | 27 Sliders individuales |
+#### 2. **27 Sliders Actualizados en DB**
+- Nuevas instrucciones para todos los niveles (OFF/LOW/MED/HIGH/FORCE)
+- Escala 1-10 (no 0-10)
+- Instrucciones tipo producción de cine ($100k look)
 
-### 3. Sistema de Tokens
-- ✅ **Balance de tokens** sincronizado en navbar (999999 TKN para admin)
-- ✅ **Click en balance** → Abre página de Pricing
-- **Admin (PROLUX)**: 999999 tokens (ilimitado)
-- **Usuarios nuevos**: 50 tokens gratis (5 previews con marca de agua)
-- **Costos**:
-  - Preview con marca: 10 tokens
-  - Preview limpio: 15 tokens
-  - Master 4K: 50 tokens
-  - Master 8K: 100 tokens
+#### 3. **VisionConfirmModal Renovado**
+- 3 modos: AUTO | ELEGIR | MANUAL
+- AUTO: Usa la mejor configuración detectada automáticamente
+- ELEGIR: Muestra 5 intents para seleccionar
+- MANUAL: Escribir intent personalizado
+- UI compacta y moderna
 
-### 4. Página de Pricing (Actualizada v28)
-- ✅ **Starter**: €1.99 - 200 tokens (Perfil AUTO)
-- ✅ **Creator**: €9.99 - 1,200 tokens (desbloquea USER)
-- ✅ **Pro**: €29.99 - 4,000 tokens (desbloquea PRO + 9 Macros)
-- ✅ **Studio**: €99.99 - 15,000 tokens (desbloquea PROLUX)
+#### 4. **Fixes anteriores mantenidos:**
+- ProcessingOverlay aparece inmediatamente
+- Error de React Hooks corregido
+- Menú simplificado (sin PHOTO/STYLE/LIGHT/UP)
+- Navegación a /result solo con imagen generada
+- Identity Lock mejorado (solo se desactiva con reencuadre_ia > 5)
 
-### 5. Panel de Administración
-- ✅ **Acceso exclusivo** para usuarios con `user_mode = 'prolux'`
-- ✅ **Menú admin** visible en dropdown del usuario
-- **Ruta**: `/admin`
+### Pilares Actualizados:
 
-### 6. Edge Functions (NUEVO - v28 Architecture)
-- ✅ **vision-analysis** - Análisis con Gemini 2.5 Flash
-- ✅ **prompt-compiler** - Compila sliders → instrucciones semánticas
-- ✅ **generate-image** - Genera imagen mejorada
-- ✅ **Frontend service** `edgeFunctionsService.ts` para llamar las funciones
+**PHOTOSCALER (9 sliders):**
+- limpieza_artefactos, geometria, optica, chronos, senal_raw, sintesis_adn, grano_filmico, enfoque, resolucion
+
+**STYLESCALER (9 sliders):**
+- styling_piel, styling_pelo, styling_ropa, maquillaje, limpieza_entorno, reencuadre_ia, atmosfera, look_cine, materiales_pbr
+
+**LIGHTSCALER (9 sliders):**
+- key_light, fill_light, rim_light, volumetria, temperatura, contraste, sombras, estilo_autor, reflejos
 
 ### 7. Modal de Confirmación de Visión (NUEVO)
 - ✅ `VisionConfirmModal.tsx` - Muestra resultados del análisis
