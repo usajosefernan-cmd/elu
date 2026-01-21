@@ -404,6 +404,11 @@ const App: React.FC = () => {
         let uploadedPublicUrl = "";
         try {
             // UX: Upload phase overlay
+            setToastState({
+                isOpen: true,
+                title: 'Subida iniciada',
+                message: 'Optimizando imagen y subiendo a Storage...'
+            });
             setShowProcessingOverlay(true);
             setProcessingPhase('upload');
             setPhaseStartedAt(Date.now());
