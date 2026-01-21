@@ -228,14 +228,14 @@ export const Navigation: React.FC<NavigationProps> = ({
             className={`flex flex-col items-center gap-1.5 transition-all px-4 ${currentView === 'HOME' ? 'text-lumen-gold' : 'text-gray-500'}`}
           >
             <LayoutGrid className={`w-6 h-6 ${currentView === 'HOME' ? 'animate-pulse' : ''}`} />
-            <span className="text-[9px] font-black uppercase tracking-tighter">Studio</span>
+            <span className="text-[9px] font-black uppercase tracking-tighter">Inicio</span>
           </button>
 
-          {/* CENTRAL MOTOR ENGINE (PhotoScaler focus) */}
+          {/* CENTRAL UPLOAD BUTTON */}
           <div className="relative -mt-10 group">
             <div className="absolute -inset-4 bg-lumen-gold/20 rounded-full blur-2xl group-active:blur-3xl transition-all" />
             <button
-              onClick={() => handleNav('ENGINE_1')}
+              onClick={() => onUploadProject?.()}
               className="w-16 h-16 rounded-full bg-gradient-to-br from-lumen-gold via-[#b3912e] to-black flex items-center justify-center text-black shadow-[0_10px_30px_rgba(212,175,55,0.4)] relative z-10 active:scale-90 transition-transform"
             >
               <PlusCircle className="w-8 h-8" />
@@ -247,7 +247,7 @@ export const Navigation: React.FC<NavigationProps> = ({
             className={`flex flex-col items-center gap-1.5 transition-all px-4 ${currentView === 'ARCHIVES' ? 'text-lumen-gold' : 'text-gray-500'}`}
           >
             <Sparkles className="w-6 h-6" />
-            <span className="text-[9px] font-black uppercase tracking-tighter">Lab</span>
+            <span className="text-[9px] font-black uppercase tracking-tighter">Archivo</span>
           </button>
 
           {/* MOBILE DROPDOWN TRIGGER (Profile) */}
