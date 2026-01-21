@@ -1290,7 +1290,7 @@ const App: React.FC = () => {
     // 2. MAIN APPLICATION LAYOUT (Standard Nav + Views)
     return (
         <div className="min-h-screen bg-void-black text-chalk-white font-sans selection:bg-lumen-gold/30 selection:text-lumen-gold flex flex-col">
-            {!location.pathname.includes('/admin/canvas') && (
+            {!location.pathname.includes('/admin/canvas') && !location.pathname.includes('/archives') && (
                 <Navigation
                     currentView={activeView}
                     onNavigateToStudio={navigateToHome}
