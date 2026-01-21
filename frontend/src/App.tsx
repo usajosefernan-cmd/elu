@@ -390,16 +390,27 @@ const App: React.FC = () => {
         // 1. UPLOAD IMAGE (CRITICAL STEP)
         let uploadedPublicUrl = "";
         try {
+            // UX: Upload phase overlay
+            setShowProcessingOverlay(true);
+            setProcessingPhase('upload');
+            setPhaseStartedAt(Date.now());
+            setPhaseEtaSeconds(8);
+            setPhaseProgress(10);
+            setPhaseLabel('Subiendo imagen (optimización + upload)...');
+            setElapsedTime(0);
+
             setStatus(AgentStatus.ANALYZING);
             setAgentMsg({ text: "Subiendo imagen...", type: 'info' });
             await new Promise(resolve => setTimeout(resolve, 100));
 
             const { blob: compressedBlob, aspectRatio: ratio } = await compressAndResizeImage(file);
             setAspectRatio(ratio);
+            setPhaseProgress(40);
 
             const userId = userProfile ? userProfile.id : 'guest_analysis';
             uploadedPublicUrl = await uploadImageToStorage(compressedBlob, userId);
             setInputImageUrl(uploadedPublicUrl);
+            setPhaseProgress(90);
 
         } catch (uploadError: any) {
             console.error("Critical Upload Error:", uploadError);
