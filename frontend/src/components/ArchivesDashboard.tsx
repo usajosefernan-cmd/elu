@@ -55,8 +55,12 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
     const [translate, setTranslate] = useState({ x: 0, y: 0 });
     const [isDragging, setIsDragging] = useState(false);
     const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-    const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
     const [isImageLoaded, setIsImageLoaded] = useState(false);
+    
+    // Track both image dimensions for proper alignment
+    const [afterImgSize, setAfterImgSize] = useState({ w: 0, h: 0 });
+    const [beforeImgSize, setBeforeImgSize] = useState({ w: 0, h: 0 });
+    const [displaySize, setDisplaySize] = useState({ w: 0, h: 0 });
 
     const currentSession = useMemo(() =>
         sessions.find(s => s.id === selectedSessionId),
