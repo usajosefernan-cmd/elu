@@ -122,6 +122,29 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
         {/* Content */}
         <div className="p-4 space-y-4">
           
+          {/* Technical Diagnosis - Compact badges */}
+          {analysis?.technical_diagnosis && (
+            <div className="flex flex-wrap gap-1.5">
+              <div className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase flex items-center gap-1 ${
+                analysis.technical_diagnosis.noise_level > 5 ? 'bg-orange-500/20 text-orange-400' : 'bg-green-500/20 text-green-400'
+              }`}>
+                <span>Ruido: {analysis.technical_diagnosis.noise_level}/10</span>
+              </div>
+              <div className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase flex items-center gap-1 ${
+                analysis.technical_diagnosis.blur_level > 5 ? 'bg-orange-500/20 text-orange-400' : 'bg-green-500/20 text-green-400'
+              }`}>
+                <span>Desenfoque: {analysis.technical_diagnosis.blur_level}/10</span>
+              </div>
+              {analysis.technical_diagnosis.has_person !== undefined && (
+                <div className={`px-2 py-1 rounded-full text-[9px] font-bold uppercase ${
+                  analysis.technical_diagnosis.has_person ? 'bg-blue-500/20 text-blue-400' : 'bg-gray-500/20 text-gray-400'
+                }`}>
+                  {analysis.technical_diagnosis.has_person ? '👤 Persona detectada' : '🖼️ Sin persona'}
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Production Analysis - Compacto */}
           <div className="bg-white/5 rounded-xl p-3 border border-white/5">
             <div className="flex items-start gap-3">
