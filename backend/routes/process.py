@@ -71,14 +71,12 @@ async def normalize_image(body: dict = Body(...)):
 async def compile_prompt_endpoint(body: dict = Body(...)):
     """
     FastAPI fallback endpoint matching the v28 Edge Function `prompt-compiler` contract.
-    Now uses the full v28 PromptCompilerService with vetos, semantic motor, and identity lock.
     """
     config = body.get('config') or {}
     vision_analysis = body.get('visionAnalysis')
-    user_mode = body.get('userMode', 'auto')
 
     # Use new compile_with_metadata for full response
-    result = await prompt_compiler.compile_with_metadata(config, vision_analysis, user_mode)
+    result = await prompt_compiler.compile_with_metadata(config, vision_analysis)
     
     if not result['success']:
         return {"success": False, "error": result.get('error', 'Compilation failed')}
