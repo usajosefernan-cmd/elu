@@ -113,7 +113,7 @@ class VisionService:
         Analyzes image using Creative Director prompt.
         Returns structured JSON with intents and auto_settings.
         """
-        api_key = get_next_api_key()
+        api_key = key_manager.get_next_key()
         if not api_key:
             return {"error": "No API keys available"}
         
