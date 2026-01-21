@@ -415,12 +415,19 @@ const App: React.FC = () => {
         } catch (uploadError: any) {
             console.error("Critical Upload Error:", uploadError);
             setAgentMsg({ text: "Error de Subida: " + (uploadError.message || "Red rechazada"), type: 'error' });
+            setShowProcessingOverlay(false);
             resetFlow();
             return;
         }
 
         // 2. CALL "Brain" pipeline (Edge Functions w/ fallback to FastAPI)
         try {
+            setProcessingPhase('vision');
+            setPhaseStartedAt(Date.now());
+            setPhaseEtaSeconds(8);
+            setPhaseProgress(5);
+            setPhaseLabel('Analizando (Vision) — esto puede tardar ~3–8s');
+
             setStatus(AgentStatus.ANALYZING);
             setAgentMsg({ text: "Gemini 2.5 Flash: Analizando imagen...", type: 'info' });
 
