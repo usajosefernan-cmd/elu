@@ -196,7 +196,7 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
         </div>
 
         {/* Action Buttons */}
-        <div className="p-4 border-t border-white/10 space-y-2">
+        <div className="p-4 border-t border-white/10 space-y-2 bg-[#0b0b0b]">
           {hasEnoughTokens ? (
             <>
               <button
