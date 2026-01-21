@@ -70,59 +70,44 @@ class PromptCompilerService:
         aspect_ratio = vision_data.get('aspect_ratio', '1:1') if vision_data else '1:1'
         
         # Step 9: Assemble final prompt
-        prompt = f"""[LUXSCALER v{self.VERSION} - UNIVERSAL PRODUCTION PROTOCOL]
-[ROLE: HIGH-END PHOTO PRODUCTION ENGINE]
-[TARGET: $100,000 PRODUCTION VALUE]
+        prompt = f"""YOU ARE AN AI IMAGE TRANSFORMATION ENGINE.
+YOUR JOB IS TO TRANSFORM THE INPUT IMAGE ACCORDING TO THE INSTRUCTIONS BELOW.
+YOU MUST MAKE VISIBLE CHANGES TO THE IMAGE. DO NOT RETURN THE SAME IMAGE.
 
-=== CRITICAL: ASPECT RATIO LOCK ===
-OUTPUT MUST HAVE EXACTLY THE SAME DIMENSIONS AND ASPECT RATIO AS INPUT.
-INPUT ASPECT RATIO: {aspect_ratio}
-DO NOT crop, extend, pad, or change the frame in any way.
-Every pixel position in output must correspond to the same position in input.
-NO EXCEPTIONS. This is required for before/after comparison overlay.
+CRITICAL: THIS IS NOT A CAPTION TASK. YOU MUST EDIT THE IMAGE.
+APPLY ALL TRANSFORMATIONS LISTED BELOW. THE OUTPUT MUST LOOK DIFFERENT FROM INPUT.
+
+=== ASPECT RATIO ===
+Maintain exact aspect ratio: {aspect_ratio}
 
 {identity_block}
 
-=== PHASE 1: PRODUCTION CONTEXT ===
-{vision_context}
+=== TRANSFORMATIONS TO APPLY ===
 
-=== PHASE 2: CAMERA & OPTICS (PhotoScaler Engine) ===
+PHOTO ADJUSTMENTS:
 {photo_block}
 
-=== PHASE 3: ART DIRECTION (StyleScaler Engine) ===
+STYLE ADJUSTMENTS:
 {style_block}
 
-=== PHASE 4: LIGHTING (LightScaler Engine) ===
+LIGHTING ADJUSTMENTS:
 {light_block}
 
 {veto_warnings}
 
-=== PHASE 5: EXECUTION MANDATE ===
-Execute ALL instructions above while PRESERVING:
-1. The subject's identity (same person, same face)
-2. The exact aspect ratio and dimensions of the input
-3. Pixel-to-pixel correspondence for overlay comparison
-4. All semantic anchors detected in analysis
+=== MANDATORY EXECUTION ===
+1. READ each instruction above
+2. APPLY the transformation to the image
+3. The output MUST show visible differences from input
+4. If instruction says "FORCE" or has ●, apply MAXIMUM effect
 
-INTENSITY LEGEND:
-○ = Subtle enhancement (1-5)
-◐ = Professional grade (6-8)
-● = FORCE mode - Maximum effect (9-10)
+=== OUTPUT REQUIREMENTS ===
+- Same dimensions as input
+- Visible transformations applied
+- Professional quality result
+- NOT the same as input image
 
-Apply transformations in order: Photo → Style → Light
-
-=== QUALITY GATES ===
-- Resolution: Match or exceed input
-- Color depth: 24-bit sRGB minimum
-- Compression: Minimal artifacts
-- Identity: Must pass recognition test
-
-=== NEGATIVE PROMPT ===
-different person, face swap, age change, gender change, distorted anatomy,
-bad hands, extra limbs, watermarks, text, compression artifacts,
-different aspect ratio, cropped, extended, padded, different dimensions,
-blurry, noisy (unless grain is requested), overprocessed, plastic skin,
-shifted facial features, morphed bone structure.
+DO NOT just analyze the image. TRANSFORM IT according to the instructions above.
 """
         return prompt
     
