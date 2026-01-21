@@ -908,6 +908,7 @@ const App: React.FC = () => {
             }
 
             setShowProcessingOverlay(false);
+            setIsMicroscopeOpen(false); // Ensure inspector is closed
             
             // Notificación del navegador
             notify('LuxScaler ✨', '¡Tu imagen está lista! Haz clic para verla.');
