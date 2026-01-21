@@ -561,6 +561,11 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                             {selectedVariation.prompt_payload.debugInfo.vetos_applied.map((v: any, i: number) => (
                                                 <div key={i} className="text-[7px] text-gray-500 ml-1">
                                                     • {v.rule_name}
+                                                    {v.actions?.map((a: any, j: number) => (
+                                                        <div key={j} className="ml-2 text-gray-600">
+                                                            {a.slider_name}: {a.original_value} → {a.forced_value}
+                                                        </div>
+                                                    ))}
                                                 </div>
                                             ))}
                                         </div>
@@ -572,6 +577,61 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                             Redundancias: {selectedVariation.prompt_payload.debugInfo.sanitization.redundancies_removed || 0}
                                         </div>
                                     )}
+                                </div>
+                            )}
+                            
+                            {/* Metadata del compilador */}
+                            {selectedVariation.prompt_payload?.metadata && (
+                                <div className="pt-2 border-t border-white/5">
+                                    <p className="text-[9px] text-blue-400 uppercase font-bold mb-1">📊 Metadata v{selectedVariation.prompt_payload.metadata.version || '28.0'}</p>
+                                    <div className="grid grid-cols-2 gap-1 text-[8px]">
+                                        <div className="text-gray-500">Sliders activos:</div>
+                                        <div className="text-white font-mono">{selectedVariation.prompt_payload.metadata.active_sliders || 0}</div>
+                                        <div className="text-gray-500">Force (=10):</div>
+                                        <div className="text-amber-400 font-mono">{selectedVariation.prompt_payload.metadata.force_sliders || 0}</div>
+                                        <div className="text-gray-500">Identity Lock:</div>
+                                        <div className="text-cyan-400 font-mono">{selectedVariation.prompt_payload.metadata.identity_lock_level || 'N/A'}</div>
+                                        <div className="text-gray-500">Cache usado:</div>
+                                        <div className={`font-mono ${selectedVariation.prompt_payload.metadata.cache_used ? 'text-green-400' : 'text-gray-600'}`}>
+                                            {selectedVariation.prompt_payload.metadata.cache_used ? 'Sí' : 'No'}
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* DNA Anchor info */}
+                            {selectedVariation.prompt_payload?.dnaAnchor && (
+                                <div className="pt-2 border-t border-white/5">
+                                    <p className="text-[9px] text-green-400 uppercase font-bold mb-1">🧬 DNA Anchor</p>
+                                    <div className="text-[8px]">
+                                        <span className="text-gray-500">Detectado: </span>
+                                        <span className={selectedVariation.prompt_payload.dnaAnchor.detected ? 'text-green-400' : 'text-gray-600'}>
+                                            {selectedVariation.prompt_payload.dnaAnchor.detected ? 'Sí' : 'No'}
+                                        </span>
+                                        {selectedVariation.prompt_payload.dnaAnchor.strength && (
+                                            <>
+                                                <span className="text-gray-500 ml-2">Fuerza: </span>
+                                                <span className="text-amber-400">{selectedVariation.prompt_payload.dnaAnchor.strength}</span>
+                                            </>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                            
+                            {/* Tokens estimados */}
+                            {selectedVariation.prompt_payload?.tokensEstimate && (
+                                <div className="pt-2 border-t border-white/5">
+                                    <p className="text-[9px] text-purple-400 uppercase font-bold mb-1">🎟️ Tokens</p>
+                                    <div className="grid grid-cols-2 gap-1 text-[8px]">
+                                        <div className="text-gray-500">Total estimado:</div>
+                                        <div className="text-white font-mono">{selectedVariation.prompt_payload.tokensEstimate.total_estimated || 0}</div>
+                                        {selectedVariation.prompt_payload.tokensEstimate.system_cached > 0 && (
+                                            <>
+                                                <div className="text-gray-500">System cached:</div>
+                                                <div className="text-green-400 font-mono">{selectedVariation.prompt_payload.tokensEstimate.system_cached}</div>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
                             )}
 
