@@ -727,42 +727,87 @@ const App: React.FC = () => {
             setAgentMsg({ text: "Compilando prompt con IA...", type: 'info' });
             // NO navegamos a /result hasta tener una imagen generada
 
-            // Step 1: Compile prompt (Edge Functions w/ fallback)
-            // PRO/PROLUX mode may provide an explicit semantic sliderConfig serialized in selectedPresetId
+            // Step 1: Build slider config from any mode
             let sliderConfig: any = null;
-            if ((config?.mode === 'PRO' || config?.mode === 'PROLUX') && config?.selectedPresetId) {
+            
+            // Try to get explicit slider config from selectedPresetId (PRO/PROLUX/USER)
+            if (config?.selectedPresetId) {
                 try {
                     const parsed = JSON.parse(config.selectedPresetId);
                     if (parsed?.photoscaler && parsed?.stylescaler && parsed?.lightscaler) {
                         sliderConfig = parsed;
-                        console.log('[LuxScaler] Using full slider config from mode:', config.mode, 'Sliders count:', 
-                            (parsed.photoscaler?.sliders?.length || 0) + 
-                            (parsed.stylescaler?.sliders?.length || 0) + 
-                            (parsed.lightscaler?.sliders?.length || 0)
-                        );
+                        console.log('[LuxScaler] Using slider config from selectedPresetId. Mode:', config.mode);
                     }
                 } catch {
-                    // ignore
+                    // ignore parse error
                 }
             }
 
+            // If no sliderConfig yet, build from mixer or use auto_settings from vision
             if (!sliderConfig) {
-                // Default mapping (AUTO/USER) from mixer
-                sliderConfig = {
-                    photoscaler: { sliders: [
-                        { name: 'limpieza_artefactos', value: config.mixer?.restoration ?? 0 },
-                        { name: 'enfoque', value: config.mixer?.restoration ?? 0 },
-                    ]},
-                    stylescaler: { sliders: [
-                        { name: 'estilo_autor', value: config.mixer?.stylism ?? 0 },
-                        { name: 'styling_piel', value: config.mixer?.skin_bio ?? 0 },
-                    ]},
-                    lightscaler: { sliders: [
-                        { name: 'brillo_exposicion', value: config.mixer?.lighting ?? 0 },
-                        { name: 'contraste', value: config.mixer?.lighting ?? 0 },
-                    ]},
-                };
+                // Check if we have auto_settings from vision analysis
+                if (visionAnalysis?.auto_settings) {
+                    console.log('[LuxScaler] Using auto_settings from vision analysis');
+                    sliderConfig = {
+                        photoscaler: { sliders: Object.entries(visionAnalysis.auto_settings.photoscaler || {}).map(([name, value]) => ({ name, value })) },
+                        stylescaler: { sliders: Object.entries(visionAnalysis.auto_settings.stylescaler || {}).map(([name, value]) => ({ name, value })) },
+                        lightscaler: { sliders: Object.entries(visionAnalysis.auto_settings.lightscaler || {}).map(([name, value]) => ({ name, value })) },
+                    };
+                } else if (config.mixer) {
+                    // Fallback: map mixer values to all sliders in each pillar
+                    const photoVal = config.mixer.restoration || 5;
+                    const styleVal = config.mixer.stylism || 5;
+                    const lightVal = config.mixer.lighting || 5;
+                    
+                    console.log('[LuxScaler] Building from mixer:', { photoVal, styleVal, lightVal });
+                    
+                    sliderConfig = {
+                        photoscaler: { sliders: [
+                            { name: 'limpieza_artefactos', value: photoVal },
+                            { name: 'geometria', value: photoVal },
+                            { name: 'optica', value: photoVal },
+                            { name: 'chronos', value: photoVal },
+                            { name: 'senal_raw', value: photoVal },
+                            { name: 'sintesis_adn', value: photoVal },
+                            { name: 'grano_filmico', value: Math.min(photoVal, 5) },
+                            { name: 'enfoque', value: photoVal },
+                            { name: 'resolucion', value: photoVal },
+                        ]},
+                        stylescaler: { sliders: [
+                            { name: 'styling_piel', value: config.mixer.skin_bio || styleVal },
+                            { name: 'styling_pelo', value: styleVal },
+                            { name: 'styling_ropa', value: styleVal },
+                            { name: 'maquillaje', value: Math.min(styleVal, 5) },
+                            { name: 'limpieza_entorno', value: config.mixer.atrezzo || styleVal },
+                            { name: 'reencuadre_ia', value: 1 },
+                            { name: 'atmosfera', value: styleVal },
+                            { name: 'look_cine', value: styleVal },
+                            { name: 'materiales_pbr', value: styleVal },
+                        ]},
+                        lightscaler: { sliders: [
+                            { name: 'key_light', value: lightVal },
+                            { name: 'fill_light', value: lightVal },
+                            { name: 'rim_light', value: Math.min(lightVal, 6) },
+                            { name: 'volumetria', value: lightVal },
+                            { name: 'temperatura', value: 5 },
+                            { name: 'contraste', value: lightVal },
+                            { name: 'sombras', value: Math.min(lightVal, 6) },
+                            { name: 'estilo_autor', value: styleVal },
+                            { name: 'reflejos', value: Math.min(lightVal, 6) },
+                        ]},
+                    };
+                } else {
+                    // Ultimate fallback: all 5s
+                    console.log('[LuxScaler] Using default values (all 5)');
+                    sliderConfig = {
+                        photoscaler: { sliders: [{ name: 'limpieza_artefactos', value: 5 }, { name: 'enfoque', value: 5 }] },
+                        stylescaler: { sliders: [{ name: 'estilo_autor', value: 5 }] },
+                        lightscaler: { sliders: [{ name: 'contraste', value: 5 }] },
+                    };
+                }
             }
+
+            console.log('[LuxScaler] Final sliderConfig:', JSON.stringify(sliderConfig).slice(0, 200));
 
             const promptResult = await compilePrompt(
                 sliderConfig,
