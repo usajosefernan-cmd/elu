@@ -1113,6 +1113,12 @@ const App: React.FC = () => {
                                     )}
                                 </div>
 
+            {/* INFO TOAST */}
+            <InfoToast
+                toast={toastState}
+                onClose={() => setToastState(s => ({ ...s, isOpen: false }))}
+            />
+
             {/* GLOBAL PROCESSING OVERLAY (upload/generate UX) */}
             {showProcessingOverlay && (
                 <div className="fixed inset-0 z-[120]">
