@@ -51,7 +51,12 @@
     "@capacitor/cli": "^6.0.0",
     "@tailwindcss/typography": "^0.5.19",
     "@types/node": "^22.14.0",
+    "@typescript-eslint/eslint-plugin": "^8.53.1",
+    "@typescript-eslint/parser": "^8.53.1",
     "@vitejs/plugin-react": "^5.0.0",
+    "eslint": "^9.39.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^7.0.1",
     "firebase-tools": "^15.2.1",
     "typescript": "~5.8.2",
     "vite": "^6.2.0"
