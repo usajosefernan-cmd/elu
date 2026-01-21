@@ -3,14 +3,19 @@ import { LuxConfig, SemanticAnalysis, ArchivedVariation } from "../types";
 import { getReadableTimestamp } from '../utils/timestamps';
 
 // --- IMAGE UTILS ---
-export const compressAndResizeImage = async (file: File): Promise<{ blob: Blob, aspectRatio: number }> => {
+export const compressAndResizeImage = async (
+    file: File,
+    options: { maxDimension?: number; quality?: number } = {}
+): Promise<{ blob: Blob, aspectRatio: number }> => {
+    const { maxDimension = 8192, quality = 0.80 } = options;
+
     return new Promise((resolve, reject) => {
         const img = new Image();
         const url = URL.createObjectURL(file);
         img.onload = () => {
             URL.revokeObjectURL(url);
             const canvas = document.createElement('canvas');
-            const MAX_DIMENSION = 8192;
+            const MAX_DIMENSION = maxDimension;
             let { width, height } = img;
             if (width > height && width > MAX_DIMENSION) {
                 height *= MAX_DIMENSION / width; width = MAX_DIMENSION;
@@ -24,7 +29,7 @@ export const compressAndResizeImage = async (file: File): Promise<{ blob: Blob, 
             canvas.toBlob((blob) => {
                 if (blob) resolve({ blob, aspectRatio: width/height });
                 else reject(new Error("Compression failed"));
-            }, 'image/jpeg', 0.80);
+            }, 'image/jpeg', quality);
         };
         img.onerror = reject;
         img.src = url;

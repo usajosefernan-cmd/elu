@@ -159,6 +159,11 @@ const App: React.FC = () => {
 
     // Data State
     const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
+
+    // v28 flow staging (avoid showing legacy workspace before vision confirmation)
+    const [stagedImageUrl, setStagedImageUrl] = useState<string | null>(null);
+    const [stagedMasterImageUrl, setStagedMasterImageUrl] = useState<string | null>(null);
+
     const [inputImageUrl, setInputImageUrl] = useState<string | null>(null);
     const [processedImageUrl, setProcessedImageUrl] = useState<string | null>(null);
 
@@ -436,13 +441,32 @@ const App: React.FC = () => {
             setAgentMsg({ text: "Subiendo imagen...", type: 'info' });
             await new Promise(resolve => setTimeout(resolve, 100));
 
-            const { blob: compressedBlob, aspectRatio: ratio } = await compressAndResizeImage(file);
+            // Fast path for vision: small thumbnail upload
+            const { blob: visionBlob, aspectRatio: ratio } = await compressAndResizeImage(file, { maxDimension: 2048, quality: 0.78 });
             setAspectRatio(ratio);
-            setPhaseProgress(40);
+            setPhaseProgress(35);
 
             const userId = userProfile ? userProfile.id : 'guest_analysis';
-            uploadedPublicUrl = await uploadImageToStorage(compressedBlob, userId);
-            setInputImageUrl(uploadedPublicUrl);
+            uploadedPublicUrl = await uploadImageToStorage(visionBlob, userId);
+            setStagedImageUrl(uploadedPublicUrl);
+            setPhaseProgress(70);
+
+            // Background upload for master-quality input (does not block Vision)
+            (async () => {
+                try {
+                    setToastState({
+                        isOpen: true,
+                        title: 'Optimizando original',
+                        message: 'Subiendo versión de mayor calidad en segundo plano.'
+                    });
+                    const { blob: masterBlob } = await compressAndResizeImage(file, { maxDimension: 8192, quality: 0.9 });
+                    const masterUrl = await uploadImageToStorage(masterBlob, userId);
+                    setStagedMasterImageUrl(masterUrl);
+                } catch (e) {
+                    console.warn('Master upload failed:', e);
+                }
+            })();
+
             setPhaseProgress(90);
 
         } catch (uploadError: any) {
@@ -553,7 +577,10 @@ const App: React.FC = () => {
             setPhaseLabel('Compilando prompt (Brain) — ~1–2s');
             setElapsedTime(0);
 
-            await processWithEdgeFunctions(inputImageUrl, config);
+            const finalInputUrl = stagedMasterImageUrl || stagedImageUrl || inputImageUrl;
+            if (finalInputUrl) setInputImageUrl(finalInputUrl);
+
+            await processWithEdgeFunctions(finalInputUrl!, config);
         }
     };
 
@@ -596,7 +623,11 @@ const App: React.FC = () => {
             setElapsedTime(0);
 
             // Process with Edge Functions
-            await processWithEdgeFunctions(inputImageUrl!, config);
+            // commit staged URLs to session, but keep legacy workspace hidden during overlay
+            const finalInputUrl = stagedMasterImageUrl || stagedImageUrl || inputImageUrl;
+            if (finalInputUrl) setInputImageUrl(finalInputUrl);
+
+            await processWithEdgeFunctions(finalInputUrl!, config);
         }
     };
 
