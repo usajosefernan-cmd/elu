@@ -271,31 +271,50 @@ const PRO_MACROS = {
 const ProProfileUI: React.FC<{ 
   onConfirm: (config: LuxConfig) => void;
 }> = ({ onConfirm }) => {
-  const [selectedMacros, setSelectedMacros] = useState<string[]>([]);
-  const [macroIntensities, setMacroIntensities] = useState<Record<string, number>>({});
+  const [macroValues, setMacroValues] = useState<Record<string, number>>({
+    restauracion: 5,
+    fidelidad: 5,
+    caracter: 5,
+    presencia: 5,
+    pulido: 5,
+    cinematica: 5,
+    volumen: 5,
+    drama: 5,
+    atmosfera: 5,
+  });
 
-  const toggleMacro = (key: string) => {
-    if (selectedMacros.includes(key)) {
-      setSelectedMacros(selectedMacros.filter(m => m !== key));
-    } else {
-      setSelectedMacros([...selectedMacros, key]);
-      if (!macroIntensities[key]) {
-        setMacroIntensities({ ...macroIntensities, [key]: 7 });
-      }
-    }
-  };
+  const allMacros = [
+    ...PRO_MACROS.photoscaler,
+    ...PRO_MACROS.stylescaler,
+    ...PRO_MACROS.lightscaler,
+  ];
 
   const handleGenerate = () => {
+    // Build semantic slider config expected by prompt-compiler
+    const buildPillar = (pillarKey: keyof typeof PRO_MACROS) => ({
+      sliders: PRO_MACROS[pillarKey].flatMap(m =>
+        m.sliders.map(s => ({ name: s, value: macroValues[m.key] ?? 0 }))
+      )
+    });
+
+    const sliderConfig = {
+      photoscaler: buildPillar('photoscaler'),
+      stylescaler: buildPillar('stylescaler'),
+      lightscaler: buildPillar('lightscaler'),
+    };
+
+    // We keep LuxConfig as carrier; App.tsx reads config.mode and config.mixer.
+    // We'll pass sliderConfig through selectedPresetId to avoid adding new types.
     onConfirm({
       userPrompt: '',
       mode: 'PRO',
-      selectedPresetId: selectedMacros.join(','),
+      selectedPresetId: JSON.stringify(sliderConfig),
       mixer: {
-        stylism: macroIntensities['cinematic_tone'] || macroIntensities['vintage_aesthetics'] || 5,
-        atrezzo: macroIntensities['portrait_refinement'] || 5,
-        skin_bio: macroIntensities['portrait_refinement'] || 5,
-        lighting: macroIntensities['studio_lighting'] || macroIntensities['golden_hour'] || 5,
-        restoration: macroIntensities['limpieza_profunda'] || macroIntensities['extreme_forensic'] || 5,
+        stylism: macroValues.cinematica,
+        atrezzo: macroValues.pulido,
+        skin_bio: macroValues.presencia,
+        lighting: Math.round((macroValues.volumen + macroValues.drama + macroValues.atmosfera) / 3),
+        restoration: Math.round((macroValues.restauracion + macroValues.fidelidad) / 2),
         upScaler: 2
       }
     });
@@ -304,66 +323,98 @@ const ProProfileUI: React.FC<{
   return (
     <div className="space-y-4">
       <div className="text-center mb-4">
-        <h3 className="text-xl font-bold text-white mb-1">Macros Temáticos</h3>
-        <p className="text-xs text-gray-400">Selecciona y ajusta los efectos</p>
+        <h3 className="text-xl font-bold text-white mb-1">PRO · 9 Macros Conceptuales</h3>
+        <p className="text-xs text-gray-400">Cada macro controla un subset semántico de sliders</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-2">
-        {MACROS.map(macro => {
-          const isSelected = selectedMacros.includes(macro.key);
-          return (
-            <button
-              key={macro.key}
-              onClick={() => toggleMacro(macro.key)}
-              className={`p-3 rounded-xl border transition-all text-center ${
-                isSelected 
-                  ? 'bg-purple-500/20 border-purple-500 text-white' 
-                  : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/30'
-              }`}
-            >
-              <span className="text-2xl block mb-1">{macro.icon}</span>
-              <span className="text-[9px] font-bold uppercase tracking-wider">{macro.name}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {selectedMacros.length > 0 && (
-        <div className="space-y-2 pt-4 border-t border-white/10">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider">Intensidades</p>
-          {selectedMacros.map(key => {
-            const macro = MACROS.find(m => m.key === key);
-            return (
-              <div key={key} className="flex items-center gap-3">
-                <span className="text-xs text-white w-24 truncate">{macro?.name}</span>
-                <input
-                  type="range"
-                  min="1"
-                  max="10"
-                  value={macroIntensities[key] || 7}
-                  onChange={(e) => setMacroIntensities({ ...macroIntensities, [key]: parseInt(e.target.value) })}
-                  className="flex-1 h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-purple-500"
-                />
-                <span className="text-xs font-mono text-purple-400 w-6">{macroIntensities[key] || 7}</span>
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <p className="text-[10px] text-gray-500 uppercase tracking-wider">PhotoScaler · Motor de Realidad</p>
+          {PRO_MACROS.photoscaler.map(m => (
+            <div key={m.key} className="bg-white/5 border border-white/10 rounded-xl p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{m.icon}</span>
+                  <div>
+                    <div className="text-xs font-bold text-white uppercase tracking-wider">{m.name}</div>
+                    <div className="text-[10px] text-gray-500">{m.sliders.join(', ')}</div>
+                  </div>
+                </div>
+                <div className="text-xs font-mono text-lumen-gold w-8 text-right">{macroValues[m.key] ?? 0}</div>
               </div>
-            );
-          })}
+              <input
+                type="range"
+                min="0"
+                max="10"
+                value={macroValues[m.key] ?? 0}
+                onChange={(e) => setMacroValues(v => ({ ...v, [m.key]: parseInt(e.target.value) }))}
+                className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-lumen-gold"
+              />
+            </div>
+          ))}
         </div>
-      )}
+
+        <div className="space-y-2">
+          <p className="text-[10px] text-gray-500 uppercase tracking-wider">StyleScaler · Director de Arte</p>
+          {PRO_MACROS.stylescaler.map(m => (
+            <div key={m.key} className="bg-white/5 border border-white/10 rounded-xl p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{m.icon}</span>
+                  <div>
+                    <div className="text-xs font-bold text-white uppercase tracking-wider">{m.name}</div>
+                    <div className="text-[10px] text-gray-500">{m.sliders.join(', ')}</div>
+                  </div>
+                </div>
+                <div className="text-xs font-mono text-lumen-gold w-8 text-right">{macroValues[m.key] ?? 0}</div>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="10"
+                value={macroValues[m.key] ?? 0}
+                onChange={(e) => setMacroValues(v => ({ ...v, [m.key]: parseInt(e.target.value) }))}
+                className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-lumen-gold"
+              />
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-2">
+          <p className="text-[10px] text-gray-500 uppercase tracking-wider">LightScaler · Estudio de Luz</p>
+          {PRO_MACROS.lightscaler.map(m => (
+            <div key={m.key} className="bg-white/5 border border-white/10 rounded-xl p-3">
+              <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center gap-2">
+                  <span className="text-lg">{m.icon}</span>
+                  <div>
+                    <div className="text-xs font-bold text-white uppercase tracking-wider">{m.name}</div>
+                    <div className="text-[10px] text-gray-500">{m.sliders.join(', ')}</div>
+                  </div>
+                </div>
+                <div className="text-xs font-mono text-lumen-gold w-8 text-right">{macroValues[m.key] ?? 0}</div>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="10"
+                value={macroValues[m.key] ?? 0}
+                onChange={(e) => setMacroValues(v => ({ ...v, [m.key]: parseInt(e.target.value) }))}
+                className="w-full h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-lumen-gold"
+              />
+            </div>
+          ))}
+        </div>
+      </div>
 
       <button
         onClick={handleGenerate}
-        disabled={selectedMacros.length === 0}
-        className={`w-full mt-4 px-6 py-4 font-bold rounded-xl transition-all text-sm uppercase tracking-widest ${
-          selectedMacros.length > 0
-            ? 'bg-purple-500 text-white hover:bg-purple-400'
-            : 'bg-white/10 text-gray-600 cursor-not-allowed'
-        }`}
+        className="w-full mt-2 px-6 py-4 bg-lumen-gold text-black font-bold rounded-xl hover:opacity-90 transition-all text-sm uppercase tracking-widest"
       >
-        Generar con {selectedMacros.length} Macro{selectedMacros.length !== 1 ? 's' : ''}
+        Generar Preview (PRO)
       </button>
       <p className="text-[10px] text-gray-600 text-center">
-        Costo: 15 tokens · Sin marca de agua
+        Costo: 15 tokens · Preview sin marca de agua
       </p>
     </div>
   );
