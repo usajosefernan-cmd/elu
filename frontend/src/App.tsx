@@ -1,4 +1,6 @@
 
+// NOTE: This file is large; changes focus on wiring & UX only.
+
 import React, { useState, useRef, useEffect } from 'react';
 import { Routes, Route, useNavigate, useLocation, Navigate } from 'react-router-dom';
 // import posthog from 'posthog-js';
