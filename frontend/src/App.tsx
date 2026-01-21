@@ -575,9 +575,6 @@ const App: React.FC = () => {
             setPhaseLabel('Compilando prompt (Brain) — ~1–2s');
             setElapsedTime(0);
 
-            const finalInputUrl = stagedMasterImageUrl || stagedImageUrl || inputImageUrl;
-            if (finalInputUrl) setInputImageUrl(finalInputUrl);
-
             await processWithEdgeFunctions(finalInputUrl!, config);
         }
     };
