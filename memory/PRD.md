@@ -215,8 +215,15 @@ El resto de sliders quedan LIBRES para que el usuario los modifique.
 - OTHER - Identity Lock moderate, max_reencuadre 5
 
 ## Archivos Clave
-- `/app/BBLA/maestro arqu.md` - Documento maestro v28
-- `/app/backend/services/` - Todos los servicios del backend
+- `/app/BBLA/maestro arqu.md` - Documento maestro v28 (actualizado con FASE 4 y 5)
+- `/app/backend/services/prompt_compiler_service.py` - El Cerebro v28.0
+- `/app/backend/services/conflict_veto_engine.py` - Motor de vetos (NEW)
+- `/app/backend/services/block_injector.py` - Inyector de bloques (NEW)
+- `/app/backend/services/semantic_sanitizer.py` - Sanitizador semántico (NEW)
+- `/app/backend/services/identity_lock.py` - Identity Lock dinámico (NEW)
+- `/app/backend/services/dna_anchor_generator.py` - DNA Anchor Generator (NEW)
+- `/app/backend/services/multimodal_prompt_injector.py` - Multimodal Injector (NEW)
+- `/app/backend/services/context_cache_manager.py` - Context Cache Manager (NEW)
 - `/app/frontend/src/components/` - Componentes UI
 - `/app/backend/migrations/vision_category_rules.sql` - Schema de categorías
 
