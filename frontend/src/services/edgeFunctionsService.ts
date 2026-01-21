@@ -116,31 +116,10 @@ export const analyzeImageWithVision = async (
   imageUrl: string,
   userId?: string
 ): Promise<VisionAnalysisResult> => {
-  try {
-    return await callEdgeFunction<VisionAnalysisResult>('vision-analysis', {
-      imageUrl,
-      userId,
-    });
-  } catch (error) {
-    console.error('Vision analysis failed, using fallback:', error);
-    // Return a default analysis for testing
-    return {
-      success: true,
-      analysis: {
-        technical_score: 7,
-        semantic_anchors: ['main subject', 'background elements'],
-        suggested_settings: {
-          limpieza_artefactos: 3,
-          enfoque: 5,
-          contraste: 4,
-        },
-        detected_issues: ['slight noise', 'minor exposure adjustment needed'],
-        recommended_profile: 'auto',
-      },
-      thumbnail_used: false,
-      tokens_consumed: 100,
-    };
-  }
+  return await callEdgeFunction<VisionAnalysisResult>('vision-analysis', {
+    imageUrl,
+    userId,
+  });
 };
 
 export const analyzeImageBase64WithVision = async (
