@@ -192,7 +192,7 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                 isOpen={isZoomModalOpen}
                 onClose={() => setIsZoomModalOpen(false)}
                 processedImage={getMasterUrl(selectedVariation?.image_path || '')}
-                originalImage={currentSession.original_image_path}
+                originalImage={getDisplayUrl(currentSession.original_image_path)}
                 title={isMaster ? "4K Master Inspection" : "2K Proxy Inspection"}
                 variation={selectedVariation}
                 generation={currentSession}
