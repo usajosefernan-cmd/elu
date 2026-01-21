@@ -1,252 +1,232 @@
-# LuxScaler v28.0 - Prompt Compiler Service (COMPLETE REWRITE)
-# FASE 4: El Cerebro - Compila el prompt universal desde sliders + visión
+# LuxScaler v28.10 - Prompt Compiler Service
+# Según documento maestro: PHASE 4 - PROMPT ASSEMBLY
 
 import asyncio
 from typing import Dict, Optional, List
 from services.supabase_service import supabase_db
-from services.semantic_motor import semantic_motor
-from services.veto_engine import veto_engine
-from services.identity_lock_service import identity_lock_service
-
 
 class PromptCompilerService:
     """
-    Compila el prompt universal LuxScaler desde:
-    - Configuración de 27 sliders
-    - Análisis de visión
-    - Perfil de usuario
-    - Reglas de veto
-    - Identity Lock
+    Compila el prompt final según el documento maestro.
+    
+    Estructura del prompt:
+    === PHOTOSCALER (Technical Imaging) ===
+    [instrucciones...]
+    
+    === STYLESCALER (Aesthetic & Vibe) ===
+    [instrucciones...]
+    
+    === LIGHTSCALER (Illumination) ===
+    [instrucciones...]
+    
+    === FINAL DIRECTIVES ===
+    Apply ALL instructions above seamlessly...
     """
     
-    VERSION = "28.1"
+    def __init__(self):
+        self._mappings_cache: Dict = {}
+        self._loaded = False
     
-    async def compile_prompt(self, config: dict, vision_data: dict = None) -> str:
-        """
-        Compila el prompt completo para Gemini.
+    async def _load_mappings(self):
+        """Carga las instrucciones de sliders desde la BD."""
+        if self._loaded:
+            return
         
-        Args:
-            config: Slider configuration
-            vision_data: Vision analysis results
-        
-        Returns:
-            Compiled prompt string
-        """
-        # Step 1: Normalize config format
-        slider_config = self._normalize_config(config)
-        
-        # Step 2: Apply veto rules
-        veto_result = await veto_engine.apply_vetos(slider_config)
-        modified_config = veto_result['modified_config']
-        vetos_applied = veto_result['vetos_applied']
-        
-        if vetos_applied:
-            print(f"PromptCompiler: Applied {len(vetos_applied)} veto rules")
-        
-        # Step 3: Translate sliders to instructions
-        translation_result = await semantic_motor.translate_all(modified_config)
-        
-        # Step 4: Build instruction blocks
-        photo_block = "\n".join(translation_result['active_instructions']['photoscaler']) or "[STANDARD PROCESSING]"
-        style_block = "\n".join(translation_result['active_instructions']['stylescaler']) or "[STANDARD STYLING]"
-        light_block = "\n".join(translation_result['active_instructions']['lightscaler']) or "[NATURAL LIGHTING]"
-        
-        # Step 5: Generate Identity Lock block
-        has_person = vision_data.get('technical_diagnosis', {}).get('has_person', True) if vision_data else True
-        semantic_anchors = vision_data.get('semantic_anchors', []) if vision_data else []
-        identity_block = identity_lock_service.generate_lock_block(
-            modified_config, 
-            has_person=has_person,
-            semantic_anchors=semantic_anchors
-        )
-        
-        # Step 6: Extract vision context
-        vision_context = self._build_vision_context(vision_data)
-        
-        # Step 7: Build veto warnings
-        veto_warnings = self._build_veto_warnings(vetos_applied)
-        
-        # Step 8: Get aspect ratio
-        aspect_ratio = vision_data.get('aspect_ratio', '1:1') if vision_data else '1:1'
-        
-        # Step 9: Assemble final prompt
-        prompt = f"""YOU ARE AN AI IMAGE TRANSFORMATION ENGINE.
-YOUR JOB IS TO TRANSFORM THE INPUT IMAGE ACCORDING TO THE INSTRUCTIONS BELOW.
-YOU MUST MAKE VISIBLE CHANGES TO THE IMAGE. DO NOT RETURN THE SAME IMAGE.
-
-CRITICAL: THIS IS NOT A CAPTION TASK. YOU MUST EDIT THE IMAGE.
-APPLY ALL TRANSFORMATIONS LISTED BELOW. THE OUTPUT MUST LOOK DIFFERENT FROM INPUT.
-
-=== ASPECT RATIO ===
-Maintain exact aspect ratio: {aspect_ratio}
-
-{identity_block}
-
-=== TRANSFORMATIONS TO APPLY ===
-
-PHOTO ADJUSTMENTS:
-{photo_block}
-
-STYLE ADJUSTMENTS:
-{style_block}
-
-LIGHTING ADJUSTMENTS:
-{light_block}
-
-{veto_warnings}
-
-=== MANDATORY EXECUTION ===
-1. READ each instruction above
-2. APPLY the transformation to the image
-3. The output MUST show visible differences from input
-4. If instruction says "FORCE" or has ●, apply MAXIMUM effect
-
-=== OUTPUT REQUIREMENTS ===
-- Same dimensions as input
-- Visible transformations applied
-- Professional quality result
-- NOT the same as input image
-
-DO NOT just analyze the image. TRANSFORM IT according to the instructions above.
-"""
-        return prompt
-    
-    def _normalize_config(self, config: dict) -> dict:
-        """Normaliza diferentes formatos de config al formato estándar."""
-        result = {
-            'photoscaler': {'sliders': []},
-            'stylescaler': {'sliders': []},
-            'lightscaler': {'sliders': []}
-        }
-        
-        for pillar in ['photoscaler', 'stylescaler', 'lightscaler']:
-            pillar_data = config.get(pillar, {})
+        try:
+            response = supabase_db.client.table("slider_semantic_mappings").select("*").execute()
             
-            if isinstance(pillar_data, dict):
-                if 'sliders' in pillar_data:
-                    sliders = pillar_data['sliders']
-                    if isinstance(sliders, list):
-                        result[pillar]['sliders'] = sliders
-                    elif isinstance(sliders, dict):
-                        result[pillar]['sliders'] = [
-                            {'name': k, 'value': v} for k, v in sliders.items()
-                        ]
-                else:
-                    # Direct dict format: {slider_name: value}
-                    result[pillar]['sliders'] = [
-                        {'name': k, 'value': v} for k, v in pillar_data.items()
-                        if isinstance(v, (int, float))
-                    ]
-        
-        return result
-    
-    def _build_vision_context(self, vision_data: dict) -> str:
-        """Construye el contexto de visión para el prompt."""
-        if not vision_data:
-            return "No prior vision analysis available. Apply standard professional enhancement."
-        
-        parts = []
-        
-        # Production analysis
-        if 'production_analysis' in vision_data:
-            pa = vision_data['production_analysis']
-            current = pa.get('current_quality', 'Unknown')
-            target = pa.get('target_vision', 'Professional enhancement')
-            parts.append(f"CURRENT STATE: {current}")
-            parts.append(f"TARGET VISION: {target}")
+            self._mappings_cache = {}
+            for item in response.data or []:
+                pillar = item.get('pillar_name', '').upper()
+                slider_name = item.get('slider_name', '')
+                
+                if pillar not in self._mappings_cache:
+                    self._mappings_cache[pillar] = {}
+                
+                # Mapear niveles de instrucción
+                self._mappings_cache[pillar][slider_name] = {
+                    0: item.get('instruction_off', ''),
+                    1: item.get('instruction_low', ''),
+                    2: item.get('instruction_low', ''),
+                    3: item.get('instruction_low', ''),
+                    4: item.get('instruction_med', ''),
+                    5: item.get('instruction_med', ''),
+                    6: item.get('instruction_med', ''),
+                    7: item.get('instruction_high', ''),
+                    8: item.get('instruction_high', ''),
+                    9: item.get('instruction_force', ''),
+                    10: item.get('instruction_force', ''),
+                    'display_name': item.get('display_name', slider_name)
+                }
             
-            gaps = pa.get('gaps_detected', [])
-            if gaps:
-                parts.append(f"GAPS TO CLOSE: {', '.join(gaps)}")
-        
-        # Technical diagnosis
-        if 'technical_diagnosis' in vision_data:
-            td = vision_data['technical_diagnosis']
-            tech_parts = []
-            if 'noise_level' in td:
-                tech_parts.append(f"Noise={td['noise_level']}/10")
-            if 'blur_level' in td:
-                tech_parts.append(f"Blur={td['blur_level']}/10")
-            if 'exposure_issues' in td and td['exposure_issues'] != 'none':
-                tech_parts.append(f"Exposure={td['exposure_issues']}")
-            if tech_parts:
-                parts.append(f"TECHNICAL: {', '.join(tech_parts)}")
-        
-        # Primary intent
-        if 'auto_settings' in vision_data:
-            intent = vision_data['auto_settings'].get('primary_intent_used', '')
-            if intent:
-                parts.append(f"SELECTED INTENT: {intent}")
-        
-        # Semantic anchors
-        if 'semantic_anchors' in vision_data:
-            anchors = vision_data['semantic_anchors'][:5]  # Top 5
-            if anchors:
-                parts.append(f"PRESERVE ELEMENTS: {', '.join(anchors)}")
-        
-        return "\n".join(parts) if parts else "Standard professional enhancement mode."
+            self._loaded = True
+            print(f"PromptCompiler: Loaded mappings for {len(self._mappings_cache)} pillars")
+            
+        except Exception as e:
+            print(f"PromptCompiler: Error loading mappings: {e}")
     
-    def _build_veto_warnings(self, vetos_applied: list) -> str:
-        """Genera advertencias sobre vetos aplicados."""
-        if not vetos_applied:
+    def _get_instruction(self, pillar: str, slider_name: str, value: int) -> str:
+        """Obtiene la instrucción para un slider según su valor."""
+        pillar_upper = pillar.upper()
+        if pillar_upper not in self._mappings_cache:
             return ""
         
-        lines = ["=== SYSTEM VETO WARNINGS ==="]
-        for veto in vetos_applied:
-            lines.append(f"⚠️ {veto['rule_name']}:")
-            for action in veto['actions']:
-                lines.append(f"   - {action['slider_name']}: {action['original']} → {action['forced']} ({action['reason']})")
+        slider_data = self._mappings_cache[pillar_upper].get(slider_name)
+        if not slider_data:
+            return ""
         
-        return "\n".join(lines)
+        # Clamp value to 0-10
+        value = max(0, min(10, value))
+        instruction = slider_data.get(value, '')
+        
+        return instruction if instruction else ""
     
-    async def compile_with_metadata(self, config: dict, vision_data: dict = None, user_mode: str = 'auto') -> dict:
+    async def compile_prompt(
+        self, 
+        config: dict, 
+        protocol_locks: dict = None,
+        vision_data: dict = None
+    ) -> str:
         """
-        Compila el prompt y devuelve metadata adicional.
+        Compila el prompt final según el documento maestro.
+        
+        Args:
+            config: Configuración de sliders {pillar: {sliders: [{name, value}]}}
+            protocol_locks: Locks de protocolo (categoría detectada)
+            vision_data: Datos del análisis de visión
         
         Returns:
-            {
-                'success': bool,
-                'prompt': str,
-                'metadata': {
-                    'vetos_applied': list,
-                    'active_sliders': int,
-                    'force_sliders': int,
-                    'identity_lock': bool,
-                    'user_mode': str,
-                    'version': str
-                }
-            }
+            Prompt compilado
         """
+        await self._load_mappings()
+        
+        prompt_parts = []
+        
+        # === PHOTOSCALER ===
+        prompt_parts.append("=== PHOTOSCALER (Technical Imaging) ===")
+        photo_instructions = self._assemble_pillar(
+            'photoscaler', 
+            config.get('photoscaler', {}),
+            protocol_locks
+        )
+        prompt_parts.append(photo_instructions if photo_instructions else "[Standard processing]")
+        
+        # === STYLESCALER ===
+        prompt_parts.append("\n=== STYLESCALER (Aesthetic & Vibe) ===")
+        style_instructions = self._assemble_pillar(
+            'stylescaler',
+            config.get('stylescaler', {}),
+            protocol_locks
+        )
+        prompt_parts.append(style_instructions if style_instructions else "[Standard styling]")
+        
+        # === LIGHTSCALER ===
+        prompt_parts.append("\n=== LIGHTSCALER (Illumination) ===")
+        light_instructions = self._assemble_pillar(
+            'lightscaler',
+            config.get('lightscaler', {}),
+            protocol_locks
+        )
+        prompt_parts.append(light_instructions if light_instructions else "[Natural lighting]")
+        
+        # === FINAL DIRECTIVES ===
+        prompt_parts.append("\n=== FINAL DIRECTIVES ===")
+        prompt_parts.append(
+            "Apply ALL instructions above seamlessly. "
+            "TRANSFORM the image according to each instruction. "
+            "The output MUST show visible changes from the input. "
+            "Preserve image authenticity unless explicitly instructed otherwise. "
+            "Generate the result at maximum quality."
+        )
+        
+        return "\n".join(prompt_parts)
+    
+    def _assemble_pillar(
+        self, 
+        pillar: str, 
+        pillar_config: dict,
+        protocol_locks: dict = None
+    ) -> str:
+        """Ensambla las instrucciones de un pilar."""
+        instructions = []
+        
+        # Get sliders - handle both formats
+        sliders = pillar_config.get('sliders', [])
+        
+        # Convert to list format if dict
+        if isinstance(sliders, dict):
+            sliders = [{'name': k, 'value': v} for k, v in sliders.items()]
+        
+        # Check for protocol locks
+        if protocol_locks:
+            locked_sliders = []
+            for slider_key, lock_data in protocol_locks.items():
+                if isinstance(lock_data, dict) and lock_data.get('locked'):
+                    hard_prompt = lock_data.get('hard_prompt', '')
+                    if hard_prompt:
+                        locked_sliders.append(f"[PROTOCOL LOCK] {slider_key}: {hard_prompt}")
+            
+            if locked_sliders:
+                instructions.append("[PROTOCOL OVERRIDE ACTIVE]")
+                instructions.extend(locked_sliders)
+                instructions.append("")
+        
+        # Process each slider
+        for slider in sliders:
+            name = slider.get('name', '')
+            value = int(slider.get('value', 0))
+            
+            if value <= 0:
+                continue  # Skip disabled sliders
+            
+            instruction = self._get_instruction(pillar, name, value)
+            
+            if instruction:
+                # Add intensity indicator
+                if value >= 9:
+                    prefix = f"[FORCE {value}]"
+                elif value >= 7:
+                    prefix = f"[HIGH {value}]"
+                elif value >= 4:
+                    prefix = f"[MED {value}]"
+                else:
+                    prefix = f"[LOW {value}]"
+                
+                display_name = self._mappings_cache.get(pillar.upper(), {}).get(name, {}).get('display_name', name)
+                instructions.append(f"{prefix} {display_name}: {instruction}")
+        
+        return "\n".join(instructions)
+    
+    async def compile_with_metadata(self, config: dict, vision_data: dict = None) -> dict:
+        """Compila el prompt y devuelve metadata."""
         try:
-            # Normalize
-            slider_config = self._normalize_config(config)
+            await self._load_mappings()
             
-            # Get veto result
-            veto_result = await veto_engine.apply_vetos(slider_config)
+            # Count active and force sliders
+            active = 0
+            force = 0
             
-            # Get translation summary
-            translation_result = await semantic_motor.translate_all(veto_result['modified_config'])
-            summary = translation_result['summary']
+            for pillar in ['photoscaler', 'stylescaler', 'lightscaler']:
+                sliders = config.get(pillar, {}).get('sliders', [])
+                if isinstance(sliders, dict):
+                    sliders = [{'name': k, 'value': v} for k, v in sliders.items()]
+                
+                for s in sliders:
+                    val = int(s.get('value', 0))
+                    if val > 0:
+                        active += 1
+                    if val >= 9:
+                        force += 1
             
-            # Get identity lock status
-            has_person = vision_data.get('technical_diagnosis', {}).get('has_person', True) if vision_data else True
-            identity_analysis = identity_lock_service.analyze_identity_risk(slider_config)
-            
-            # Compile prompt
-            prompt = await self.compile_prompt(config, vision_data)
+            prompt = await self.compile_prompt(config, None, vision_data)
             
             return {
                 'success': True,
                 'prompt': prompt,
                 'metadata': {
-                    'vetos_applied': veto_result['vetos_applied'],
-                    'active_sliders': summary['active_sliders'],
-                    'force_sliders': summary['force_sliders'],
-                    'identity_lock': identity_analysis['identity_lock_active'],
-                    'identity_risk': identity_analysis['risk_level'],
-                    'conflicts': translation_result['conflicts_detected'],
-                    'user_mode': user_mode,
-                    'version': self.VERSION
+                    'active_sliders': active,
+                    'force_sliders': force,
+                    'version': '28.10'
                 }
             }
         except Exception as e:
