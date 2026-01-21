@@ -231,6 +231,45 @@ El resto de sliders quedan LIBRES para que el usuario los modifique.
 - Email: usajosefernan@gmail.com
 - Password: 111111
 
+## Nuevos Servicios Backend v28.0
+
+### Estructura de Servicios (FASE 4 & 5)
+```
+backend/services/
+├── conflict_veto_engine.py      # 7 reglas de veto
+├── block_injector.py            # Inyección de bloques por pilar
+├── semantic_sanitizer.py        # Limpieza y validación
+├── identity_lock.py             # Lock dinámico facial
+├── dna_anchor_generator.py      # Detección facial + crop
+├── multimodal_prompt_injector.py # Contenido multimodal
+├── context_cache_manager.py     # Cache Vertex AI (stub)
+└── prompt_compiler_service.py   # Orquestador principal
+```
+
+### Flujo del Prompt Compiler
+```
+1. Flatten Config → Dict plano de sliders
+2. Apply Vetos → Resuelve conflictos lógicos
+3. Translate Sliders → Instrucciones semánticas
+4. Inject Blocks → Bloques por pilar
+5. Generate Identity Lock → Según contexto
+6. Generate DNA Anchor → Si hay imagen con cara
+7. Build System Prompt → Template dinámico
+8. Sanitize → Elimina redundancias
+9. Context Cache → Si disponible
+```
+
+### Endpoint de Compilación
+```bash
+POST /api/process/compile
+{
+  "config": {...sliders...},
+  "visionAnalysis": {...},
+  "profileType": "AUTO|USER|PRO|PROLUX",
+  "includeDebug": true  # Para ver vetos y sanitization
+}
+```
+
 ## Changelog
 
 ### v28.2 (2025-01-21) - FASE 4 & 5 COMPLETE
