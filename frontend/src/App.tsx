@@ -1280,11 +1280,12 @@ const App: React.FC = () => {
                 onUpgrade={() => navigate('/pricing')}
             />
 
+            {/* Legacy MobileConfigWizard disabled for v28 flow */}
             <MobileConfigWizard
-                imageUrl={inputImageUrl || ''}
+                imageUrl={stagedImageUrl || inputImageUrl || ''}
                 onConfirm={handleWizardConfirm}
                 onCancel={resetFlow}
-                isVisible={showConfigWizard}
+                isVisible={false}
                 analysis={analysisResult}
             />
 
