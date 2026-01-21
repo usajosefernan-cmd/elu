@@ -27,7 +27,7 @@ const PROFILES: ProfileInfo[] = [
 ];
 
 // =====================================================
-// SLIDER DEFINITIONS con nombres amigables y descripciones
+// SLIDER DEFINITIONS con nombres amigables y descripciones v29
 // =====================================================
 const SLIDERS = {
   photoscaler: {
@@ -35,15 +35,15 @@ const SLIDERS = {
     emoji: '📷',
     color: 'cyan',
     items: [
-      { key: 'limpieza_artefactos', name: 'Limpieza', desc: 'Elimina ruido, manchas y artefactos de compresión' },
-      { key: 'geometria', name: 'Geometría', desc: 'Corrige distorsiones y endereza líneas' },
-      { key: 'optica', name: 'Lente', desc: 'Simula calidad de lentes profesionales' },
-      { key: 'chronos', name: 'Nitidez Mov.', desc: 'Reduce desenfoque por movimiento' },
-      { key: 'senal_raw', name: 'Rango', desc: 'Recupera detalles en sombras y luces' },
-      { key: 'sintesis_adn', name: 'Detalle', desc: 'Genera texturas de alta resolución' },
-      { key: 'grano_filmico', name: 'Grano', desc: 'Añade textura cinematográfica' },
-      { key: 'enfoque', name: 'Enfoque', desc: 'Aumenta la definición de bordes' },
-      { key: 'resolucion', name: 'Escala', desc: 'Aumenta la resolución de la imagen' }
+      { key: 'limpieza_artefactos', name: 'Limpieza', desc: 'Elimina ruido, manchas y artefactos. FORCE: Reconstrucción forense' },
+      { key: 'geometria', name: 'Geometría', desc: 'Corrige distorsiones y perspectiva. FORCE: Perfección euclidiana' },
+      { key: 'optica', name: 'Óptica', desc: 'Simula lentes profesionales. FORCE: Nitidez sintética' },
+      { key: 'chronos', name: 'Movimiento', desc: 'Congela el movimiento. FORCE: 1/8000s, cristalino' },
+      { key: 'senal_raw', name: 'Rango Din.', desc: 'Recupera sombras y luces. FORCE: Workflow 32-bit' },
+      { key: 'sintesis_adn', name: 'Textura', desc: 'Genera detalles faltantes. FORCE: Texturas 16K' },
+      { key: 'grano_filmico', name: 'Grano', desc: 'Añade textura de película. FORCE: 16MM vintage' },
+      { key: 'enfoque', name: 'Enfoque', desc: 'Aumenta nitidez de bordes. FORCE: Vectorial' },
+      { key: 'resolucion', name: 'Escala', desc: 'Aumenta resolución. FORCE: Calidad de impresión gigante' }
     ]
   },
   stylescaler: {
@@ -51,15 +51,15 @@ const SLIDERS = {
     emoji: '🎨',
     color: 'pink',
     items: [
-      { key: 'styling_piel', name: 'Piel', desc: 'Suaviza y perfecciona la textura de piel' },
-      { key: 'styling_pelo', name: 'Cabello', desc: 'Mejora brillo y definición del pelo' },
-      { key: 'styling_ropa', name: 'Ropa', desc: 'Mejora texturas de telas y vestimenta' },
-      { key: 'maquillaje', name: 'Makeup', desc: 'Realza o añade maquillaje sutil' },
-      { key: 'limpieza_entorno', name: 'Fondo', desc: 'Limpia y mejora el entorno' },
-      { key: 'reencuadre_ia', name: 'Encuadre', desc: 'Ajusta composición automáticamente' },
-      { key: 'atmosfera', name: 'Atmósfera', desc: 'Añade profundidad ambiental' },
-      { key: 'look_cine', name: 'Cinema', desc: 'Aplica estética cinematográfica' },
-      { key: 'materiales_pbr', name: 'Texturas', desc: 'Mejora realismo de materiales' }
+      { key: 'styling_piel', name: 'Piel', desc: 'Perfecciona textura de piel. FORCE: Superficie sintética' },
+      { key: 'styling_pelo', name: 'Cabello', desc: 'Mejora brillo y volumen. FORCE: Fibra sintética perfecta' },
+      { key: 'styling_ropa', name: 'Ropa', desc: 'Mejora texturas de tela. FORCE: Lujo sintetizado' },
+      { key: 'maquillaje', name: 'Maquillaje', desc: 'Realza o añade makeup. FORCE: Stage makeup extremo' },
+      { key: 'limpieza_entorno', name: 'Fondo', desc: 'Limpia el entorno. FORCE: Estudio infinito' },
+      { key: 'reencuadre_ia', name: 'Encuadre', desc: 'Recompone la imagen. FORCE: Espiral Fibonacci' },
+      { key: 'atmosfera', name: 'Atmósfera', desc: 'Añade niebla y profundidad. FORCE: Silent Hill fog' },
+      { key: 'look_cine', name: 'Cinema', desc: 'Aplica look cinematográfico. FORCE: Matrix grade' },
+      { key: 'materiales_pbr', name: 'Materiales', desc: 'Mejora reflejos y texturas. FORCE: Unreal Engine 5' }
     ]
   },
   lightscaler: {
@@ -67,15 +67,15 @@ const SLIDERS = {
     emoji: '☀️',
     color: 'orange',
     items: [
-      { key: 'key_light', name: 'Principal', desc: 'Luz principal del sujeto' },
-      { key: 'fill_light', name: 'Relleno', desc: 'Suaviza sombras duras' },
-      { key: 'rim_light', name: 'Contorno', desc: 'Luz de borde/separación' },
-      { key: 'volumetria', name: 'Volumen', desc: 'Crea sensación de profundidad' },
-      { key: 'temperatura', name: 'Temp.', desc: 'Cálido (amarillo) o frío (azul)' },
-      { key: 'contraste', name: 'Contraste', desc: 'Diferencia entre luces y sombras' },
-      { key: 'sombras', name: 'Sombras', desc: 'Intensidad de áreas oscuras' },
-      { key: 'estilo_autor', name: 'Autor', desc: 'Estilo de iluminación artístico' },
-      { key: 'reflejos', name: 'Reflejos', desc: 'Brillos y highlights especulares' }
+      { key: 'key_light', name: 'Principal', desc: 'Luz principal del sujeto. FORCE: Spotlight teatral' },
+      { key: 'fill_light', name: 'Relleno', desc: 'Suaviza sombras. FORCE: Mundo sin sombras' },
+      { key: 'rim_light', name: 'Contorno', desc: 'Luz de borde/separación. FORCE: Neon Tron' },
+      { key: 'volumetria', name: 'Volumen', desc: 'Rayos de luz visibles. FORCE: Haces láser' },
+      { key: 'temperatura', name: 'Temp.', desc: 'Cálido o frío. FORCE: Fuego y hielo' },
+      { key: 'contraste', name: 'Contraste', desc: 'Diferencia luz/sombra. FORCE: Blanco y negro binario' },
+      { key: 'sombras', name: 'Sombras', desc: 'Intensidad de negros. FORCE: Vantablack' },
+      { key: 'estilo_autor', name: 'Estilo', desc: 'Look de autor. FORCE: Renacimiento' },
+      { key: 'reflejos', name: 'Brillo', desc: 'Especularidad de superficies. FORCE: Cromado' }
     ]
   }
 };
