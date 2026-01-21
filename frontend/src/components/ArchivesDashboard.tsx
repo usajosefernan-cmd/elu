@@ -260,21 +260,14 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                     )}
                                     
                                     {viewMode === 'full' && (
-                                        // 1:1: Slider a pantalla completa con imágenes de máxima calidad
-                                        <div 
-                                            className="w-full h-full flex items-center justify-center cursor-pointer"
-                                            onDoubleClick={() => setIsZoomModalOpen(true)}
-                                        >
+                                        // 1:1: Abre el modal de pantalla completa directamente
+                                        <div className="w-full h-full relative">
                                             <ComparisonSlider 
                                                 originalImage={getDisplayUrl(currentSession.original_image_path)} 
                                                 processedImage={getDisplayUrl(selectedVariation.image_path)} 
                                                 isLocked={false} 
                                                 objectFit="contain"
                                             />
-                                            {/* Hint para pantalla completa */}
-                                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-black/60 backdrop-blur rounded-full text-[9px] text-gray-400 pointer-events-none">
-                                                Doble clic para pantalla completa
-                                            </div>
                                         </div>
                                     )}
                                 </div>
