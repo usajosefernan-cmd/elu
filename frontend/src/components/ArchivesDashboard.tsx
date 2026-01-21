@@ -90,6 +90,9 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
             setScale(1);
             setTranslate({ x: 0, y: 0 });
             setSliderPosition(50);
+            setAfterImgSize({ w: 0, h: 0 });
+            setBeforeImgSize({ w: 0, h: 0 });
+            setDisplaySize({ w: 0, h: 0 });
         }
     }, [selectedVariation]);
 
