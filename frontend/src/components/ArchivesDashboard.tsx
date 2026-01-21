@@ -248,11 +248,17 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                 </button>
                             </div>
                             <div className="flex-1 flex items-center justify-center bg-checkered relative">
-                                <div className="w-full h-full relative">
+                                <div className="w-full h-full relative flex items-center justify-center">
                                     {isMaster ? (
-                                        <img src={getDisplayUrl(selectedVariation.image_path)} className="w-full h-full object-cover" />
+                                        <img src={getDisplayUrl(selectedVariation.image_path)} className="max-w-full max-h-full object-contain" />
                                     ) : (
-                                        <ComparisonSlider originalImage={currentSession.original_image_path} processedImage={getDisplayUrl(selectedVariation.image_path)} isLocked={false} objectFit="cover" />
+                                        <ComparisonSlider 
+                                            originalImage={currentSession.original_image_path} 
+                                            processedImage={getDisplayUrl(selectedVariation.image_path)} 
+                                            isLocked={false} 
+                                            objectFit="contain"
+                                            className="max-w-full max-h-full"
+                                        />
                                     )}
                                 </div>
                             </div>
