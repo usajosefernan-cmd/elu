@@ -521,6 +521,10 @@ const App: React.FC = () => {
             };
             // Store these so USER/PRO/PROLUX can start from AUTO by default
             setVisionAnalysis((prev: any) => ({ ...prev, _defaultMixer: defaultMixer }));
+            // Also allow AUTO to start from suggested defaults
+            if (stagedMasterImageUrl || stagedImageUrl) {
+                setInputImageUrl(stagedMasterImageUrl || stagedImageUrl);
+            }
 
             // Get current token balance
             const balance = await getBalance();
