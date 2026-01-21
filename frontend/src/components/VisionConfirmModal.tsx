@@ -1,11 +1,14 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Check, X, Sparkles, Wand2, Edit3, 
   Camera, Palette, Sun, ChevronRight, Zap,
   Eye, AlertTriangle, User, Layers, ChevronDown, ChevronUp,
   Shield, Home, Utensils, Mountain, Calendar, FileText, Cat, Brush,
-  Users, Package, Info
+  Users, Package, Info, Bookmark
 } from 'lucide-react';
+import { SmartPresetSelector } from './SmartPresetSelector';
+import { IntentSpectrum, IntentLevel, applyIntentToSliders } from './IntentSpectrum';
+import { SmartPreset, presetToSliderConfig } from '../services/smartPresetsService';
 
 interface VisionAnalysis {
   category?: string;
