@@ -523,26 +523,55 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                 </div>
                             )}
 
-                            {/* Prompt compilado */}
+                            {/* Prompt compilado COMPLETO */}
                             {selectedVariation.prompt_payload?.compiledPrompt && (
                                 <div className="pt-2 border-t border-white/5">
                                     <div className="flex items-center justify-between mb-1">
-                                        <p className="text-[9px] text-purple-400 uppercase font-bold">📝 Prompt Enviado</p>
+                                        <p className="text-[9px] text-purple-400 uppercase font-bold">📝 Prompt Completo</p>
                                         <button
                                             onClick={() => {
                                                 navigator.clipboard.writeText(selectedVariation.prompt_payload?.compiledPrompt || '');
                                             }}
-                                            className="text-[8px] text-gray-500 hover:text-white"
+                                            className="text-[8px] text-gray-500 hover:text-white px-1.5 py-0.5 bg-white/5 rounded"
                                         >
                                             Copiar
                                         </button>
                                     </div>
-                                    <div className="bg-black/40 rounded p-2 max-h-32 overflow-y-auto">
-                                        <p className="text-[8px] text-gray-400 whitespace-pre-wrap font-mono leading-relaxed">
-                                            {selectedVariation.prompt_payload.compiledPrompt.slice(0, 500)}
-                                            {selectedVariation.prompt_payload.compiledPrompt.length > 500 && '...'}
-                                        </p>
+                                    <div className="bg-black/60 rounded p-2 max-h-[400px] overflow-y-auto border border-white/5">
+                                        <pre className="text-[8px] text-gray-300 whitespace-pre-wrap font-mono leading-relaxed">
+                                            {selectedVariation.prompt_payload.compiledPrompt}
+                                        </pre>
                                     </div>
+                                    <div className="flex justify-between mt-1 text-[8px] text-gray-600">
+                                        <span>{selectedVariation.prompt_payload.compiledPrompt.length} chars</span>
+                                        <span>~{Math.ceil(selectedVariation.prompt_payload.compiledPrompt.length / 4)} tokens</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Debug Info - Vetos, Sanitization */}
+                            {selectedVariation.prompt_payload?.debugInfo && (
+                                <div className="pt-2 border-t border-white/5">
+                                    <p className="text-[9px] text-red-400 uppercase font-bold mb-1">🔧 Debug Info</p>
+                                    
+                                    {/* Vetos aplicados */}
+                                    {selectedVariation.prompt_payload.debugInfo.vetos_applied?.length > 0 && (
+                                        <div className="mb-2">
+                                            <p className="text-[8px] text-amber-400 mb-0.5">Vetos aplicados:</p>
+                                            {selectedVariation.prompt_payload.debugInfo.vetos_applied.map((v: any, i: number) => (
+                                                <div key={i} className="text-[7px] text-gray-500 ml-1">
+                                                    • {v.rule_name}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    
+                                    {/* Sanitization stats */}
+                                    {selectedVariation.prompt_payload.debugInfo.sanitization && (
+                                        <div className="text-[7px] text-gray-600">
+                                            Redundancias: {selectedVariation.prompt_payload.debugInfo.sanitization.redundancies_removed || 0}
+                                        </div>
+                                    )}
                                 </div>
                             )}
 
