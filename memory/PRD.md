@@ -272,6 +272,19 @@ POST /api/process/compile
 
 ## Changelog
 
+### v29.0 (2025-01-21) - VETO ENGINE v2 + CONFLICT RESOLUTION
+- ✅ **Nuevas Reglas de Veto:**
+  - "Niebla vs Nitidez": atmosfera>5 → optica=0, enfoque=0
+  - "High Key vs Vantablack": fill_light>6 → sombras=0
+  - "High Key Limita Contraste": fill_light>6 → contraste≤5
+  - "Cine vs Autor": prioriza el slider con valor más alto
+  - "Volumetría sin Atmósfera": volumetria>7 con atmosfera<3 → atmosfera=4
+- ✅ **System Prompt mejorado:**
+  - CRITICAL INSTRUCTION: Resolución de conflictos lógicos
+  - "DO NOT attempt to merge contradictory styles"
+  - Priorizar última instrucción cuando hay conflicto
+- ✅ **Versión actualizada a v29.0**
+
 ### v28.2 (2025-01-21) - FASE 4 & 5 COMPLETE
 - ✅ **Conflict Veto Engine** (conflict_veto_engine.py)
   - 7 reglas de veto implementadas
