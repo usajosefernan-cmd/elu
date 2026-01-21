@@ -610,6 +610,14 @@ export const ProfileConfigModal: React.FC<ProfileConfigModalProps> = ({
 
   if (!isVisible) return null;
 
+
+  const [useAutoAll, setUseAutoAll] = useState(true);
+
+  const applyAutoToAll = () => {
+    setUseAutoAll(true);
+    // Per-profile UIs will read initialMixer/initialSuggestedSettings when useAutoAll=true
+  };
+
   const canAccessProfile = (profile: UserProfileType): boolean => {
     const profileInfo = PROFILES.find(p => p.key === profile);
     if (!profileInfo) return false;
