@@ -450,39 +450,40 @@ const ProProfileUI: React.FC<{
 // =====================================================
 // PROLUX PROFILE UI - 27 Sliders
 // =====================================================
+// IMPORTANTE: Los keys deben coincidir EXACTAMENTE con slider_semantic_mappings en Supabase
 const SLIDERS_27 = {
   photoscaler: [
     { key: 'limpieza_artefactos', name: 'Limpieza', short: 'CLN' },
     { key: 'grano_filmico', name: 'Grano', short: 'GRN' },
-    { key: 'optica_nitidez', name: 'Nitidez', short: 'SHP' },
-    { key: 'geometria_distorsion', name: 'Distorsión', short: 'DST' },
-    { key: 'reencuadre_ia', name: 'Reencuadre', short: 'FRM' },
-    { key: 'desenfoque_movimiento', name: 'Motion', short: 'MOT' },
-    { key: 'detalle_texturas', name: 'Texturas', short: 'TXT' },
-    { key: 'restauracion_danos', name: 'Restauración', short: 'RST' },
-    { key: 'geometria_perspectiva', name: 'Perspectiva', short: 'PRS' }
+    { key: 'optica', name: 'Óptica/Nitidez', short: 'OPT' },
+    { key: 'geometria', name: 'Geometría', short: 'GEO' },
+    { key: 'chronos', name: 'Chronos', short: 'CHR' },
+    { key: 'senal_raw', name: 'Señal RAW', short: 'RAW' },
+    { key: 'sintesis_adn', name: 'Síntesis ADN', short: 'ADN' },
+    { key: 'enfoque', name: 'Enfoque', short: 'FOC' },
+    { key: 'resolucion', name: 'Resolución', short: 'RES' }
   ],
   stylescaler: [
-    { key: 'vibracion_saturacion', name: 'Saturación', short: 'SAT' },
-    { key: 'paleta_tonos', name: 'Tonos', short: 'TON' },
-    { key: 'dramatismo_contraste', name: 'Contraste', short: 'CNT' },
-    { key: 'estilo_render', name: 'Render', short: 'RND' },
-    { key: 'antiguedad_aged_look', name: 'Vintage', short: 'VNT' },
-    { key: 'retoque_piel', name: 'Piel', short: 'SKN' },
-    { key: 'dramatismo_vigneta', name: 'Viñeta', short: 'VIG' },
-    { key: 'suavidad_bokeh', name: 'Bokeh', short: 'BOK' },
-    { key: 'caracter_procesa', name: 'Carácter', short: 'CHR' }
+    { key: 'styling_piel', name: 'Piel', short: 'SKN' },
+    { key: 'styling_pelo', name: 'Pelo', short: 'HAR' },
+    { key: 'styling_ropa', name: 'Ropa', short: 'CLO' },
+    { key: 'maquillaje', name: 'Maquillaje', short: 'MKP' },
+    { key: 'limpieza_entorno', name: 'Entorno', short: 'ENV' },
+    { key: 'reencuadre_ia', name: 'Reencuadre IA', short: 'FRM' },
+    { key: 'atmosfera', name: 'Atmósfera', short: 'ATM' },
+    { key: 'look_cine', name: 'Look Cine', short: 'CIN' },
+    { key: 'materiales_pbr', name: 'Materiales PBR', short: 'PBR' }
   ],
   lightscaler: [
-    { key: 'brillo_exposicion', name: 'Exposición', short: 'EXP' },
-    { key: 'luz_relleno', name: 'Fill', short: 'FIL' },
-    { key: 'profundidad_sombras', name: 'Sombras', short: 'SHD' },
-    { key: 'iluminacion_dramatica', name: 'Drama', short: 'DRM' },
-    { key: 'tonalidad_color', name: 'Temperatura', short: 'TMP' },
-    { key: 'enfasis_ojos', name: 'Ojos', short: 'EYE' },
-    { key: 'profundidad_dof', name: 'DOF', short: 'DOF' },
-    { key: 'luces_especulares', name: 'Especular', short: 'SPC' },
-    { key: 'balance_luminoso', name: 'Balance', short: 'BAL' }
+    { key: 'key_light', name: 'Luz Principal', short: 'KEY' },
+    { key: 'fill_light', name: 'Luz Relleno', short: 'FIL' },
+    { key: 'rim_light', name: 'Contra Luz', short: 'RIM' },
+    { key: 'volumetria', name: 'Volumetría', short: 'VOL' },
+    { key: 'temperatura', name: 'Temperatura', short: 'TMP' },
+    { key: 'contraste', name: 'Contraste', short: 'CNT' },
+    { key: 'sombras', name: 'Sombras', short: 'SHD' },
+    { key: 'estilo_autor', name: 'Estilo Autor', short: 'STY' },
+    { key: 'reflejos', name: 'Reflejos', short: 'REF' }
   ]
 };
 
