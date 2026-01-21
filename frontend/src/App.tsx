@@ -704,13 +704,18 @@ const App: React.FC = () => {
             // NO navegamos a /result hasta tener una imagen generada
 
             // Step 1: Compile prompt (Edge Functions w/ fallback)
-            // PRO mode may provide an explicit semantic sliderConfig serialized in selectedPresetId
+            // PRO/PROLUX mode may provide an explicit semantic sliderConfig serialized in selectedPresetId
             let sliderConfig: any = null;
-            if (config?.mode === 'PRO' && config?.selectedPresetId) {
+            if ((config?.mode === 'PRO' || config?.mode === 'PROLUX') && config?.selectedPresetId) {
                 try {
                     const parsed = JSON.parse(config.selectedPresetId);
                     if (parsed?.photoscaler && parsed?.stylescaler && parsed?.lightscaler) {
                         sliderConfig = parsed;
+                        console.log('[LuxScaler] Using full slider config from mode:', config.mode, 'Sliders count:', 
+                            (parsed.photoscaler?.sliders?.length || 0) + 
+                            (parsed.stylescaler?.sliders?.length || 0) + 
+                            (parsed.lightscaler?.sliders?.length || 0)
+                        );
                     }
                 } catch {
                     // ignore
