@@ -59,16 +59,7 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
     const [isProcessingMatrix, setIsProcessingMatrix] = useState(false);
     const [processingStatus, setProcessingStatus] = useState('');
 
-    // ZOOM/PAN STATE
     const containerRef = useRef<HTMLDivElement>(null);
-    const [imgNativeSize, setImgNativeSize] = useState({ w: 1, h: 1 });
-    const [scale, setScale] = useState(1);
-    const [translate, setTranslate] = useState({ x: 0, y: 0 });
-    const [isDragging, setIsDragging] = useState(false);
-    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
-    const [fitScale, setFitScale] = useState(1);
-    const [lastTouchDistance, setLastTouchDistance] = useState<number | null>(null);
-    const [isImageLoaded, setIsImageLoaded] = useState(false);
 
     const currentSession = useMemo(() =>
         sessions.find(s => s.id === selectedSessionId),
