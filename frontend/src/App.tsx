@@ -543,14 +543,6 @@ const App: React.FC = () => {
             resetFlow();
             return;
         }
-
-            // Legacy analysis is disabled in v28 flow
-            return;
-
-        } catch (analysisError: any) {
-            // Legacy analysis is disabled in v28 flow
-            return;
-        }
     };
 
     // Legacy wizard handlers (disabled)
