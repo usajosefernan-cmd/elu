@@ -303,35 +303,46 @@ const PRO_MACROS = {
 const ProProfileUI: React.FC<{ 
   onConfirm: (config: LuxConfig) => void;
   initialMixer?: LuxMixer;
-  useAutoAll?: boolean;
-  onAutoAll?: () => void;
-}> = ({ onConfirm, initialMixer, useAutoAll = true, onAutoAll }) => {
-  const defaults = {
-    restauracion: initialMixer?.restoration ?? 5,
-    fidelidad: initialMixer?.restoration ?? 5,
-    caracter: initialMixer?.restoration ?? 5,
-    presencia: initialMixer?.skin_bio ?? 5,
-    pulido: initialMixer?.stylism ?? 5,
-    cinematica: initialMixer?.stylism ?? 5,
-    volumen: initialMixer?.lighting ?? 5,
-    drama: initialMixer?.lighting ?? 5,
-    atmosfera: initialMixer?.lighting ?? 5,
+  initialSettings?: any;
+}> = ({ onConfirm, initialMixer, initialSettings }) => {
+  // Initialize from auto_settings if available
+  const getInitialValues = () => {
+    if (initialSettings) {
+      const ps = initialSettings.photoscaler || {};
+      const ss = initialSettings.stylescaler || {};
+      const ls = initialSettings.lightscaler || {};
+      return {
+        restauracion: Math.round((ps.limpieza_artefactos + ps.geometria + ps.chronos) / 3) || 5,
+        fidelidad: Math.round((ps.resolucion + ps.enfoque + ps.sintesis_adn + ps.senal_raw) / 4) || 5,
+        caracter: Math.round((ps.grano_filmico + ps.optica) / 2) || 5,
+        presencia: Math.round((ss.styling_piel + ss.styling_pelo + ss.maquillaje) / 3) || 5,
+        pulido: Math.round((ss.styling_ropa + ss.limpieza_entorno + ss.reencuadre_ia) / 3) || 5,
+        cinematica: Math.round((ss.look_cine + ss.atmosfera + ss.materiales_pbr) / 3) || 5,
+        volumen: Math.round((ls.key_light + ls.fill_light + ls.reflejos) / 3) || 5,
+        drama: Math.round((ls.contraste + ls.sombras + ls.rim_light) / 3) || 5,
+        atmosfera: Math.round((ls.volumetria + ls.temperatura + ls.estilo_autor) / 3) || 5,
+      };
+    }
+    return {
+      restauracion: initialMixer?.restoration ?? 5,
+      fidelidad: initialMixer?.restoration ?? 5,
+      caracter: initialMixer?.restoration ?? 5,
+      presencia: initialMixer?.skin_bio ?? 5,
+      pulido: initialMixer?.stylism ?? 5,
+      cinematica: initialMixer?.stylism ?? 5,
+      volumen: initialMixer?.lighting ?? 5,
+      drama: initialMixer?.lighting ?? 5,
+      atmosfera: initialMixer?.lighting ?? 5,
+    };
   };
 
-  const [macroValues, setMacroValues] = useState<Record<string, number>>(defaults);
+  const [macroValues, setMacroValues] = useState<Record<string, number>>(getInitialValues);
 
-  useEffect(() => {
-    if (useAutoAll) {
-      setMacroValues(defaults);
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [useAutoAll, initialMixer?.restoration, initialMixer?.skin_bio, initialMixer?.stylism, initialMixer?.lighting]);
-
-  const allMacros = [
-    ...PRO_MACROS.photoscaler,
-    ...PRO_MACROS.stylescaler,
-    ...PRO_MACROS.lightscaler,
-  ];
+  const setAll = (value: number) => {
+    const all: Record<string, number> = {};
+    Object.keys(macroValues).forEach(k => { all[k] = value; });
+    setMacroValues(all);
+  };
 
   const handleGenerate = () => {
     // Build semantic slider config expected by prompt-compiler
@@ -347,8 +358,6 @@ const ProProfileUI: React.FC<{
       lightscaler: buildPillar('lightscaler'),
     };
 
-    // We keep LuxConfig as carrier; App.tsx reads config.mode and config.mixer.
-    // We'll pass sliderConfig through selectedPresetId to avoid adding new types.
     onConfirm({
       userPrompt: '',
       mode: 'PRO',
@@ -365,39 +374,153 @@ const ProProfileUI: React.FC<{
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between gap-2">
-        <button
-          onClick={onAutoAll}
-          className="px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-[10px] text-gray-200 uppercase tracking-widest hover:bg-white/10"
-        >
-          Auto en todo
+    <div className="space-y-3">
+      {/* Quick presets */}
+      <div className="flex gap-2">
+        <button onClick={() => setAll(5)} className="flex-1 py-1.5 bg-white/5 text-gray-400 text-[10px] font-bold uppercase rounded-lg hover:bg-white/10">
+          Todo 5
         </button>
-        <div className="text-[10px] text-gray-500 uppercase tracking-widest">
-          Estado: {useAutoAll ? 'AUTO' : 'MANUAL'}
-        </div>
+        <button onClick={() => setAll(7)} className="flex-1 py-1.5 bg-white/5 text-gray-400 text-[10px] font-bold uppercase rounded-lg hover:bg-white/10">
+          Todo 7
+        </button>
+        <button onClick={() => setAll(10)} className="flex-1 py-1.5 bg-lumen-gold/20 text-lumen-gold text-[10px] font-bold uppercase rounded-lg hover:bg-lumen-gold/30">
+          Máximo
+        </button>
       </div>
 
       <div className="text-center mb-2">
-        <h3 className="text-xl font-bold text-white mb-1">PRO · 9 Macros Conceptuales</h3>
-        <p className="text-xs text-gray-400">Cada macro controla un subset semántico de sliders</p>
+        <h3 className="text-lg font-bold text-white mb-1">PRO · 9 Macros</h3>
+        <p className="text-[10px] text-gray-400">Cada macro controla un grupo de sliders</p>
       </div>
 
-      <div className="space-y-4">
-        <div className="space-y-2">
-          <p className="text-[10px] text-gray-500 uppercase tracking-wider">PhotoScaler · Motor de Realidad</p>
+      <div className="space-y-3 max-h-[300px] overflow-y-auto pr-1">
+        <div className="space-y-1.5">
+          <p className="text-[9px] text-gray-500 uppercase tracking-wider">PhotoScaler</p>
           {PRO_MACROS.photoscaler.map(m => (
-            <div key={m.key} className="bg-white/5 border border-white/10 rounded-xl p-3">
-              <div className="flex items-center justify-between mb-2">
+            <div key={m.key} className="bg-white/5 border border-white/10 rounded-lg p-2">
+              <div className="flex items-center justify-between mb-1.5">
                 <div className="flex items-center gap-2">
-                  <span className="text-lg">{m.icon}</span>
-                  <div>
-                    <div className="text-xs font-bold text-white uppercase tracking-wider">{m.name}</div>
-                    <div className="text-[10px] text-gray-500">{m.sliders.join(', ')}</div>
-                  </div>
+                  <span className="text-sm">{m.icon}</span>
+                  <span className="text-[11px] font-bold text-white uppercase">{m.name}</span>
                 </div>
-                <div className="text-xs font-mono text-lumen-gold w-8 text-right">{macroValues[m.key] ?? 0}</div>
+                <span className="text-[11px] font-mono text-lumen-gold">{macroValues[m.key] ?? 0}</span>
               </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={macroValues[m.key] ?? 0}
+                  onChange={(e) => setMacroValues(v => ({ ...v, [m.key]: parseInt(e.target.value) }))}
+                  className="flex-1 h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-lumen-gold"
+                />
+                <div className="flex gap-0.5">
+                  {[1, 5, 10].map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setMacroValues(val => ({ ...val, [m.key]: v }))}
+                      className={`w-5 h-5 rounded text-[8px] font-bold ${
+                        macroValues[m.key] === v ? 'bg-lumen-gold text-black' : 'bg-white/5 text-gray-500'
+                      }`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-1.5">
+          <p className="text-[9px] text-gray-500 uppercase tracking-wider">StyleScaler</p>
+          {PRO_MACROS.stylescaler.map(m => (
+            <div key={m.key} className="bg-white/5 border border-white/10 rounded-lg p-2">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">{m.icon}</span>
+                  <span className="text-[11px] font-bold text-white uppercase">{m.name}</span>
+                </div>
+                <span className="text-[11px] font-mono text-lumen-gold">{macroValues[m.key] ?? 0}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={macroValues[m.key] ?? 0}
+                  onChange={(e) => setMacroValues(v => ({ ...v, [m.key]: parseInt(e.target.value) }))}
+                  className="flex-1 h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-lumen-gold"
+                />
+                <div className="flex gap-0.5">
+                  {[1, 5, 10].map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setMacroValues(val => ({ ...val, [m.key]: v }))}
+                      className={`w-5 h-5 rounded text-[8px] font-bold ${
+                        macroValues[m.key] === v ? 'bg-lumen-gold text-black' : 'bg-white/5 text-gray-500'
+                      }`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="space-y-1.5">
+          <p className="text-[9px] text-gray-500 uppercase tracking-wider">LightScaler</p>
+          {PRO_MACROS.lightscaler.map(m => (
+            <div key={m.key} className="bg-white/5 border border-white/10 rounded-lg p-2">
+              <div className="flex items-center justify-between mb-1.5">
+                <div className="flex items-center gap-2">
+                  <span className="text-sm">{m.icon}</span>
+                  <span className="text-[11px] font-bold text-white uppercase">{m.name}</span>
+                </div>
+                <span className="text-[11px] font-mono text-lumen-gold">{macroValues[m.key] ?? 0}</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <input
+                  type="range"
+                  min="1"
+                  max="10"
+                  value={macroValues[m.key] ?? 0}
+                  onChange={(e) => setMacroValues(v => ({ ...v, [m.key]: parseInt(e.target.value) }))}
+                  className="flex-1 h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-lumen-gold"
+                />
+                <div className="flex gap-0.5">
+                  {[1, 5, 10].map(v => (
+                    <button
+                      key={v}
+                      onClick={() => setMacroValues(val => ({ ...val, [m.key]: v }))}
+                      className={`w-5 h-5 rounded text-[8px] font-bold ${
+                        macroValues[m.key] === v ? 'bg-lumen-gold text-black' : 'bg-white/5 text-gray-500'
+                      }`}
+                    >
+                      {v}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <button
+        onClick={handleGenerate}
+        className="w-full py-3 bg-lumen-gold text-black font-bold rounded-xl hover:opacity-90 transition-all text-sm uppercase tracking-widest"
+      >
+        Generar Preview (PRO)
+      </button>
+      <p className="text-[10px] text-gray-600 text-center">
+        15 tokens · Preview sin marca de agua
+      </p>
+    </div>
+  );
+};
               <input
                 type="range"
                 min="0"
