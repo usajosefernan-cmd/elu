@@ -570,6 +570,7 @@ interface ProfileConfigModalProps {
   availableTokens: number;
   totalTokensPurchased: number;
   imageUrl: string;
+  initialMixer?: LuxMixer;
   onConfirm: (config: LuxConfig) => void;
   onCancel: () => void;
   onUpgrade: () => void;
