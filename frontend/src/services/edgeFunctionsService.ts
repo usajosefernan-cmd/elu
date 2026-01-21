@@ -240,6 +240,8 @@ export const compilePrompt = async (
     config,
     visionAnalysis,
     userMode,
+    profileType: userMode.toUpperCase(),
+    includeDebug: true,  // Always include debug info for Archives
   });
 };
 
