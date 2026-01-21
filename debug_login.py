@@ -6,7 +6,7 @@ Debug login flow
 import requests
 
 def test_login_debug():
-    url = "https://prompt-forge-123.preview.emergentagent.com/api/auth/login"
+    url = "https://image-ai-1.preview.emergentagent.com/api/auth/login"
     data = {"email": "usajosefernan@gmail.com", "password": "password"}
     
     print("🔍 Testing login flow")

@@ -12,7 +12,7 @@ def test_generation_with_supabase_id():
     print("🔍 Testing generation with Supabase user ID")
     
     # Test apply-user-macro first to set current_config
-    macro_url = "https://prompt-forge-123.preview.emergentagent.com/api/process/apply-user-macro"
+    macro_url = "https://image-ai-1.preview.emergentagent.com/api/process/apply-user-macro"
     macro_data = {
         "userId": supabase_user_id,
         "quality": 8,
@@ -27,7 +27,7 @@ def test_generation_with_supabase_id():
     
     if macro_response.status_code == 200:
         # Now test generation
-        gen_url = "https://prompt-forge-123.preview.emergentagent.com/api/process/generate"
+        gen_url = "https://image-ai-1.preview.emergentagent.com/api/process/generate"
         gen_data = {
             "userId": supabase_user_id,
             "input": {
