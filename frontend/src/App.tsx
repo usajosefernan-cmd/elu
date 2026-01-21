@@ -495,7 +495,7 @@ const App: React.FC = () => {
             setStatus(AgentStatus.ANALYZING);
             setAgentMsg({ text: "Gemini 2.5 Flash: Analizando imagen...", type: 'info' });
 
-            const visionResult = await analyzeImageWithVision(uploadedPublicUrl, userProfile?.id);
+            const visionResult = await analyzeImageWithVision(stagedImageUrl || uploadedPublicUrl, userProfile?.id);
             setPhaseProgress(100);
 
             // ask notification permission early
