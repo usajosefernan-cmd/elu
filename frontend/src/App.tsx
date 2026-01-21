@@ -528,6 +528,15 @@ const App: React.FC = () => {
                 }
             };
             
+            // UX overlay for generation
+            setShowProcessingOverlay(true);
+            setProcessingPhase('compile');
+            setPhaseStartedAt(Date.now());
+            setPhaseEtaSeconds(2);
+            setPhaseProgress(5);
+            setPhaseLabel('Compilando prompt (Brain) — ~1–2s');
+            setElapsedTime(0);
+
             // Process with Edge Functions
             await processWithEdgeFunctions(inputImageUrl!, config);
         }
