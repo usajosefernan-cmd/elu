@@ -527,7 +527,6 @@ const App: React.FC = () => {
             // Get current token balance
             const balance = await getBalance();
             setUserTokenBalance(balance);
-            console.log('Token balance after vision:', balance);
 
             // 3. SHOW VISION CONFIRM MODAL
             setShowProcessingOverlay(false);
