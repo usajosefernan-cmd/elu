@@ -316,19 +316,6 @@ const ProProfileUI: React.FC<{
       photoscaler: buildPillar('photoscaler'),
       stylescaler: buildPillar('stylescaler'),
       lightscaler: buildPillar('lightscaler'),
-
-      <div className="flex items-center justify-between gap-2 mb-3">
-        <button
-          onClick={onAutoAll}
-          className="px-3 py-2 rounded-lg border border-white/10 bg-white/5 text-[10px] text-gray-200 uppercase tracking-widest hover:bg-white/10"
-        >
-          Auto en todo
-        </button>
-        <div className="text-[10px] text-gray-500 uppercase tracking-widest">
-          Estado: {useAutoAll ? 'AUTO' : 'MANUAL'}
-        </div>
-      </div>
-
     };
 
     // We keep LuxConfig as carrier; App.tsx reads config.mode and config.mixer.
