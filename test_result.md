@@ -102,6 +102,18 @@
 # Testing Data - Main Agent and testing sub agent both should log testing data below this section
 #====================================================================================================
 
+## update_2026_01_21_archive_storage:
+## supabase:
+##   - task: "Crear tablas generations/variations + RLS policies"
+##     implemented: true
+##     working: true
+##     verification: "SQL query: relrowsecurity true for both, 6 policies created"
+## frontend:
+##   - task: "Persistir previews al ARCHIVE usando lux-storage (sin data URI gigante)"
+##     implemented: true
+##     needs_retesting: true
+
+
 ## update_2026_01_21_fix_build:
 ## frontend:
 ##   - task: "Fix Vite build error in App.tsx (dangling catch/return)"
