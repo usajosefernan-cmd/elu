@@ -118,6 +118,21 @@ const App: React.FC = () => {
     const [isAuthLoading, setIsAuthLoading] = useState(true); // 🔄 NEW: Loading state
     const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
     const [isAccessModalOpen, setIsAccessModalOpen] = useState(false);
+
+    // Browser notifications
+    const requestNotifications = async () => {
+        if (!('Notification' in window)) return;
+        if (Notification.permission === 'default') {
+            try { await Notification.requestPermission(); } catch { /* ignore */ }
+        }
+    };
+
+    const notify = (title: string, body: string) => {
+        if (!('Notification' in window)) return;
+        if (Notification.permission !== 'granted') return;
+        try { new Notification(title, { body }); } catch { /* ignore */ }
+    };
+
     const [accessGranted, setAccessGranted] = useState(false);
     const [isPurchaseModalOpen, setIsPurchaseModal] = useState(false);
     const [authMessage, setAuthMessage] = useState<string | null>(null);
