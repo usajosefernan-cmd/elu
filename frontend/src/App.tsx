@@ -517,22 +517,24 @@ const App: React.FC = () => {
             setAgentMsg({ text: "Compilando prompt con IA...", type: 'info' });
             navigate('/result');
 
-            // Step 1: Compile prompt via Edge Function
+            // Step 1: Compile prompt (Edge Functions w/ fallback)
             const sliderConfig = {
                 photoscaler: { sliders: [
-                    { name: 'limpieza_artefactos', value: config.mixer.restoration },
-                    { name: 'optica_nitidez', value: config.mixer.restoration },
+                    // NOTE: for MVP wiring, we map a couple of semantic sliders.
+                    { name: 'limpieza_artefactos', value: config.mixer?.restoration ?? 0 },
+                    { name: 'enfoque', value: config.mixer?.restoration ?? 0 },
                 ]},
                 stylescaler: { sliders: [
-                    { name: 'vibracion_saturacion', value: config.mixer.stylism },
-                    { name: 'retoque_piel', value: config.mixer.skin_bio },
+                    { name: 'estilo_autor', value: config.mixer?.stylism ?? 0 },
+                    { name: 'styling_piel', value: config.mixer?.skin_bio ?? 0 },
                 ]},
                 lightscaler: { sliders: [
-                    { name: 'brillo_exposicion', value: config.mixer.lighting },
-                    { name: 'iluminacion_dramatica', value: config.mixer.lighting },
+                    { name: 'brillo_exposicion', value: config.mixer?.lighting ?? 0 },
+                    { name: 'contraste', value: config.mixer?.lighting ?? 0 },
                 ]},
             };
 
+            // NOTE: The FastAPI fallback currently compiles+generates via /api/process/generate
             const promptResult = await compilePrompt(
                 sliderConfig,
                 visionAnalysis,
@@ -547,7 +549,6 @@ const App: React.FC = () => {
             addSystemLog(`Prompt compilado: ${promptResult.metadata?.active_sliders} sliders activos`);
             addSystemLog(`Identity Lock: ${promptResult.metadata?.identity_lock ? 'ACTIVO' : 'DESACTIVADO'}`);
 
-            // Step 2: Generate image via Edge Function
             const generateResult = await generateEnhancedImage(
                 imageUrl,
                 promptResult.prompt!,
@@ -562,24 +563,38 @@ const App: React.FC = () => {
                 throw new Error(generateResult.error || "Error generando imagen");
             }
 
-            // Add result to previews
-            if (generateResult.output?.image) {
+            // Normalize response into our ArchivedVariation shape
+            const outputImage = generateResult.output?.image;
+            if (outputImage) {
+                // If backend returns base64 (common), make it a data URL
+                const normalizedImage = outputImage.startsWith('data:image')
+                    ? outputImage
+                    : outputImage.length > 500
+                        ? `data:image/png;base64,${outputImage}`
+                        : outputImage;
+
+                const nowIso = new Date().toISOString();
                 setPreviews([{
                     id: `edge-${Date.now()}`,
-                    url: generateResult.output.image,
-                    prompt: generateResult.output.text || '',
-                    styleId: 'edge_generated',
-                    timestamp: Date.now(),
-                    settings: config.mixer
+                    generation_id: `edge-${Date.now()}`,
+                    type: 'preview_watermark',
+                    style_id: 'edge_generated',
+                    image_path: normalizedImage,
+                    prompt_payload: { prompt: generateResult.output?.text || '', compiledPrompt: promptResult.prompt },
+                    seed: 0,
+                    rating: 0,
+                    is_selected: true,
+                    created_at: nowIso,
                 }]);
+                setProcessedImageUrl(normalizedImage);
             }
 
-            setStatus(AgentStatus.COMPLETE);
+            setStatus(AgentStatus.COMPLETED);
             setAgentMsg({ text: "¡Procesamiento completado!", type: 'success' });
-            addSystemLog(`Tokens utilizados: ${generateResult.metadata?.tokens_charged}`);
+            addSystemLog(`Tokens utilizados: ${generateResult.metadata?.tokens_charged ?? 0}`);
 
         } catch (error: any) {
-            console.error("Edge Function Processing Error:", error);
+            console.error("Brain pipeline processing error:", error);
             setAgentMsg({ text: `Error: ${error.message}`, type: 'error' });
             setStatus(AgentStatus.ERROR);
         }
