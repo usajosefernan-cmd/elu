@@ -424,99 +424,70 @@ const App: React.FC = () => {
     };
 
     const processFileForAnalysis = async (file: File) => {
-            // Immediate UX
-            setToastState({ isOpen: true, title: 'Procesando', message: 'Preparando análisis de visión...' });
+        // ============================================================
+        // PASO 0: FEEDBACK INMEDIATO (ANTES de cualquier operación)
+        // ============================================================
+        // Esto se ejecuta SINCRÓNICAMENTE - el usuario ve el overlay al instante
+        setShowProcessingOverlay(true);
+        setProcessingPhase('upload');
+        setPhaseStartedAt(Date.now());
+        setPhaseEtaSeconds(2);
+        setPhaseProgress(5);
+        setPhaseLabel('Preparando tu imagen...');
+        setElapsedTime(0);
+        setStatus(AgentStatus.ANALYZING);
 
-        // 1. IMMEDIATE FEEDBACK + LOCAL PREVIEW (do not wait for Storage)
+        // Local preview instantáneo (sin await)
+        const localUrl = URL.createObjectURL(file);
+        generatedObjectUrlsRef.current.push(localUrl);
+        setStagedImageUrl(localUrl);
+
+        // Calcular aspect ratio del archivo original
+        const img = new Image();
+        img.src = localUrl;
+        img.onload = () => setAspectRatio(img.width / img.height);
+
+        // ============================================================
+        // PASO 1: ANÁLISIS DE VISIÓN (imagen pequeña = RÁPIDO)
+        // ============================================================
         try {
-            setToastState({
-                isOpen: true,
-                title: 'Subida iniciada',
-                message: 'Preparando análisis...'
-            });
-            setShowProcessingOverlay(true);
-            setProcessingPhase('upload');
-            setPhaseStartedAt(Date.now());
-            setPhaseEtaSeconds(3);
-            setPhaseProgress(10);
-            setPhaseLabel('Preparando archivo...');
-            setElapsedTime(0);
-
-            // Local preview for instant UI
-            const localUrl = URL.createObjectURL(file);
-            generatedObjectUrlsRef.current.push(localUrl);
-            setStagedImageUrl(localUrl);
-
-        } catch (e: any) {
-            console.error('Preview prep error:', e);
-        }
-
-        // 2. VISION FIRST (base64) — fastest path, no Storage propagation wait
-        // Use a compressed blob for base64 to keep this fast even for big images.
-        try {
-            setToastState({
-                isOpen: true,
-                title: 'Análisis de visión',
-                message: 'Usando Gemini 2.5 Flash.'
-            });
+            // Cambiar a fase de visión
             setProcessingPhase('vision');
-            setPhaseStartedAt(Date.now());
-            setPhaseEtaSeconds(6);
-            setPhaseProgress(25);
-            setPhaseLabel('Analizando (Vision) — debería ser rápido');
+            setPhaseProgress(15);
+            setPhaseLabel('Analizando tu foto con Gemini 2.5 Flash...');
+            setAgentMsg({ text: "🔍 Analizando imagen...", type: 'info' });
 
-            setStatus(AgentStatus.ANALYZING);
-            setAgentMsg({ text: "Gemini 2.5 Flash: Analizando imagen...", type: 'info' });
-
-            // Vision input: user-requested quality ("19.5MP 80% JPEG")
-            // Approx = 5400x3600px (~19.4MP)
-            const { blob: visionBlob, aspectRatio: ratio } = await compressAndResizeImage(file, { maxDimension: 5400, quality: 0.80 });
+            // OPTIMIZACIÓN: Usar imagen PEQUEÑA para análisis (1280px es suficiente para Gemini)
+            // Esto reduce el tiempo de compresión de ~5-10s a <1s
+            const { blob: visionBlob, aspectRatio: ratio } = await compressAndResizeImage(file, { 
+                maxDimension: 1280,  // Mucho más pequeño = mucho más rápido
+                quality: 0.75 
+            });
             setAspectRatio(ratio);
+            setPhaseProgress(30);
 
+            // Convertir a base64
             const visionBase64 = await new Promise<string>((resolve, reject) => {
                 const reader = new FileReader();
                 reader.onloadend = () => resolve(reader.result as string);
                 reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
                 reader.readAsDataURL(visionBlob);
             });
+            setPhaseProgress(40);
+            setPhaseLabel('Enviando a Gemini 2.5 Flash...');
 
+            // Llamar al backend
             const visionResult = await analyzeImageBase64WithVision(visionBase64, userProfile?.id);
-            setPhaseProgress(100);
-
-            await requestNotifications();
+            setPhaseProgress(90);
 
             if (!visionResult.success) {
                 throw new Error(visionResult.error || "Análisis de visión falló");
             }
 
             setVisionAnalysis(visionResult.analysis);
+            setPhaseProgress(100);
 
-            // Background: upload optimized images for generation/archive
-            (async () => {
-                try {
-                    const userId = userProfile ? userProfile.id : 'guest_analysis';
-
-                    const thumbPromise = (async () => {
-                        const { blob: thumbBlob } = await compressAndResizeImage(file, { maxDimension: 2048, quality: 0.78 });
-                        const publicThumb = await uploadImageToStorage(thumbBlob, userId);
-                        setStagedImageUrl(publicThumb);
-                        return publicThumb;
-                    })();
-
-                    masterUploadPromiseRef.current = (async () => {
-                        const { blob: masterBlob } = await compressAndResizeImage(file, { maxDimension: 8192, quality: 0.9 });
-                        const masterUrl = await uploadImageToStorage(masterBlob, userId);
-                        setStagedMasterImageUrl(masterUrl);
-                        return masterUrl;
-                    })();
-
-                    await thumbPromise;
-                } catch (e) {
-                    console.warn('Background upload failed:', e);
-                }
-            })();
-
-            // Compute default slider start values from AUTO suggested_settings
+            // Calcular valores por defecto para sliders
             const ss = visionResult.analysis?.suggested_settings || {};
             const defaultMixer = {
                 stylism: ss.estilo_autor ?? 5,
@@ -526,25 +497,51 @@ const App: React.FC = () => {
                 restoration: ss.limpieza_artefactos ?? 5,
                 upScaler: 1
             };
-            // Store these so USER/PRO/PROLUX can start from AUTO by default
             setVisionAnalysis((prev: any) => ({ ...prev, _defaultMixer: defaultMixer }));
 
-            // Get current token balance
-            const balance = await getBalance();
-            setUserTokenBalance(balance);
+            // ============================================================
+            // PASO 2: SUBIR IMÁGENES EN SEGUNDO PLANO (no bloquea UI)
+            // ============================================================
+            const userId = userProfile ? userProfile.id : 'guest_analysis';
+            
+            // Iniciar subidas en background (no esperamos)
+            (async () => {
+                try {
+                    // Thumbnail para preview
+                    const { blob: thumbBlob } = await compressAndResizeImage(file, { maxDimension: 2048, quality: 0.78 });
+                    const publicThumb = await uploadImageToStorage(thumbBlob, userId);
+                    setStagedImageUrl(publicThumb);
+                } catch (e) {
+                    console.warn('Thumb upload failed:', e);
+                }
+            })();
 
-            // 3. SHOW VISION CONFIRM MODAL
+            // Master para generación (en paralelo)
+            masterUploadPromiseRef.current = (async () => {
+                const { blob: masterBlob } = await compressAndResizeImage(file, { maxDimension: 5400, quality: 0.85 });
+                const masterUrl = await uploadImageToStorage(masterBlob, userId);
+                setStagedMasterImageUrl(masterUrl);
+                return masterUrl;
+            })();
+
+            // Obtener balance (en paralelo, no bloquea)
+            getBalance().then(balance => setUserTokenBalance(balance)).catch(() => {});
+
+            // Solicitar permisos de notificación (no bloquea)
+            requestNotifications().catch(() => {});
+
+            // ============================================================
+            // PASO 3: MOSTRAR MODAL DE CONFIRMACIÓN
+            // ============================================================
             setShowProcessingOverlay(false);
             setShowVisionConfirm(true);
             setStatus(AgentStatus.CONFIGURING);
-            return;
 
         } catch (visionError: any) {
             console.error("Vision Analysis Error:", visionError);
             setShowProcessingOverlay(false);
-            setAgentMsg({ text: `Error en análisis (Vision): ${visionError.message}`, type: 'error' });
+            setAgentMsg({ text: `Error: ${visionError.message}`, type: 'error' });
             resetFlow();
-            return;
         }
     };
 
