@@ -165,9 +165,9 @@
 ## frontend:
 ##   - task: "Upload Project wiring -> Brain pipeline (Edge Functions con fallback)"
 ##     implemented: true
-##     working: "NA"
+##     working: false
 ##     file: "frontend/src/App.tsx, frontend/src/services/edgeFunctionsService.ts"
-##     stuck_count: 0
+##     stuck_count: 1
 ##     priority: "high"
 ##     needs_retesting: false
 ##     status_history:
@@ -180,6 +180,9 @@
 ##       - working: "NA"
 ##         agent: "testing"
 ##         comment: "E2E testing results: ✅ File input accessible and functional, ✅ New wiring confirmed (uses edgeFunctionsService), ✅ Archives page functional, ✅ Mobile responsive without MobileConfigWizard, ❌ VisionConfirmModal not appearing due to Gemini API quota exhaustion (429 errors in backend logs). Upload flow technically working but blocked by API limits. Recommend testing with fresh API quota or alternative test image."
+##       - working: false
+##         agent: "testing"
+##         comment: "DETAILED PERFORMANCE TEST: ✅ Login works (usajosefernan@gmail.com), ✅ Image upload functional, ✅ Local preview appears immediately, ⚠️ VisionConfirmModal appears in 13.96s (slower than target <10s), ❌ User has 0 tokens preventing generation, ❌ Missing immediate UI feedback (toast/overlay), ❌ AUTO button not accessible in VisionModal, ❌ PRO modal missing 'Auto en todo' button. Core upload->vision flow works but UX feedback, performance, and token handling need fixes."
 ## metadata:
 ##   created_by: "main_agent"
 ##   version: "1.0"
