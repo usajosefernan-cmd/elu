@@ -123,9 +123,11 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
 }) => {
   const [selectedIntent, setSelectedIntent] = useState<number>(0);
   const [customIntent, setCustomIntent] = useState('');
-  const [mode, setMode] = useState<'auto' | 'select' | 'custom'>('auto');
+  const [mode, setMode] = useState<'auto' | 'preset' | 'custom'>('auto');
   const [showFullAnalysis, setShowFullAnalysis] = useState(false);
-  const [selectedSpectrum, setSelectedSpectrum] = useState<number>(2); // Default: Creative (middle)
+  const [intentLevel, setIntentLevel] = useState<IntentLevel>('creative');
+  const [selectedPreset, setSelectedPreset] = useState<SmartPreset | null>(null);
+  const [selectedPresetConfig, setSelectedPresetConfig] = useState<any>(null);
 
   if (!isVisible) return null;
 
@@ -145,25 +147,37 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
   const categoryRules = analysis?.category_rules;
   const protocolAlerts = analysis?.protocol_alerts || [];
 
-  const handleGenerate = () => {
-    if (mode === 'auto') {
-      onConfirm({ mode: 'auto', settings: analysis?.auto_settings });
-    } else if (mode === 'custom' && customIntent.trim()) {
-      onConfirm({ mode: 'custom', customIntent: customIntent.trim() });
-    } else {
-      onConfirm({ mode: 'intent', intentIndex: selectedIntent, settings: analysis?.auto_settings });
-    }
+  const handlePresetSelect = (preset: SmartPreset, config: any) => {
+    setSelectedPreset(preset);
+    setSelectedPresetConfig(config);
+    setMode('preset');
   };
 
-  // Modify settings based on spectrum selection
-  const getSpectrumMultiplier = () => {
-    switch(selectedSpectrum) {
-      case 0: return 0.3;  // Fix - minimal
-      case 1: return 0.6;  // Polished
-      case 2: return 1.0;  // Creative - as-is
-      case 3: return 1.3;  // Stylized
-      case 4: return 1.6;  // Aggressive
-      default: return 1.0;
+  const handleGenerate = () => {
+    let finalSettings = analysis?.auto_settings;
+    
+    if (mode === 'preset' && selectedPresetConfig) {
+      // Apply intent multiplier to preset config
+      finalSettings = applyIntentToSliders(selectedPresetConfig, intentLevel);
+    } else if (mode === 'auto') {
+      // Apply intent multiplier to auto settings
+      const autoConfig = {
+        photoscaler: { sliders: Object.entries(autoSettings?.photoscaler || {}).map(([name, value]) => ({ name, value: value as number })) },
+        stylescaler: { sliders: Object.entries(autoSettings?.stylescaler || {}).map(([name, value]) => ({ name, value: value as number })) },
+        lightscaler: { sliders: Object.entries(autoSettings?.lightscaler || {}).map(([name, value]) => ({ name, value: value as number })) }
+      };
+      finalSettings = applyIntentToSliders(autoConfig, intentLevel);
+    }
+    
+    if (mode === 'custom' && customIntent.trim()) {
+      onConfirm({ mode: 'custom', customIntent: customIntent.trim() });
+    } else {
+      onConfirm({ 
+        mode: mode === 'preset' ? 'intent' : 'auto', 
+        intentIndex: selectedIntent, 
+        settings: finalSettings,
+        customIntent: selectedPreset?.narrative_anchor
+      });
     }
   };
 
