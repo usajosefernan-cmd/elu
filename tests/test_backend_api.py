@@ -12,7 +12,7 @@ import os
 import base64
 import time
 
-BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://image-ai-1.preview.emergentagent.com')
+BASE_URL = os.environ.get('REACT_APP_BACKEND_URL', 'https://image-genius-3.preview.emergentagent.com')
 
 # Test credentials
 TEST_USER_EMAIL = "usajosefernan@gmail.com"
