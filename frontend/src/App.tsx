@@ -521,10 +521,6 @@ const App: React.FC = () => {
             };
             // Store these so USER/PRO/PROLUX can start from AUTO by default
             setVisionAnalysis((prev: any) => ({ ...prev, _defaultMixer: defaultMixer }));
-            // Also allow AUTO to start from suggested defaults
-            if (stagedMasterImageUrl || stagedImageUrl) {
-                setInputImageUrl(stagedMasterImageUrl || stagedImageUrl);
-            }
 
             // Get current token balance
             const balance = await getBalance();
@@ -681,7 +677,6 @@ const App: React.FC = () => {
 
     const processWithEdgeFunctions = async (imageUrl: string, config: LuxConfig) => {
         try {
-            setStatus(AgentStatus.GENERATING_PREVIEWS);
             setAgentMsg({ text: "Compilando prompt con IA...", type: 'info' });
             navigate('/result');
 
@@ -762,12 +757,23 @@ const App: React.FC = () => {
                         : outputImage;
 
                 // If it's a data URI, convert to object URL to reduce huge-string UI freezes
+                // and upload to Storage for ARCHIVE persistence.
+                let archiveImageUrl = normalizedImage;
                 if (normalizedImage.startsWith('data:image')) {
                     try {
                         const blob = await (await fetch(normalizedImage)).blob();
                         const objUrl = URL.createObjectURL(blob);
                         generatedObjectUrlsRef.current.push(objUrl);
                         normalizedImage = objUrl;
+
+                        // Persistable URL (Supabase Storage)
+                        const uploaderId = userProfile?.id || 'user';
+                        try {
+                            archiveImageUrl = await uploadImageToStorage(blob, `${uploaderId}/variations`);
+                        } catch (e) {
+                            console.warn('Archive image upload failed:', e);
+                            archiveImageUrl = normalizedImage;
+                        }
                     } catch (e) {
                         console.warn('Could not convert data URI to blob URL:', e);
                     }
@@ -792,7 +798,7 @@ const App: React.FC = () => {
                 setProcessedImageUrl(normalizedImage);
 
                 // Persist to ARCHIVE (Supabase DB + Storage URLs)
-                await persistToArchive(imageUrl, visionAnalysis, normalizedImage, promptPayload);
+                await persistToArchive(imageUrl, visionAnalysis, archiveImageUrl, promptPayload);
             }
 
             setShowProcessingOverlay(false);
