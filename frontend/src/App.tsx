@@ -432,6 +432,7 @@ const App: React.FC = () => {
             setAgentMsg({ text: "Gemini 2.5 Flash: Analizando imagen...", type: 'info' });
 
             const visionResult = await analyzeImageWithVision(uploadedPublicUrl, userProfile?.id);
+            setPhaseProgress(100);
 
             if (!visionResult.success) {
                 throw new Error(visionResult.error || "Análisis de visión falló");
@@ -445,6 +446,7 @@ const App: React.FC = () => {
             setUserTokenBalance(balance);
 
             // 3. SHOW VISION CONFIRM MODAL
+            setShowProcessingOverlay(false);
             setShowVisionConfirm(true);
             setStatus(AgentStatus.CONFIGURING);
             return;
