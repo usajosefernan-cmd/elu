@@ -188,11 +188,11 @@ const App: React.FC = () => {
             interval = setInterval(() => {
                 setElapsedTime(prev => prev + 0.1);
             }, 100);
-        } else if (status === AgentStatus.IDLE) {
+        } else if (status === AgentStatus.IDLE && !showProcessingOverlay) {
             setElapsedTime(0);
         }
         return () => clearInterval(interval);
-    }, [status, previews.length]);
+    }, [status, previews.length, showProcessingOverlay]);
 
     useEffect(() => {
         const checkAuth = async () => {
