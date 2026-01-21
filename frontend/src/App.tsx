@@ -26,7 +26,7 @@ import { MobileConfigWizard } from './components/MobileConfigWizard';
 import { AdvancedConfigModal } from './components/AdvancedConfigModal';
 import { ImageInspectorModal } from './components/ImageInspectorModal';
 import { ProfileConfigModal } from './components/ProfileConfigModal';
-import { VisionConfirmModal } from './components/VisionConfirmModal';
+import { UnifiedConfigModal } from './components/UnifiedConfigModal';
 import { TermsPage, PrivacyPage, CookiesPage, LegalNoticePage, APIDocsPage, ContactPage, InfoPages } from './components/InfoPages';
 import { InfoToast, ToastState } from './components/InfoToast';
 
