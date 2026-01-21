@@ -1,11 +1,9 @@
 
-import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { getGenerations, deleteGeneration, submitVariationFeedback } from '../services/historyService';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import { getGenerations } from '../services/historyService';
 import { GenerationSession, ArchivedVariation } from '../types';
-import { Trash2, ArrowLeft, FolderOpen, Crown, Loader2, Sparkles, Copy, Palette, Sun, RefreshCw, Home, User, Camera } from 'lucide-react';
-import { ComparisonSlider } from './ComparisonSlider';
-import { getDisplayUrl, getMasterUrl, getThumbnailUrl } from '../utils/imageUtils';
-import { generateMaster } from '../services/geminiService';
+import { ArrowLeft, FolderOpen, Crown, Loader2, Sparkles, Copy, Palette, Sun, RefreshCw, Home, User, Camera, ZoomIn, ZoomOut, Move } from 'lucide-react';
+import { getDisplayUrl, getThumbnailUrl } from '../utils/imageUtils';
 import { MasterConfigModal } from './MasterConfigModal';
 import { LuxMixer } from '../types';
 
@@ -38,35 +36,34 @@ const getSmallThumb = (url: string) => {
     return url;
 };
 
-// Función para generar URL de preview mediano
-const getMediumPreview = (url: string) => {
-    if (!url) return '';
-    if (url.includes('supabase.co')) {
-        const separator = url.includes('?') ? '&' : '?';
-        return `${url}${separator}width=800&quality=75`;
-    }
-    return url;
-};
-
 export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) => {
     const [sessions, setSessions] = useState<GenerationSession[]>([]);
     const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
     const [selectedVariation, setSelectedVariation] = useState<ArchivedVariation | null>(null);
     const [isLoading, setIsLoading] = useState(true);
 
-    const [feedbackText, setFeedbackText] = useState('');
     const [isMasterConfigOpen, setIsMasterConfigOpen] = useState(false);
     const [isProcessingMatrix, setIsProcessingMatrix] = useState(false);
-    const [processingStatus, setProcessingStatus] = useState('');
 
+    // Comparador state
+    const [sliderPosition, setSliderPosition] = useState(50);
+    const [isDraggingSlider, setIsDraggingSlider] = useState(false);
+    
+    // Zoom/Pan state
     const containerRef = useRef<HTMLDivElement>(null);
+    const [scale, setScale] = useState(1);
+    const [translate, setTranslate] = useState({ x: 0, y: 0 });
+    const [isDragging, setIsDragging] = useState(false);
+    const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+    const [imgSize, setImgSize] = useState({ w: 0, h: 0 });
+    const [isImageLoaded, setIsImageLoaded] = useState(false);
 
     const currentSession = useMemo(() =>
         sessions.find(s => s.id === selectedSessionId),
         [sessions, selectedSessionId]);
 
     const isMaster = useMemo(() =>
-        selectedVariation?.type.includes('master') || selectedVariation?.type.includes('upscale') || selectedVariation?.type.includes('matrix'),
+        selectedVariation?.type.includes('master') || selectedVariation?.type.includes('upscale'),
         [selectedVariation]);
 
     const loadSessions = async () => {
@@ -81,23 +78,117 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
         }
     };
 
-    useEffect(() => {
-        loadSessions();
-    }, []);
+    useEffect(() => { loadSessions(); }, []);
 
     useEffect(() => {
         if (selectedVariation) {
-            setFeedbackText(selectedVariation.feedback || '');
-            setIsProcessingMatrix(false);
-            setProcessingStatus('');
+            setIsImageLoaded(false);
+            setScale(1);
+            setTranslate({ x: 0, y: 0 });
+            setSliderPosition(50);
         }
     }, [selectedVariation]);
 
+    // Fit image to container
+    const fitToContainer = useCallback(() => {
+        if (!containerRef.current || !imgSize.w) return;
+        const { clientWidth, clientHeight } = containerRef.current;
+        const scaleX = clientWidth / imgSize.w;
+        const scaleY = clientHeight / imgSize.h;
+        const fitScale = Math.min(scaleX, scaleY, 1);
+        setScale(fitScale);
+        setTranslate({
+            x: (clientWidth - imgSize.w * fitScale) / 2,
+            y: (clientHeight - imgSize.h * fitScale) / 2
+        });
+    }, [imgSize]);
+
+    // Image load handler
+    const handleImageLoad = useCallback((e: React.SyntheticEvent<HTMLImageElement>) => {
+        const img = e.currentTarget;
+        setImgSize({ w: img.naturalWidth, h: img.naturalHeight });
+        setIsImageLoaded(true);
+        
+        if (containerRef.current) {
+            const { clientWidth, clientHeight } = containerRef.current;
+            const scaleX = clientWidth / img.naturalWidth;
+            const scaleY = clientHeight / img.naturalHeight;
+            const fitScale = Math.min(scaleX, scaleY, 1);
+            setScale(fitScale);
+            setTranslate({
+                x: (clientWidth - img.naturalWidth * fitScale) / 2,
+                y: (clientHeight - img.naturalHeight * fitScale) / 2
+            });
+        }
+    }, []);
+
+    // Wheel zoom
+    const handleWheel = useCallback((e: React.WheelEvent) => {
+        if (!isImageLoaded || !containerRef.current) return;
+        e.preventDefault();
+        
+        const rect = containerRef.current.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = e.clientY - rect.top;
+        
+        const delta = -e.deltaY * 0.001;
+        const newScale = Math.min(4, Math.max(0.1, scale + delta * scale));
+        
+        // Zoom hacia el punto del cursor
+        const scaleRatio = newScale / scale;
+        const newTranslateX = mouseX - (mouseX - translate.x) * scaleRatio;
+        const newTranslateY = mouseY - (mouseY - translate.y) * scaleRatio;
+        
+        setScale(newScale);
+        setTranslate({ x: newTranslateX, y: newTranslateY });
+    }, [isImageLoaded, scale, translate]);
+
+    // Pan handlers
+    const handleMouseDown = useCallback((e: React.MouseEvent) => {
+        if (e.button !== 0) return; // Solo click izquierdo
+        
+        // Check if clicking on slider handle
+        const target = e.target as HTMLElement;
+        if (target.closest('.slider-handle')) {
+            setIsDraggingSlider(true);
+            return;
+        }
+        
+        setIsDragging(true);
+        setDragStart({ x: e.clientX - translate.x, y: e.clientY - translate.y });
+    }, [translate]);
+
+    const handleMouseMove = useCallback((e: React.MouseEvent) => {
+        if (!containerRef.current) return;
+        
+        if (isDraggingSlider) {
+            const rect = containerRef.current.getBoundingClientRect();
+            const x = e.clientX - rect.left;
+            const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+            setSliderPosition(percentage);
+            return;
+        }
+        
+        if (isDragging) {
+            setTranslate({
+                x: e.clientX - dragStart.x,
+                y: e.clientY - dragStart.y
+            });
+        }
+    }, [isDragging, isDraggingSlider, dragStart]);
+
+    const handleMouseUp = useCallback(() => {
+        setIsDragging(false);
+        setIsDraggingSlider(false);
+    }, []);
+
+    // Zoom controls
+    const zoomIn = () => setScale(s => Math.min(4, s * 1.3));
+    const zoomOut = () => setScale(s => Math.max(0.1, s / 1.3));
+
     const handleConfirmMaster = async (config: any) => {
-        if (!selectedVariation || !currentSession) return;
         setIsMasterConfigOpen(false);
         setIsProcessingMatrix(true);
-        setProcessingStatus("Generando Master 4K...");
     };
 
     const copyConfigToClipboard = () => {
@@ -105,6 +196,8 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
             navigator.clipboard.writeText(JSON.stringify(selectedVariation.prompt_payload, null, 2));
         }
     };
+
+    const zoomPercentage = Math.round(scale * 100);
 
     return (
         <div className="w-full h-full flex flex-col max-w-[1600px] mx-auto px-4 md:px-6">
@@ -184,32 +277,98 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                         </div>
                     </div>
 
-                    {/* Center: Visor con zoom/pan/comparación integrado */}
+                    {/* Center: Visor con zoom y comparación */}
                     <div className="col-span-6 bg-white/[0.02] border border-white/5 rounded-xl overflow-hidden flex flex-col">
                         {currentSession && selectedVariation ? (
                             <>
-                                {/* Toolbar simple */}
+                                {/* Toolbar con controles de zoom */}
                                 <div className="p-2 border-b border-white/5 bg-black/20 flex items-center justify-between">
-                                    <span className="text-[10px] text-gray-500">
-                                        {new Date(selectedVariation.created_at).toLocaleDateString('es-ES')}
-                                    </span>
-                                    <span className="text-[10px] text-gray-600">
-                                        Desliza la barra para comparar
-                                    </span>
+                                    <div className="flex items-center gap-2">
+                                        <button onClick={zoomOut} className="p-1.5 rounded bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white">
+                                            <ZoomOut className="w-4 h-4" />
+                                        </button>
+                                        <span className="text-[10px] text-gray-400 font-mono w-12 text-center">{zoomPercentage}%</span>
+                                        <button onClick={zoomIn} className="p-1.5 rounded bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white">
+                                            <ZoomIn className="w-4 h-4" />
+                                        </button>
+                                        <button onClick={fitToContainer} className="p-1.5 rounded bg-white/5 hover:bg-white/10 text-gray-400 hover:text-white text-[10px] px-2">
+                                            FIT
+                                        </button>
+                                    </div>
+                                    <div className="flex items-center gap-2 text-[10px] text-gray-500">
+                                        <Move className="w-3 h-3" />
+                                        Arrastra para mover
+                                    </div>
                                 </div>
 
-                                {/* Visor principal - ComparisonSlider ajustado al contenedor */}
+                                {/* Visor principal */}
                                 <div 
                                     ref={containerRef}
-                                    className="flex-1 bg-[#080808] relative overflow-hidden"
+                                    className="flex-1 bg-[#080808] relative overflow-hidden select-none"
+                                    style={{ cursor: isDragging ? 'grabbing' : 'grab' }}
+                                    onWheel={handleWheel}
+                                    onMouseDown={handleMouseDown}
+                                    onMouseMove={handleMouseMove}
+                                    onMouseUp={handleMouseUp}
+                                    onMouseLeave={handleMouseUp}
                                 >
-                                    <ComparisonSlider
-                                        originalImage={getDisplayUrl(currentSession.original_image_path)}
-                                        processedImage={getDisplayUrl(selectedVariation.image_path)}
-                                        isLocked={false}
-                                        objectFit="contain"
-                                        className="w-full h-full"
-                                    />
+                                    {!isImageLoaded && (
+                                        <div className="absolute inset-0 flex items-center justify-center z-10">
+                                            <Loader2 className="w-6 h-6 text-lumen-gold animate-spin" />
+                                        </div>
+                                    )}
+                                    
+                                    {/* Contenedor de imágenes con transformación */}
+                                    <div
+                                        className="absolute"
+                                        style={{
+                                            transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
+                                            transformOrigin: '0 0',
+                                            width: imgSize.w || 'auto',
+                                            height: imgSize.h || 'auto',
+                                        }}
+                                    >
+                                        {/* Imagen DESPUÉS (base) */}
+                                        <img
+                                            src={getDisplayUrl(selectedVariation.image_path)}
+                                            alt="Después"
+                                            onLoad={handleImageLoad}
+                                            className="absolute inset-0 w-full h-full"
+                                            draggable={false}
+                                        />
+                                        
+                                        {/* Imagen ANTES (overlay con clip) */}
+                                        <div 
+                                            className="absolute inset-0"
+                                            style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
+                                        >
+                                            <img
+                                                src={getDisplayUrl(currentSession.original_image_path)}
+                                                alt="Antes"
+                                                className="w-full h-full"
+                                                style={{ width: imgSize.w, height: imgSize.h }}
+                                                draggable={false}
+                                            />
+                                        </div>
+                                        
+                                        {/* Línea del slider */}
+                                        <div 
+                                            className="slider-handle absolute top-0 bottom-0 w-1 bg-white shadow-lg cursor-ew-resize z-20"
+                                            style={{ left: `${sliderPosition}%`, transform: 'translateX(-50%)' }}
+                                        >
+                                            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-10 h-10 bg-white/20 backdrop-blur rounded-full flex items-center justify-center border-2 border-white">
+                                                <span className="text-white text-lg">⟷</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    
+                                    {/* Labels */}
+                                    <div className="absolute top-3 left-3 px-2 py-1 bg-black/60 rounded text-[10px] text-white font-bold z-10">
+                                        ANTES
+                                    </div>
+                                    <div className="absolute top-3 right-3 px-2 py-1 bg-black/60 rounded text-[10px] text-lumen-gold font-bold z-10">
+                                        DESPUÉS
+                                    </div>
                                 </div>
 
                                 {/* Variaciones */}
