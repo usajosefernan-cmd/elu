@@ -237,33 +237,19 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                             Vista Rápida
                                         </button>
                                         <button
-                                            onClick={() => setViewMode('compare')}
-                                            className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
-                                                viewMode === 'compare' ? 'bg-lumen-gold text-black' : 'text-gray-400 hover:text-white'
-                                            }`}
-                                        >
-                                            Comparar
-                                        </button>
-                                        <button
                                             onClick={() => setViewMode('full')}
                                             className={`px-3 py-1.5 rounded-lg text-[10px] font-bold transition-all ${
                                                 viewMode === 'full' ? 'bg-lumen-gold text-black' : 'text-gray-400 hover:text-white'
                                             }`}
                                         >
-                                            1:1
+                                            1:1 Comparar
                                         </button>
                                     </div>
-                                    <button
-                                        onClick={() => setIsZoomModalOpen(true)}
-                                        className="p-2 bg-white/5 hover:bg-white/10 rounded-lg transition-colors"
-                                    >
-                                        <Maximize className="w-4 h-4 text-gray-400" />
-                                    </button>
                                 </div>
 
                                 {/* Image View */}
                                 <div className="flex-1 flex items-center justify-center p-4 bg-[#0a0a0a] relative overflow-hidden">
-                                        {viewMode === 'thumb' && (
+                                    {viewMode === 'thumb' && (
                                         // Vista rápida: Solo imagen procesada (thumbnail mediano)
                                         <img 
                                             src={getMediumPreview(selectedVariation.image_path)} 
@@ -273,29 +259,22 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                         />
                                     )}
                                     
-                                    {viewMode === 'compare' && (
-                                        // Comparación: Slider centrado con imágenes medianas (carga rápida)
-                                        <div className="w-full h-full flex items-center justify-center">
-                                            <ComparisonSlider 
-                                                originalImage={getMediumPreview(currentSession.original_image_path)} 
-                                                processedImage={getMediumPreview(selectedVariation.image_path)} 
-                                                isLocked={false} 
-                                                objectFit="contain"
-                                            />
-                                        </div>
-                                    )}
-                                    
                                     {viewMode === 'full' && (
-                                        // 1:1: Slider con imágenes a máxima calidad, ajustado a pantalla
-                                        <div className="w-full h-full flex items-center justify-center">
+                                        // 1:1: Slider a pantalla completa con imágenes de máxima calidad
+                                        <div 
+                                            className="w-full h-full flex items-center justify-center cursor-pointer"
+                                            onDoubleClick={() => setIsZoomModalOpen(true)}
+                                        >
                                             <ComparisonSlider 
                                                 originalImage={getDisplayUrl(currentSession.original_image_path)} 
                                                 processedImage={getDisplayUrl(selectedVariation.image_path)} 
                                                 isLocked={false} 
                                                 objectFit="contain"
-                                                enableNativeScrolling={false}
-                                                staticZoomLevel={1}
                                             />
+                                            {/* Hint para pantalla completa */}
+                                            <div className="absolute bottom-6 left-1/2 -translate-x-1/2 px-3 py-1.5 bg-black/60 backdrop-blur rounded-full text-[9px] text-gray-400 pointer-events-none">
+                                                Doble clic para pantalla completa
+                                            </div>
                                         </div>
                                     )}
                                 </div>
