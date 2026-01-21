@@ -783,19 +783,24 @@ const App: React.FC = () => {
 
                 const nowIso = new Date().toISOString();
                 const id = `edge-${Date.now()}`;
+                const promptPayload = { prompt: generateResult.output?.text || '', compiledPrompt: promptResult.prompt };
+
                 setPreviews([{
                     id,
                     generation_id: id,
                     type: 'preview_watermark',
                     style_id: 'edge_generated',
                     image_path: normalizedImage,
-                    prompt_payload: { prompt: generateResult.output?.text || '', compiledPrompt: promptResult.prompt },
+                    prompt_payload: promptPayload,
                     seed: 0,
                     rating: 0,
                     is_selected: true,
                     created_at: nowIso,
                 }]);
                 setProcessedImageUrl(normalizedImage);
+
+                // Persist to ARCHIVE (Supabase DB + Storage URLs)
+                await persistToArchive(imageUrl, visionAnalysis, normalizedImage, promptPayload);
             }
 
             setShowProcessingOverlay(false);
