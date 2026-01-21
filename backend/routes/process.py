@@ -70,22 +70,37 @@ async def normalize_image(body: dict = Body(...)):
 @router.post("/compile")
 async def compile_prompt_endpoint(body: dict = Body(...)):
     """
-    FastAPI fallback endpoint matching the v28 Edge Function `prompt-compiler` contract.
+    FastAPI endpoint for prompt compilation v28.0.
+    Includes full debug info with vetos, blocks, and sanitization.
     """
     config = body.get('config') or {}
     vision_analysis = body.get('visionAnalysis')
+    profile_type = body.get('profileType', 'AUTO')
+    include_debug = body.get('includeDebug', False)
 
-    # Use new compile_with_metadata for full response
-    result = await prompt_compiler.compile_with_metadata(config, vision_analysis)
+    # Use full compile_prompt for complete response
+    result = await prompt_compiler.compile_prompt(
+        config, 
+        vision_analysis,
+        profile_type=profile_type
+    )
     
     if not result['success']:
         return {"success": False, "error": result.get('error', 'Compilation failed')}
     
-    return {
+    response = {
         "success": True,
-        "prompt": result['prompt'],
+        "prompt": result['compiled_prompt'],
         "metadata": result['metadata']
     }
+    
+    # Include debug info if requested
+    if include_debug:
+        response['debug_info'] = result.get('debug_info', {})
+        response['tokens_estimate'] = result.get('tokens_estimate', {})
+        response['dna_anchor'] = result.get('dna_anchor')
+    
+    return response
 
 
 @router.post("/generate-image")
