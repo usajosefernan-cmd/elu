@@ -29,8 +29,57 @@ interface PromptCompilerResult {
   metadata?: {
     vetos_applied: string[];
     active_sliders: number;
+    force_sliders: number;
     identity_lock: boolean;
+    identity_lock_level: string;
     user_mode: string;
+    version: string;
+    cache_used: boolean;
+  };
+  debug_info?: {
+    vetos_applied: Array<{
+      rule_name: string;
+      actions: Array<{
+        slider_name: string;
+        original_value: number;
+        forced_value: number;
+        reason: string;
+      }>;
+    }>;
+    active_sliders: {
+      total_active: number;
+      force_sliders: number;
+      by_pillar: Record<string, number>;
+      translations: Array<{
+        slider: string;
+        value: number;
+        pillar: string;
+        instruction_preview: string;
+      }>;
+    };
+    sanitization: {
+      redundancies_removed: number;
+      empty_sections_removed: string[];
+      lines_before: number;
+      lines_after: number;
+    };
+    validation: {
+      valid: boolean;
+      issues: string[];
+      char_count: number;
+      line_count: number;
+      estimated_tokens: number;
+    };
+  };
+  tokens_estimate?: {
+    system_cached: number;
+    user_new: number;
+    total_from_cache: number;
+    total_estimated: number;
+  };
+  dna_anchor?: {
+    detected: boolean;
+    strength: string;
   };
   error?: string;
 }
