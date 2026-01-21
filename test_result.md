@@ -169,7 +169,7 @@
 ##     file: "frontend/src/App.tsx, frontend/src/services/edgeFunctionsService.ts"
 ##     stuck_count: 0
 ##     priority: "high"
-##     needs_retesting: true
+##     needs_retesting: false
 ##     status_history:
 ##       - working: false
 ##         agent: "user"
@@ -177,6 +177,9 @@
 ##       - working: true
 ##         agent: "main"
 ##         comment: "edgeFunctionsService ahora intenta Supabase Functions y si falla cae automáticamente a FastAPI (sin mocks). Se añadió VITE_BACKEND_URL para fallback en navegador. App flow usa analyzeImageWithVision -> VisionConfirmModal -> processWithEdgeFunctions (compilePrompt + generateEnhancedImage)."
+##       - working: "NA"
+##         agent: "testing"
+##         comment: "E2E testing results: ✅ File input accessible and functional, ✅ New wiring confirmed (uses edgeFunctionsService), ✅ Archives page functional, ✅ Mobile responsive without MobileConfigWizard, ❌ VisionConfirmModal not appearing due to Gemini API quota exhaustion (429 errors in backend logs). Upload flow technically working but blocked by API limits. Recommend testing with fresh API quota or alternative test image."
 ## metadata:
 ##   created_by: "main_agent"
 ##   version: "1.0"
