@@ -138,6 +138,7 @@ const App: React.FC = () => {
     const [authMessage, setAuthMessage] = useState<string | null>(null);
 
     // Config Wizard State
+    // Legacy wizard is disabled for v28 (single new flow)
     const [showConfigWizard, setShowConfigWizard] = useState(false);
     const [showProfileSelector, setShowProfileSelector] = useState(false); // NEW: Profile selector
     const [showVisionConfirm, setShowVisionConfirm] = useState(false); // NEW: Vision confirm modal
