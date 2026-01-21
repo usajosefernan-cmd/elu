@@ -107,21 +107,19 @@ export const ComparisonSlider: React.FC<ComparisonSliderProps> = ({
             ref={containerRef}
             className={`relative w-full h-full overflow-hidden select-none group ${className}`}
             style={{
-                // Ensure the container respects the passed aspect ratio if set explicitly
-                aspectRatio: aspectRatio,
+                aspectRatio: finalAspectRatio,
                 cursor: isDraggingSlider ? 'ew-resize' : 'default',
                 ...style
             }}
             onMouseMove={handleMouseMove}
             onTouchMove={handleTouchMove}
         >
-            {/* IMAGE CONTAINER - REMOVED bg-black/20 overlay to prevent dimming */}
+            {/* IMAGE CONTAINER - Both images share same container for alignment */}
             <div className="absolute inset-0 w-full h-full">
-                {/* AFTER IMAGE (Base - Right Side) - The Truth of the new structure */}
+                {/* AFTER IMAGE (Base - Right Side) - Processed result */}
                 <img
                     src={processedImage}
                     alt="After"
-                    onLoad={handleProcessedImageLoad}
                     className={`absolute inset-0 w-full h-full object-${objectFit}`}
                     draggable={false}
                     style={{
@@ -132,13 +130,13 @@ export const ComparisonSlider: React.FC<ComparisonSliderProps> = ({
                     decoding="async"
                 />
 
-                {/* BEFORE IMAGE (Overlay - Left Side) - Centered to match */}
+                {/* BEFORE IMAGE (Overlay - Left Side) - Original, clipped */}
                 <div className="absolute inset-0 w-full h-full">
                     <img
                         src={originalImage}
                         alt="Before"
-                        // UPDATED: Removed 'opacity-80' to ensure 100% opacity as requested
-                        className={`w-full h-full object-${objectFit} opacity-100`}
+                        onLoad={handleOriginalImageLoad}
+                        className={`w-full h-full object-${objectFit}`}
                         style={{
                             clipPath: `inset(0 ${100 - sliderPosition}% 0 0)`,
                             objectPosition: `${focusPoint.x}% ${focusPoint.y}%`,
