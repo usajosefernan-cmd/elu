@@ -589,55 +589,79 @@ const App: React.FC = () => {
     };
 
     // NEW: Handlers for Vision Confirm Modal (Edge Function flow)
-    const handleVisionConfirm = async (useAuto: boolean) => {
+    const handleVisionConfirm = async (confirmConfig: { mode: 'auto' | 'intent' | 'custom'; intentIndex?: number; customIntent?: string; settings?: any }) => {
         setShowVisionConfirm(false);
         
-        if (useAuto) {
-            // Use recommended settings from vision analysis (AUTO default)
-            const dm = (visionAnalysis as any)?._defaultMixer;
-            const config: LuxConfig = {
-                userPrompt: '',
-                mode: 'AUTO',
-                mixer: {
-                    stylism: dm?.stylism ?? 5,
-                    atrezzo: dm?.atrezzo ?? 5,
-                    skin_bio: dm?.skin_bio ?? 5,
-                    lighting: dm?.lighting ?? 5,
-                    restoration: dm?.restoration ?? 5,
-                    upScaler: dm?.upScaler ?? 1
-                }
+        // Build config based on mode
+        let config: LuxConfig;
+        const autoSettings = visionAnalysis?.auto_settings || confirmConfig.settings;
+        
+        if (confirmConfig.mode === 'auto' || confirmConfig.mode === 'intent') {
+            // Use auto_settings from vision analysis
+            const sliderConfig = {
+                photoscaler: autoSettings?.photoscaler || {},
+                stylescaler: autoSettings?.stylescaler || {},
+                lightscaler: autoSettings?.lightscaler || {}
             };
             
-            // UX overlay for generation
-            setToastState({
-                isOpen: true,
-                title: 'Trabajo encargado',
-                message: 'Puedes cerrar esta ventana (X). La generación continuará y te avisaremos al terminar.'
-            });
-            setShowProcessingOverlay(true);
-            setProcessingPhase('compile');
-            setPhaseStartedAt(Date.now());
-            setPhaseEtaSeconds(2);
-            setPhaseProgress(5);
-            setPhaseLabel('Compilando prompt (Brain) — ~1–2s');
-            setElapsedTime(0);
-
-            // Process with Edge Functions
-            // commit staged URLs to session, but keep legacy workspace hidden during overlay
-            // Ensure we have a public URL for generation (wait for background upload if needed)
-            let finalInputUrl = stagedMasterImageUrl || stagedImageUrl || inputImageUrl;
-            if (!finalInputUrl && masterUploadPromiseRef.current) {
-                setProcessingPhase('upload');
-                setPhaseLabel('Subiendo original para generar...');
-                try { finalInputUrl = await masterUploadPromiseRef.current; } catch { /* ignore */ }
-            }
-            if (!finalInputUrl) {
-                throw new Error('No hay URL de imagen disponible para generar.');
-            }
-            setInputImageUrl(finalInputUrl);
-
-            await processWithEdgeFunctions(finalInputUrl, config);
+            config = {
+                userPrompt: confirmConfig.customIntent || '',
+                mode: 'AUTO',
+                selectedPresetId: JSON.stringify({
+                    photoscaler: { sliders: Object.entries(sliderConfig.photoscaler).map(([name, value]) => ({ name, value })) },
+                    stylescaler: { sliders: Object.entries(sliderConfig.stylescaler).map(([name, value]) => ({ name, value })) },
+                    lightscaler: { sliders: Object.entries(sliderConfig.lightscaler).map(([name, value]) => ({ name, value })) }
+                }),
+                mixer: {
+                    stylism: autoSettings?.stylescaler?.look_cine ?? 5,
+                    atrezzo: autoSettings?.stylescaler?.limpieza_entorno ?? 5,
+                    skin_bio: autoSettings?.stylescaler?.styling_piel ?? 5,
+                    lighting: autoSettings?.lightscaler?.key_light ?? 5,
+                    restoration: autoSettings?.photoscaler?.limpieza_artefactos ?? 5,
+                    upScaler: 1
+                }
+            };
+        } else {
+            // Custom intent - use defaults with custom prompt
+            config = {
+                userPrompt: confirmConfig.customIntent || '',
+                mode: 'AUTO',
+                mixer: {
+                    stylism: 5, atrezzo: 5, skin_bio: 5,
+                    lighting: 5, restoration: 5, upScaler: 1
+                }
+            };
         }
+        
+        // UX overlay for generation
+        setToastState({
+            isOpen: true,
+            title: 'Procesando',
+            message: 'Puedes cerrar esta ventana. Te avisaremos cuando termine.'
+        });
+        setShowProcessingOverlay(true);
+        setProcessingPhase('compile');
+        setPhaseStartedAt(Date.now());
+        setPhaseEtaSeconds(2);
+        setPhaseProgress(5);
+        setPhaseLabel('Compilando instrucciones...');
+        setElapsedTime(0);
+
+        // Ensure we have a public URL for generation
+        let finalInputUrl = stagedMasterImageUrl || stagedImageUrl || inputImageUrl;
+        if (!finalInputUrl && masterUploadPromiseRef.current) {
+            setProcessingPhase('upload');
+            setPhaseLabel('Subiendo original...');
+            try { finalInputUrl = await masterUploadPromiseRef.current; } catch { /* ignore */ }
+        }
+        if (!finalInputUrl) {
+            setShowProcessingOverlay(false);
+            setAgentMsg({ text: 'Error: No hay imagen disponible', type: 'error' });
+            return;
+        }
+        setInputImageUrl(finalInputUrl);
+
+        await processWithEdgeFunctions(finalInputUrl, config);
     };
 
     const handleVisionCustomize = () => {
