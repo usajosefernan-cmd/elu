@@ -166,7 +166,7 @@ export const generateEnhancedImage = async (
     outputType?: 'preview_watermark' | 'preview_clean' | 'master_4k' | 'master_8k';
   } = {}
 ): Promise<GenerateImageResult> => {
-  return callEdgeFunction<GenerateImageResult>('generate-image', {
+  return await callEdgeFunction<GenerateImageResult>('generate-image', {
     imageUrl,
     compiledPrompt,
     userMode: options.userMode || 'auto',
