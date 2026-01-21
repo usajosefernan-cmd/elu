@@ -57,18 +57,21 @@ const PROFILES: ProfileInfo[] = [
 // =====================================================
 // AUTO PROFILE UI - No controls, just AI magic
 // =====================================================
-const AutoProfileUI: React.FC<{ onConfirm: (config: LuxConfig) => void }> = ({ onConfirm }) => {
+const AutoProfileUI: React.FC<{ 
+  onConfirm: (config: LuxConfig) => void;
+  initialMixer?: LuxMixer;
+}> = ({ onConfirm, initialMixer }) => {
   const handleGenerate = () => {
     onConfirm({
       userPrompt: '',
       mode: 'AUTO',
       mixer: {
-        stylism: 5,
-        atrezzo: 5,
-        skin_bio: 5,
-        lighting: 5,
-        restoration: 5,
-        upScaler: 1
+        stylism: initialMixer?.stylism ?? 5,
+        atrezzo: initialMixer?.atrezzo ?? 5,
+        skin_bio: initialMixer?.skin_bio ?? 5,
+        lighting: initialMixer?.lighting ?? 5,
+        restoration: initialMixer?.restoration ?? 5,
+        upScaler: initialMixer?.upScaler ?? 1
       }
     });
   };
