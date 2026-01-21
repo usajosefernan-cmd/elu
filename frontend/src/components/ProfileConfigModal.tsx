@@ -202,19 +202,71 @@ const UserProfileUI: React.FC<{
 };
 
 // =====================================================
-// PRO PROFILE UI - 9 Macros
+// PRO PROFILE UI - 9 Macros Conceptuales (v28)
+// Cada macro controla un subset semántico de sliders.
 // =====================================================
-const MACROS = [
-  { key: 'limpieza_profunda', name: 'Limpieza Profunda', icon: '🧹', pillar: 'photo' },
-  { key: 'restauracion_historica', name: 'Restauración', icon: '📜', pillar: 'photo' },
-  { key: 'portrait_refinement', name: 'Portrait Pro', icon: '👤', pillar: 'style' },
-  { key: 'cinematic_tone', name: 'Cinematic', icon: '🎬', pillar: 'style' },
-  { key: 'studio_lighting', name: 'Studio Light', icon: '💡', pillar: 'light' },
-  { key: 'golden_hour', name: 'Golden Hour', icon: '🌅', pillar: 'light' },
-  { key: 'vintage_aesthetics', name: 'Vintage', icon: '📷', pillar: 'style' },
-  { key: 'high_end_luxury', name: 'Luxury', icon: '💎', pillar: 'all' },
-  { key: 'extreme_forensic', name: 'Forensic Max', icon: '🔬', pillar: 'photo' }
-];
+const PRO_MACROS = {
+  photoscaler: [
+    {
+      key: 'restauracion',
+      name: 'Restauración',
+      icon: '🛠️',
+      sliders: ['limpieza_artefactos', 'geometria', 'chronos'],
+    },
+    {
+      key: 'fidelidad',
+      name: 'Fidelidad',
+      icon: '🔍',
+      sliders: ['resolucion', 'enfoque', 'sintesis_adn', 'senal_raw'],
+    },
+    {
+      key: 'caracter',
+      name: 'Carácter',
+      icon: '🎞️',
+      sliders: ['grano_filmico', 'optica'],
+    },
+  ],
+  stylescaler: [
+    {
+      key: 'presencia',
+      name: 'Presencia',
+      icon: '👤',
+      sliders: ['styling_piel', 'styling_pelo', 'maquillaje'],
+    },
+    {
+      key: 'pulido',
+      name: 'Pulido',
+      icon: '🧼',
+      sliders: ['styling_ropa', 'limpieza_entorno', 'reencuadre_ia'],
+    },
+    {
+      key: 'cinematica',
+      name: 'Cinemática',
+      icon: '🎬',
+      sliders: ['look_cine', 'atmosfera', 'materiales_pbr'],
+    },
+  ],
+  lightscaler: [
+    {
+      key: 'volumen',
+      name: 'Volumen',
+      icon: '📐',
+      sliders: ['key_light', 'fill_light', 'reflejos'],
+    },
+    {
+      key: 'drama',
+      name: 'Drama',
+      icon: '🎭',
+      sliders: ['contraste', 'sombras', 'rim_light'],
+    },
+    {
+      key: 'atmosfera',
+      name: 'Atmósfera',
+      icon: '🌫️',
+      sliders: ['volumetria', 'temperatura', 'estilo_autor'],
+    },
+  ],
+} as const;
 
 const ProProfileUI: React.FC<{ 
   onConfirm: (config: LuxConfig) => void;
