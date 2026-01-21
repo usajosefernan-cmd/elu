@@ -154,10 +154,23 @@ export const analyzeImageBase64WithVision = async (
   imageBase64: string,
   userId?: string
 ): Promise<VisionAnalysisResult> => {
-  return await callEdgeFunction<VisionAnalysisResult>('vision-analysis', {
-    imageBase64,
-    userId,
+  // Same as analyzeImageWithVision: go directly to FastAPI for speed/stability
+  if (!BACKEND_URL) {
+    throw new Error('Missing VITE_BACKEND_URL (required for vision).');
+  }
+
+  const response = await fetch(`${BACKEND_URL}/api/process/analyze`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ imageBase64, userId }),
   });
+
+  if (!response.ok) {
+    const errorText = await response.text();
+    throw new Error(`API Error: ${errorText}`);
+  }
+
+  return response.json();
 };
 
 // =====================================================
