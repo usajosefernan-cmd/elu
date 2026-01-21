@@ -26,6 +26,8 @@ import { ImageInspectorModal } from './components/ImageInspectorModal';
 import { ProfileConfigModal } from './components/ProfileConfigModal';
 import { VisionConfirmModal } from './components/VisionConfirmModal';
 import { TermsPage, PrivacyPage, CookiesPage, LegalNoticePage, APIDocsPage, ContactPage, InfoPages } from './components/InfoPages';
+import { InfoToast, ToastState } from './components/InfoToast';
+
 import TutorialInteractive from './components/TutorialInteractive';
 import FAQInteractive from './components/FAQInteractive';
 import { ScalerInfoPage } from './components/ScalerInfoPage';
