@@ -1479,6 +1479,7 @@ const App: React.FC = () => {
                 onCancel={handleUnifiedCancel}
                 tokensRequired={10}
                 userTokens={userTokenBalance}
+                userProfile={(userProfile?.profile_type as 'auto' | 'user' | 'pro' | 'prolux') || 'auto'}
             />
 
             {/* Legacy MobileConfigWizard disabled for v28 flow */}
