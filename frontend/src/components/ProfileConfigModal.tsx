@@ -493,15 +493,18 @@ const ProluxProfileUI: React.FC<{
 }> = ({ onConfirm, initialMixer }) => {
   const [sliderValues, setSliderValues] = useState<Record<string, number>>(() => {
     const initial: Record<string, number> = {};
-    Object.values(SLIDERS_27).flat().forEach(s => {
-      // Default: start from AUTO recommendations mapped to approximate pillars
-      if (s.key.startsWith('photo') || ['limpieza_artefactos','geometria','chronos','senal_raw','sintesis_adn','grano_filmico','enfoque','resolucion','optica'].includes(s.key)) {
-        initial[s.key] = initialMixer?.restoration ?? 5;
-      } else if (['styling_piel','styling_pelo','maquillaje','styling_ropa','limpieza_entorno','reencuadre_ia','look_cine','atmosfera','materiales_pbr','estilo_autor'].includes(s.key)) {
-        initial[s.key] = initialMixer?.stylism ?? 5;
-      } else {
-        initial[s.key] = initialMixer?.lighting ?? 5;
-      }
+    // Inicializar todos los sliders con valores del initialMixer si están disponibles
+    // PhotoScaler sliders -> restoration
+    SLIDERS_27.photoscaler.forEach(s => {
+      initial[s.key] = initialMixer?.restoration ?? 5;
+    });
+    // StyleScaler sliders -> stylism
+    SLIDERS_27.stylescaler.forEach(s => {
+      initial[s.key] = initialMixer?.stylism ?? 5;
+    });
+    // LightScaler sliders -> lighting
+    SLIDERS_27.lightscaler.forEach(s => {
+      initial[s.key] = initialMixer?.lighting ?? 5;
     });
     return initial;
   });
