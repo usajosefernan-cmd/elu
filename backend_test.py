@@ -533,18 +533,133 @@ class LuxScalerAPITester:
             self.log_test("Supabase Apply User Macro", False, "User macro application failed")
             return False
 
+    def test_process_analyze_endpoint(self):
+        """Test POST /api/process/analyze with public image URL"""
+        public_image_url = "https://images.pexels.com/photos/35501372/pexels-photo-35501372.jpeg"
+        
+        success, response = self.run_test(
+            "Process Analyze Endpoint",
+            "POST",
+            "process/analyze",
+            200,
+            data={
+                "imageUrl": public_image_url
+            }
+        )
+        
+        if success:
+            # Check required fields
+            has_success = response.get('success') is True
+            has_analysis = 'analysis' in response and isinstance(response['analysis'], dict)
+            has_thumbnail_used = 'thumbnail_used' in response
+            has_tokens_consumed = 'tokens_consumed' in response
+            
+            self.log_test("Process Analyze - success field", has_success, 
+                         "Has success:true" if has_success else "Missing or false success field")
+            self.log_test("Process Analyze - analysis object", has_analysis, 
+                         "Has analysis object" if has_analysis else "Missing analysis object")
+            self.log_test("Process Analyze - thumbnail_used field", has_thumbnail_used, 
+                         "Has thumbnail_used field" if has_thumbnail_used else "Missing thumbnail_used field")
+            self.log_test("Process Analyze - tokens_consumed field", has_tokens_consumed, 
+                         "Has tokens_consumed field" if has_tokens_consumed else "Missing tokens_consumed field")
+            
+            return has_success and has_analysis and has_thumbnail_used and has_tokens_consumed
+        else:
+            self.log_test("Process Analyze Endpoint", False, "Endpoint failed")
+            return False
+
+    def test_process_compile_endpoint(self):
+        """Test POST /api/process/compile with minimal config"""
+        minimal_config = {
+            "photoscaler": {
+                "pillarName": "photoscaler",
+                "mode": "auto",
+                "sliders": [
+                    {"name": "limpieza_artefactos", "value": 5, "levelText": "MEDIUM", "snippet": "test"}
+                ]
+            }
+        }
+        
+        success, response = self.run_test(
+            "Process Compile Endpoint",
+            "POST",
+            "process/compile",
+            200,
+            data={
+                "config": minimal_config,
+                "userMode": "auto"
+            }
+        )
+        
+        if success:
+            # Check required fields
+            has_success = response.get('success') is True
+            has_prompt = 'prompt' in response and isinstance(response['prompt'], str) and len(response['prompt']) > 0
+            
+            self.log_test("Process Compile - success field", has_success, 
+                         "Has success:true" if has_success else "Missing or false success field")
+            self.log_test("Process Compile - prompt string", has_prompt, 
+                         "Has prompt string" if has_prompt else "Missing or empty prompt string")
+            
+            return has_success and has_prompt
+        else:
+            self.log_test("Process Compile Endpoint", False, "Endpoint failed")
+            return False
+
+    def test_process_generate_image_endpoint(self):
+        """Test POST /api/process/generate-image with imageUrl + compiledPrompt"""
+        image_url = "https://images.pexels.com/photos/35501372/pexels-photo-35501372.jpeg"
+        compiled_prompt = "Enhance this image with professional quality improvements"
+        
+        success, response = self.run_test(
+            "Process Generate Image Endpoint",
+            "POST",
+            "process/generate-image",
+            200,
+            data={
+                "imageUrl": image_url,
+                "compiledPrompt": compiled_prompt,
+                "userMode": "auto",
+                "outputType": "preview_watermark"
+            }
+        )
+        
+        if success:
+            # Check required fields
+            has_success = response.get('success') is True
+            output = response.get('output', {})
+            has_image = 'image' in output and output['image'] is not None
+            metadata = response.get('metadata', {})
+            has_output_type = 'output_type' in metadata
+            
+            self.log_test("Process Generate Image - success field", has_success, 
+                         "Has success:true" if has_success else "Missing or false success field")
+            self.log_test("Process Generate Image - output.image exists", has_image, 
+                         "Has output.image" if has_image else "Missing output.image")
+            self.log_test("Process Generate Image - metadata.output_type", has_output_type, 
+                         "Has metadata.output_type" if has_output_type else "Missing metadata.output_type")
+            
+            return has_success and has_image and has_output_type
+        else:
+            self.log_test("Process Generate Image Endpoint", False, "Endpoint failed")
+            return False
+
     def run_all_tests(self):
         """Run all tests in sequence"""
-        print("🚀 Starting LuxScaler v27 Backend API Tests")
+        print("🚀 Starting LuxScaler v27 Backend API Tests - Review Request Focus")
         print("=" * 60)
         
         # Test sequence - focusing on review request items
         tests = [
             self.test_root_endpoint,
-            self.test_login,  # Test 1: Login flow
-            self.test_supabase_generation_flow,  # Test 2: Generation with Supabase config
-            self.test_supabase_apply_user_macro,  # Test 3: Apply user macro updates Supabase
+            # Review request specific tests
+            self.test_process_analyze_endpoint,
+            self.test_process_compile_endpoint, 
+            self.test_process_generate_image_endpoint,
             # Additional comprehensive tests
+            self.test_login,
+            self.test_supabase_generation_flow,
+            self.test_supabase_apply_user_macro,
             self.test_pillars_config,
             self.test_slider_update,
             self.test_pillar_toggle,
