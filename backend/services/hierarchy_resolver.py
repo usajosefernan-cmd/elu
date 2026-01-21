@@ -1,9 +1,17 @@
 # Hierarchy Resolver Logic
 def resolve_conflicts(user_sliders):
+    # Be tolerant to partial configs
+    user_sliders = user_sliders or {}
+    for pillar in ['photoscaler', 'stylescaler', 'lightscaler']:
+        if pillar not in user_sliders:
+            user_sliders[pillar] = { 'sliders': [] }
+        if 'sliders' not in user_sliders[pillar] or user_sliders[pillar]['sliders'] is None:
+            user_sliders[pillar]['sliders'] = []
+
     optimized = {
-        'photoscaler': { s['name']: s['value'] for s in user_sliders['photoscaler']['sliders'] },
-        'stylescaler': { s['name']: s['value'] for s in user_sliders['stylescaler']['sliders'] },
-        'lightscaler': { s['name']: s['value'] for s in user_sliders['lightscaler']['sliders'] },
+        'photoscaler': { s['name']: s.get('value', 0) for s in user_sliders['photoscaler']['sliders'] },
+        'stylescaler': { s['name']: s.get('value', 0) for s in user_sliders['stylescaler']['sliders'] },
+        'lightscaler': { s['name']: s.get('value', 0) for s in user_sliders['lightscaler']['sliders'] },
     }
 
     # REGLA 1: La Paradoja Forense
@@ -21,6 +29,6 @@ def resolve_conflicts(user_sliders):
     # Write back to list structure
     for pillar in ['photoscaler', 'stylescaler', 'lightscaler']:
         for s in user_sliders[pillar]['sliders']:
-            s['value'] = optimized[pillar][s['name']]
+            s['value'] = optimized[pillar].get(s['name'], s.get('value', 0))
 
     return user_sliders

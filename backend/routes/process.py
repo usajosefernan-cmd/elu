@@ -12,10 +12,12 @@ router = APIRouter(prefix="/process", tags=["process"])
 @router.post("/analyze")
 async def analyze_input(body: dict = Body(...)):
     image_url = body.get('imageUrl')
-    if not image_url:
-        return {"success": False, "error": "No image URL provided", "thumbnail_used": False, "tokens_consumed": 0}
+    image_base64 = body.get('imageBase64')
 
-    analysis = await vision_service.analyze_image(image_url)
+    if not image_url and not image_base64:
+        return {"success": False, "error": "No image provided", "thumbnail_used": False, "tokens_consumed": 0}
+
+    analysis = await vision_service.analyze_image(image_base64 or image_url)
     if isinstance(analysis, dict) and analysis.get('error'):
         return {"success": False, "error": analysis.get('error'), "thumbnail_used": False, "tokens_consumed": 0}
 
