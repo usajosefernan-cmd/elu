@@ -448,16 +448,16 @@ class VisionService:
             "category": "OTHER",
             "category_confidence": 0.5,
             "production_analysis": {
-                "current_quality": "Unable to analyze - using defaults",
-                "target_vision": "Standard professional enhancement",
+                "current_quality": "Imagen recibida correctamente",
+                "target_vision": "Mejora profesional automática",
                 "gaps_detected": []
             },
             "intents_detected": [
-                "1. 🎬 Standard Enhancement - Professional quality",
-                "2. 💎 Clean Portrait - Polished look",
-                "3. 📸 Natural Light - Soft enhancement",
-                "4. ✨ Vibrant Colors - Pop and contrast",
-                "5. 🎨 Artistic Edit - Creative treatment"
+                "1. 🎬 Mejora Estándar - Calidad profesional",
+                "2. 💎 Retrato Limpio - Look pulido",
+                "3. 📸 Luz Natural - Mejora suave",
+                "4. ✨ Colores Vibrantes - Pop y contraste",
+                "5. 🎨 Edición Artística - Tratamiento creativo"
             ],
             "auto_settings": self._get_default_settings(),
             "technical_diagnosis": {
