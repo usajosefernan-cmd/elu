@@ -39,7 +39,7 @@ class CompilerOutput:
 
 class PromptCompilerService:
     """
-    Compilador de Prompts v28.0 - "El Cerebro"
+    Compilador de Prompts v29.0 - "El Cerebro"
     
     Transforma los 27 valores numéricos de sliders en una instrucción
     coherente para Gemini 3 Pro, resolviendo conflictos y aplicando
@@ -55,7 +55,7 @@ class PromptCompilerService:
     """
     
     def __init__(self):
-        self.version = "28.0"
+        self.version = "29.0"
     
     def _flatten_config(self, config: Dict) -> Dict[str, int]:
         """Convierte config estructurada a diccionario plano {slider_name: value}."""
