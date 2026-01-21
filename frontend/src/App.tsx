@@ -496,7 +496,15 @@ const App: React.FC = () => {
             setStatus(AgentStatus.ANALYZING);
             setAgentMsg({ text: "Gemini 2.5 Flash: Analizando imagen...", type: 'info' });
 
-            const visionResult = await analyzeImageWithVision(stagedImageUrl || uploadedPublicUrl, userProfile?.id);
+            // Avoid waiting for Storage public URL propagation. Use base64 direct for vision.
+            const visionBase64 = await new Promise<string>((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.onerror = () => reject(new Error('No se pudo leer el archivo'));
+                reader.readAsDataURL(file);
+            });
+
+            const visionResult = await analyzeImageBase64WithVision(visionBase64, userProfile?.id);
             setPhaseProgress(100);
 
             // ask notification permission early
