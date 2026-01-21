@@ -173,7 +173,18 @@ Usuario confirma → Edge: prompt-compiler → Edge: generate-image → Resultad
 
 ## 📅 Changelog
 
-### 2026-01-20 (Sesión Actual)
+### 2026-01-21 (Sesión Actual)
+- ✅ **PROLUX UI Mejorada**: Nuevo diseño compacto tipo grid para los 27 sliders
+  - Toggle entre modo "Compacto" (grid 3x9) y "Detallado" (acordeón con descripciones)
+  - Controles rápidos (1, 5, 10) para ajuste rápido de valores
+  - Indicadores de nivel con colores (gris/azul/púrpura/dorado)
+- ✅ **Archives Viewer Corregido**: Slider de comparación antes/después perfectamente alineado
+  - Imágenes forzadas a las mismas dimensiones usando `displaySize`
+  - Zoom funcional con rueda del mouse
+  - Pan funcional arrastrando con el mouse
+  - Handlers separados para carga de imágenes antes/después
+
+### 2026-01-20
 - ✅ Corregido API key de Supabase (anon_key)
 - ✅ Usuario admin configurado como PROLUX con 99999 tokens
 - ✅ Balance de tokens sincronizado en navbar (999999 TKN)
