@@ -645,6 +645,7 @@ const App: React.FC = () => {
 
         } catch (error: any) {
             console.error("Brain pipeline processing error:", error);
+            setShowProcessingOverlay(false);
             setAgentMsg({ text: `Error: ${error.message}`, type: 'error' });
             setStatus(AgentStatus.ERROR);
         }
