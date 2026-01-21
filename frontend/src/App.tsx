@@ -173,6 +173,7 @@ const App: React.FC = () => {
     const [elapsedTime, setElapsedTime] = useState(0);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const generatedObjectUrlsRef = useRef<string[]>([]);
 
     // Update elapsed display while overlay visible
     useEffect(() => {
@@ -455,6 +456,7 @@ const App: React.FC = () => {
 
         } catch (visionError: any) {
             console.error("Vision Analysis Error:", visionError);
+            setShowProcessingOverlay(false);
             setAgentMsg({ text: `Fallo en Brain pipeline: ${visionError.message}. Probando fallback legacy...`, type: 'info' });
         }
 
@@ -502,7 +504,16 @@ const App: React.FC = () => {
     const handleProfileConfigConfirm = async (config: LuxConfig) => {
         setShowProfileSelector(false);
         if (inputImageUrl) {
-            processFileGeneration(inputImageUrl, config, analysisResult);
+            // IMPORTANT: Use the v28 Brain pipeline (Edge Functions w/ fallback)
+            setShowProcessingOverlay(true);
+            setProcessingPhase('compile');
+            setPhaseStartedAt(Date.now());
+            setPhaseEtaSeconds(2);
+            setPhaseProgress(5);
+            setPhaseLabel('Compilando prompt (Brain) — ~1–2s');
+            setElapsedTime(0);
+
+            await processWithEdgeFunctions(inputImageUrl, config);
         }
     };
 
@@ -618,16 +629,29 @@ const App: React.FC = () => {
             const outputImage = generateResult.output?.image;
             if (outputImage) {
                 // If backend returns base64 (common), make it a data URL
-                const normalizedImage = outputImage.startsWith('data:image')
+                let normalizedImage = outputImage.startsWith('data:image')
                     ? outputImage
                     : outputImage.length > 500
                         ? `data:image/png;base64,${outputImage}`
                         : outputImage;
 
+                // If it's a data URI, convert to object URL to reduce huge-string UI freezes
+                if (normalizedImage.startsWith('data:image')) {
+                    try {
+                        const blob = await (await fetch(normalizedImage)).blob();
+                        const objUrl = URL.createObjectURL(blob);
+                        generatedObjectUrlsRef.current.push(objUrl);
+                        normalizedImage = objUrl;
+                    } catch (e) {
+                        console.warn('Could not convert data URI to blob URL:', e);
+                    }
+                }
+
                 const nowIso = new Date().toISOString();
+                const id = `edge-${Date.now()}`;
                 setPreviews([{
-                    id: `edge-${Date.now()}`,
-                    generation_id: `edge-${Date.now()}`,
+                    id,
+                    generation_id: id,
                     type: 'preview_watermark',
                     style_id: 'edge_generated',
                     image_path: normalizedImage,
@@ -753,6 +777,17 @@ const App: React.FC = () => {
         setPhaseEtaSeconds(null);
         setPhaseProgress(0);
         setPhaseLabel('');
+
+        // Modal resets (avoid cross-flow UI mixing)
+        setShowVisionConfirm(false);
+        setShowProfileSelector(false);
+        setVisionAnalysis(null);
+
+        // Revoke any created blob URLs
+        generatedObjectUrlsRef.current.forEach((u) => {
+            try { URL.revokeObjectURL(u); } catch { }
+        });
+        generatedObjectUrlsRef.current = [];
 
         if (fileInputRef.current) fileInputRef.current.value = '';
         navigate('/');

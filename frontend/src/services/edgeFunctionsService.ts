@@ -93,7 +93,7 @@ const callEdgeFunction = async <T>(
     try {
       // Use Supabase Edge Functions (with short timeout → fallback rápido si BOOT_ERROR)
       const controller = new AbortController();
-      const timeoutMs = 2500;
+      const timeoutMs = 800;
       const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
 
       const response = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
