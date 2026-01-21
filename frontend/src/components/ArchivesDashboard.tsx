@@ -348,20 +348,25 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                         style={{
                                             transform: `translate(${translate.x}px, ${translate.y}px) scale(${scale})`,
                                             transformOrigin: '0 0',
-                                            width: imgSize.w || 'auto',
-                                            height: imgSize.h || 'auto',
+                                            width: displaySize.w || 'auto',
+                                            height: displaySize.h || 'auto',
                                         }}
                                     >
-                                        {/* Imagen DESPUÉS (base) */}
+                                        {/* Imagen DESPUÉS (base) - This is the reference for dimensions */}
                                         <img
                                             src={getDisplayUrl(selectedVariation.image_path)}
                                             alt="Después"
-                                            onLoad={handleImageLoad}
-                                            className="absolute inset-0 w-full h-full"
+                                            onLoad={handleAfterImageLoad}
+                                            className="absolute inset-0"
+                                            style={{ 
+                                                width: displaySize.w || '100%', 
+                                                height: displaySize.h || '100%',
+                                                objectFit: 'contain'
+                                            }}
                                             draggable={false}
                                         />
                                         
-                                        {/* Imagen ANTES (overlay con clip) */}
+                                        {/* Imagen ANTES (overlay con clip) - FORCED to same dimensions */}
                                         <div 
                                             className="absolute inset-0"
                                             style={{ clipPath: `inset(0 ${100 - sliderPosition}% 0 0)` }}
@@ -369,8 +374,12 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                             <img
                                                 src={getDisplayUrl(currentSession.original_image_path)}
                                                 alt="Antes"
-                                                className="w-full h-full"
-                                                style={{ width: imgSize.w, height: imgSize.h }}
+                                                onLoad={handleBeforeImageLoad}
+                                                style={{ 
+                                                    width: displaySize.w || '100%', 
+                                                    height: displaySize.h || '100%',
+                                                    objectFit: 'contain'
+                                                }}
                                                 draggable={false}
                                             />
                                         </div>
