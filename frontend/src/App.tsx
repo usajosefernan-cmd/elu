@@ -743,6 +743,15 @@ const App: React.FC = () => {
         setSystemLogs([]);
         setIsSculpting(false);
         setShowTelemetry(false);
+
+        // Overlay reset
+        setShowProcessingOverlay(false);
+        setProcessingPhase(null);
+        setPhaseStartedAt(null);
+        setPhaseEtaSeconds(null);
+        setPhaseProgress(0);
+        setPhaseLabel('');
+
         if (fileInputRef.current) fileInputRef.current.value = '';
         navigate('/');
     };
