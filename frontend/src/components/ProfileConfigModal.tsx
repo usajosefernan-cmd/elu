@@ -647,80 +647,95 @@ const ProluxProfileUI: React.FC<{
         <p className="text-[10px] text-gray-500">{currentPillar.description}</p>
       </div>
 
-      {/* Sliders List - Diseño compacto tipo acordeón */}
-      <div className="space-y-1 max-h-[280px] overflow-y-auto pr-1">
-        {currentPillar.sliders.map(slider => {
-          const value = sliderValues[slider.key] ?? 5;
-          const isExpanded = expandedSlider === slider.key;
-          const isActive = value > 3;
-          
-          // Indicador de nivel
-          const levelLabel = value <= 2 ? 'Sutil' : value <= 5 ? 'Normal' : value <= 8 ? 'Intenso' : 'Máximo';
-          const levelColor = value <= 2 ? 'text-gray-400' : value <= 5 ? 'text-blue-400' : value <= 8 ? 'text-purple-400' : 'text-lumen-gold';
+      {/* View Mode Toggle */}
+      <div className="flex gap-1 p-1 bg-white/5 rounded-lg">
+        <button
+          onClick={() => setViewMode('compact')}
+          className={`flex-1 py-1.5 px-2 rounded text-[10px] font-bold uppercase transition-all ${
+            viewMode === 'compact' 
+              ? 'bg-lumen-gold text-black' 
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          Compacto
+        </button>
+        <button
+          onClick={() => setViewMode('detailed')}
+          className={`flex-1 py-1.5 px-2 rounded text-[10px] font-bold uppercase transition-all ${
+            viewMode === 'detailed' 
+              ? 'bg-lumen-gold text-black' 
+              : 'text-gray-400 hover:text-white'
+          }`}
+        >
+          Detallado
+        </button>
+      </div>
 
-          return (
-            <div 
-              key={slider.key}
-              className={`rounded-xl border transition-all ${
-                isActive 
-                  ? 'bg-white/5 border-lumen-gold/30' 
-                  : 'bg-white/[0.02] border-white/5'
-              }`}
-            >
-              {/* Header clickeable */}
-              <button
-                onClick={() => setExpandedSlider(isExpanded ? null : slider.key)}
-                className="w-full px-3 py-2.5 flex items-center justify-between"
+      {/* Sliders Grid - Compact Mode */}
+      {viewMode === 'compact' ? (
+        <div className="grid grid-cols-3 gap-2 max-h-[280px] overflow-y-auto pr-1">
+          {currentPillar.sliders.map(slider => (
+            <CompactSlider key={slider.key} slider={slider} />
+          ))}
+        </div>
+      ) : (
+        /* Detailed Mode - Original accordion style */
+        <div className="space-y-1 max-h-[280px] overflow-y-auto pr-1">
+          {currentPillar.sliders.map(slider => {
+            const value = sliderValues[slider.key] ?? 5;
+            const isActive = value > 3;
+            
+            return (
+              <div 
+                key={slider.key}
+                className={`p-3 rounded-lg border transition-all ${
+                  isActive 
+                    ? 'bg-white/5 border-white/10' 
+                    : 'bg-white/[0.02] border-white/5'
+                }`}
               >
-                <div className="flex items-center gap-2 flex-1 min-w-0">
-                  <span className={`text-sm font-medium truncate ${isActive ? 'text-white' : 'text-gray-400'}`}>
-                    {slider.name}
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex-1 min-w-0">
+                    <span className={`text-sm font-medium ${isActive ? 'text-white' : 'text-gray-400'}`}>
+                      {slider.name}
+                    </span>
+                    <p className="text-[10px] text-gray-500 mt-0.5">{slider.desc}</p>
+                  </div>
+                  <span className={`text-xs font-mono font-bold ml-2 ${isActive ? 'text-lumen-gold' : 'text-gray-600'}`}>
+                    {value}
                   </span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <span className={`text-xs font-mono ${levelColor}`}>{value}</span>
-                  <span className={`text-[9px] uppercase ${levelColor}`}>{levelLabel}</span>
-                  <ChevronRight className={`w-4 h-4 text-gray-500 transition-transform ${isExpanded ? 'rotate-90' : ''}`} />
-                </div>
-              </button>
-
-              {/* Contenido expandido */}
-              {isExpanded && (
-                <div className="px-3 pb-3 space-y-2 animate-in slide-in-from-top-2 duration-200">
-                  <p className="text-[11px] text-gray-500 leading-relaxed">{slider.desc}</p>
-                  
-                  {/* Slider */}
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="range"
-                      min="1"
-                      max="10"
-                      value={value}
-                      onChange={(e) => updateSlider(slider.key, parseInt(e.target.value))}
-                      className="flex-1 h-2 bg-white/10 rounded-full appearance-none cursor-pointer accent-lumen-gold"
-                    />
-                    <div className="flex gap-1">
-                      {[1, 5, 10].map(v => (
-                        <button
-                          key={v}
-                          onClick={() => updateSlider(slider.key, v)}
-                          className={`w-7 h-7 rounded-lg text-[10px] font-bold transition-all ${
-                            value === v 
-                              ? 'bg-lumen-gold text-black' 
-                              : 'bg-white/5 text-gray-400 hover:bg-white/10'
-                          }`}
-                        >
-                          {v}
-                        </button>
-                      ))}
-                    </div>
+                
+                <div className="flex items-center gap-3">
+                  <input
+                    type="range"
+                    min="1"
+                    max="10"
+                    value={value}
+                    onChange={(e) => updateSlider(slider.key, parseInt(e.target.value))}
+                    className="flex-1 h-1.5 bg-white/10 rounded-full appearance-none cursor-pointer accent-lumen-gold"
+                  />
+                  <div className="flex gap-1">
+                    {[1, 5, 10].map(v => (
+                      <button
+                        key={v}
+                        onClick={() => updateSlider(slider.key, v)}
+                        className={`w-6 h-6 rounded text-[9px] font-bold transition-all ${
+                          value === v 
+                            ? 'bg-lumen-gold text-black' 
+                            : 'bg-white/5 text-gray-400 hover:bg-white/10'
+                        }`}
+                      >
+                        {v}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Quick presets */}
       <div className="flex gap-2">
