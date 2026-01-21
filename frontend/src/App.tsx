@@ -642,6 +642,51 @@ const App: React.FC = () => {
     };
 
     // NEW: Process using Edge Functions
+
+    const persistToArchive = async (originalUrl: string, vision: any, variationImageUrl: string, promptPayload: any) => {
+        try {
+            const { getSupabaseClient } = await import('./services/authService');
+            const supabase = getSupabaseClient();
+            const { data: { user } } = await supabase.auth.getUser();
+            if (!user) return;
+
+            const { data: gen, error: genErr } = await supabase
+                .from('generations')
+                .insert({
+                    user_id: user.id,
+                    status: 'completed',
+                    original_image_path: originalUrl,
+                    original_image_thumbnail: stagedImageUrl || originalUrl,
+                    semantic_analysis: vision,
+                })
+                .select('id')
+                .single();
+
+            if (genErr || !gen) {
+                console.warn('Archive: could not create generation', genErr);
+                return;
+            }
+
+            const { error: varErr } = await supabase
+                .from('variations')
+                .insert({
+                    generation_id: gen.id,
+                    type: 'preview_watermark',
+                    style_id: 'edge_generated',
+                    image_path: variationImageUrl,
+                    prompt_payload: promptPayload,
+                    is_selected: true,
+                    rating: 0,
+                });
+
+            if (varErr) {
+                console.warn('Archive: could not create variation', varErr);
+            }
+        } catch (e) {
+            console.warn('Archive persist failed:', e);
+        }
+    };
+
     const processWithEdgeFunctions = async (imageUrl: string, config: LuxConfig) => {
         try {
             setStatus(AgentStatus.GENERATING_PREVIEWS);
