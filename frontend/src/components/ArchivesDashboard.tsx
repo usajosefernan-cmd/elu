@@ -56,7 +56,7 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
     const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
     const [selectedVariation, setSelectedVariation] = useState<ArchivedVariation | null>(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [viewMode, setViewMode] = useState<'thumb' | 'compare' | 'full'>('thumb');
+    const [viewMode, setViewMode] = useState<'thumb' | 'full'>('thumb');
 
     const [isZoomModalOpen, setIsZoomModalOpen] = useState(false);
     const [feedbackText, setFeedbackText] = useState('');
