@@ -146,7 +146,7 @@ export const compilePrompt = async (
   visionAnalysis?: VisionAnalysisResult['analysis'],
   userMode: string = 'auto'
 ): Promise<PromptCompilerResult> => {
-  return callEdgeFunction<PromptCompilerResult>('prompt-compiler', {
+  return await callEdgeFunction<PromptCompilerResult>('prompt-compiler', {
     config,
     visionAnalysis,
     userMode,
