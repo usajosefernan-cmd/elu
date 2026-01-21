@@ -589,7 +589,7 @@ const App: React.FC = () => {
     };
 
     // NEW: Unified handler for the combined modal
-    const handleUnifiedConfirm = async (confirmConfig: { mode: 'auto' | 'preset' | 'manual'; settings: any; customIntent?: string }) => {
+    const handleUnifiedConfirm = async (confirmConfig: { mode: string; settings: any; preset?: string }) => {
         setShowVisionConfirm(false);
         setShowProfileSelector(false);
         
@@ -597,11 +597,12 @@ const App: React.FC = () => {
         const sliderConfig = confirmConfig.settings;
         
         console.log('[LuxScaler] Mode:', confirmConfig.mode);
-        console.log('[LuxScaler] Slider config:', JSON.stringify(sliderConfig).slice(0, 500));
+        console.log('[LuxScaler] Preset:', confirmConfig.preset || 'none');
+        console.log('[LuxScaler] Settings:', JSON.stringify(sliderConfig).slice(0, 500));
         
         const config: LuxConfig = {
-            userPrompt: confirmConfig.customIntent || '',
-            mode: confirmConfig.mode.toUpperCase() as any,
+            userPrompt: '',
+            mode: confirmConfig.mode as any,
             selectedPresetId: JSON.stringify(sliderConfig),
             mixer: {
                 stylism: 5, atrezzo: 5, skin_bio: 5,
