@@ -536,18 +536,13 @@ const App: React.FC = () => {
         }
     };
 
-    const handleConfigConfirm = async (config: LuxConfig) => {
+    // Legacy wizard handlers (disabled)
+    const handleConfigConfirm = async (_config: LuxConfig) => {
         setShowConfigWizard(false);
-        if (inputImageUrl) {
-            processFileGeneration(inputImageUrl, config, analysisResult);
-        }
     };
 
-    const handleWizardConfirm = async (config: LuxConfig) => {
+    const handleWizardConfirm = async (_config: LuxConfig) => {
         setShowConfigWizard(false);
-        if (inputImageUrl) {
-            processFileGeneration(inputImageUrl, config, analysisResult);
-        }
     };
 
     // NEW: Handler for Profile Config Modal (v28)
