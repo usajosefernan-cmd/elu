@@ -606,11 +606,11 @@ export const ProfileConfigModal: React.FC<ProfileConfigModalProps> = ({
       case 'auto':
         return <AutoProfileUI onConfirm={onConfirm} />;
       case 'user':
-        return <UserProfileUI onConfirm={onConfirm} />;
+        return <UserProfileUI onConfirm={onConfirm} initialMixer={initialMixer} />;
       case 'pro':
         return <ProProfileUI onConfirm={onConfirm} />;
       case 'prolux':
-        return <ProluxProfileUI onConfirm={onConfirm} />;
+        return <ProluxProfileUI onConfirm={onConfirm} initialMixer={initialMixer} />;
       default:
         return <AutoProfileUI onConfirm={onConfirm} />;
     }
