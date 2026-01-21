@@ -402,25 +402,6 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
             </div>
           )}
 
-          {/* Intent selector - removed, replaced by presets */}
-                      <div className="flex-1 min-w-0">
-                        <p className={`text-xs font-bold truncate ${isSelected ? 'text-amber-400' : 'text-white'}`}>
-                          {headline}
-                        </p>
-                        {desc && <p className="text-[9px] text-gray-500 truncate">{desc}</p>}
-                      </div>
-                      {isSelected && (
-                        <div className="w-4 h-4 rounded-full bg-amber-500 flex items-center justify-center ml-2">
-                          <Check size={10} className="text-black" />
-                        </div>
-                      )}
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-
           {/* Custom input */}
           {mode === 'custom' && (
             <textarea
