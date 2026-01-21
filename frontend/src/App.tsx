@@ -849,6 +849,8 @@ const App: React.FC = () => {
     };
 
     const resetFlow = () => {
+        setStagedImageUrl(null);
+        setStagedMasterImageUrl(null);
         setInputImageUrl(null);
         setProcessedImageUrl(null);
         setPreviews([]);
