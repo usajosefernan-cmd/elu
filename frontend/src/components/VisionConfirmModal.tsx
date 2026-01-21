@@ -76,6 +76,13 @@ export const VisionConfirmModal: React.FC<VisionConfirmModalProps> = ({
         
         {/* Header with Image Preview */}
         <div className="relative h-48 overflow-hidden">
+          <button
+            onClick={onCancel}
+            className="absolute top-3 left-3 z-10 w-9 h-9 rounded-full bg-black/70 border border-white/20 text-white flex items-center justify-center hover:bg-black/90 transition-all"
+            aria-label="Cerrar"
+          >
+            <X className="w-4 h-4" />
+          </button>
           <img 
             src={imageUrl} 
             alt="Análisis" 
