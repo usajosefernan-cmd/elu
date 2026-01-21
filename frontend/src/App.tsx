@@ -1028,6 +1028,7 @@ const App: React.FC = () => {
         setSystemLogs([]);
         setIsSculpting(false);
         setShowTelemetry(false);
+        setIsMicroscopeOpen(false); // Reset inspector modal
 
         // Overlay reset
         setShowProcessingOverlay(false);
