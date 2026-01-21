@@ -424,6 +424,9 @@ const App: React.FC = () => {
     };
 
     const processFileForAnalysis = async (file: File) => {
+            // Immediate UX
+            setToastState({ isOpen: true, title: 'Procesando', message: 'Preparando análisis de visión...' });
+
         // 1. IMMEDIATE FEEDBACK + LOCAL PREVIEW (do not wait for Storage)
         try {
             setToastState({
