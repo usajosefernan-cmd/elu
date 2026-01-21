@@ -11,6 +11,7 @@ from datetime import datetime
 
 class LuxScalerAPITester:
     def __init__(self, base_url="https://prompt-forge-123.preview.emergentagent.com"):
+        # Use external API base from frontend/.env (VITE_BACKEND_URL)
         self.base_url = base_url
         self.user_id = None
         self.tests_run = 0
