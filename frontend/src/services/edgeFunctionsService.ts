@@ -126,7 +126,7 @@ export const analyzeImageBase64WithVision = async (
   imageBase64: string,
   userId?: string
 ): Promise<VisionAnalysisResult> => {
-  return callEdgeFunction<VisionAnalysisResult>('vision-analysis', {
+  return await callEdgeFunction<VisionAnalysisResult>('vision-analysis', {
     imageBase64,
     userId,
   });
