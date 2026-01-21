@@ -58,7 +58,7 @@ class PromptCompilerService:
         # 1. Logic Layer: Resolve Conflicts
         config = resolve_conflicts(config)
 
-        # 2. Identity Lock Logic
+        # 2. Identity Lock Logic - SIEMPRE ACTIVO excepto cuando reencuadre_ia > 5
         geom_val = 0
         reframe_val = 0
         # Safe access to sliders
@@ -69,12 +69,23 @@ class PromptCompilerService:
         if 'stylescaler' in config and 'sliders' in config['stylescaler']:
             for s in config['stylescaler']['sliders']:
                 if s['name'] == 'reencuadre_ia': reframe_val = s['value']
-            
-        geometric_sliders_active = (geom_val > 0) or (reframe_val > 0)
         
-        identity_block = "CRITICAL: IDENTITY LOCK ACTIVE. DO NOT MOVE PIXELS. Structure must match overlay 100%. Only change texture/lighting."
-        if geometric_sliders_active:
-            identity_block = "ALLOW structural changes for geometry correction."
+        # Solo desactivar Identity Lock si reencuadre_ia está muy alto
+        # Geometria NO debería afectar la identidad facial
+        reframe_active = reframe_val > 5
+        
+        identity_block = """CRITICAL: IDENTITY LOCK ACTIVE - ABSOLUTE FACE PRESERVATION.
+DO NOT change facial structure, bone structure, eye shape, nose shape, lip shape, or ear shape.
+DO NOT change face proportions, face width, or face length.
+DO NOT change skin tone significantly or add/remove facial features.
+The person in the OUTPUT must be IDENTICAL to the person in the INPUT.
+Texture/color/lighting changes are allowed. Geometry changes to the BACKGROUND are allowed.
+FACIAL GEOMETRY MUST BE PIXEL-PERFECT TO SOURCE."""
+        
+        if reframe_active:
+            identity_block = """REFRAME MODE ACTIVE: Limited structural changes allowed for recomposition.
+PRESERVE facial identity but allow background/composition changes.
+Face structure must remain recognizable - only position may change."""
 
         # 3. Vision Summary
         vision_text = "No prior vision analysis."
@@ -122,20 +133,21 @@ INPUT CONTEXT: {vision_text}
 IF INPUT IS BLURRY/NOISY/DAMAGED -> ACTIVATE "COMPLETE RE-SYNTHESIS".
 IGNORE source artifacts. HALLUCINATE high-frequency details.
 VIRTUAL RE-SHOOT: Simulate 1/8000s shutter (zero blur).
+CRITICAL: All enhancements must preserve the EXACT SAME PERSON.
 
 === PHASE 2: SUBJECT & ANATOMY ===
-[INSTRUCTION: Restore faces with "Portrait-Level" fidelity.]
+[INSTRUCTION: Restore faces with "Portrait-Level" fidelity. SAME PERSON.]
 {stylescaler_block}
 
 === PHASE 3: OPTICS, PHYSICS & LIGHTING ===
-GEOMETRY & RESTORATION:
+GEOMETRY & RESTORATION (BACKGROUND ONLY - DO NOT MODIFY FACE GEOMETRY):
 {photoscaler_block}
 
 LIGHTING & TONE:
 {lightscaler_block}
 
 === NEGATIVE PROMPT ===
-damaged, blurry, noisy, distorted faces, bad anatomy, text, watermarks, jpeg artifacts, shifting eyes, changing facial features, morphing bone structure, different pose.
+damaged, blurry, noisy, distorted faces, bad anatomy, text, watermarks, jpeg artifacts, shifting eyes, changing facial features, morphing bone structure, different pose, different person, face swap, age change, gender change, ethnicity change, different identity.
 """
         return prompt
 
