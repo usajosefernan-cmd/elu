@@ -314,7 +314,7 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
     return {
       photoscaler: { sliders: Object.entries(finalValues.photoscaler).map(([name, value]) => ({ name, value })) },
       stylescaler: { sliders: Object.entries(finalValues.stylescaler).map(([name, value]) => ({ name, value })) },
-      lightscaler: { sliders: Object.entries(finalValues.lightescaler).map(([name, value]) => ({ name, value })) }
+      lightscaler: { sliders: Object.entries(finalValues.lightscaler).map(([name, value]) => ({ name, value })) }
     };
   };
 
