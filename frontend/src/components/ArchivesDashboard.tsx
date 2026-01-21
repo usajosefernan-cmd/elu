@@ -263,8 +263,8 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
 
                                 {/* Image View */}
                                 <div className="flex-1 flex items-center justify-center p-4 bg-[#0a0a0a] relative overflow-hidden">
-                                    {viewMode === 'thumb' && (
-                                        // Vista rápida: Solo thumbnail mediano
+                                        {viewMode === 'thumb' && (
+                                        // Vista rápida: Solo imagen procesada (thumbnail mediano)
                                         <img 
                                             src={getMediumPreview(selectedVariation.image_path)} 
                                             alt="" 
@@ -274,7 +274,7 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                     )}
                                     
                                     {viewMode === 'compare' && (
-                                        // Comparación: Slider siempre centrado
+                                        // Comparación: Slider centrado con imágenes medianas (carga rápida)
                                         <div className="w-full h-full flex items-center justify-center">
                                             <ComparisonSlider 
                                                 originalImage={getMediumPreview(currentSession.original_image_path)} 
@@ -286,13 +286,15 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                     )}
                                     
                                     {viewMode === 'full' && (
-                                        // 1:1: Imagen a tamaño real con scroll
-                                        <div className="w-full h-full overflow-auto flex items-center justify-center">
-                                            <img 
-                                                src={getDisplayUrl(selectedVariation.image_path)} 
-                                                alt="" 
-                                                className="max-w-none"
-                                                style={{ imageRendering: 'crisp-edges' }}
+                                        // 1:1: Slider con imágenes a máxima calidad, ajustado a pantalla
+                                        <div className="w-full h-full flex items-center justify-center">
+                                            <ComparisonSlider 
+                                                originalImage={getDisplayUrl(currentSession.original_image_path)} 
+                                                processedImage={getDisplayUrl(selectedVariation.image_path)} 
+                                                isLocked={false} 
+                                                objectFit="contain"
+                                                enableNativeScrolling={false}
+                                                staticZoomLevel={1}
                                             />
                                         </div>
                                     )}
