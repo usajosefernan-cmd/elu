@@ -438,7 +438,7 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
 
                     {/* Panel de info - Colapsable */}
                     {showInfo && selectedVariation && (
-                        <div className="w-56 bg-black/40 border-l border-white/5 overflow-y-auto p-3 space-y-3">
+                        <div className="w-64 bg-black/40 border-l border-white/5 overflow-y-auto p-3 space-y-3">
                             {/* Info básica */}
                             <div className="space-y-1.5">
                                 <div className="flex justify-between text-[10px]">
@@ -457,8 +457,63 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
                                 )}
                             </div>
 
-                            {/* Mixer */}
-                            {selectedVariation.prompt_payload?.mixer && (
+                            {/* 27 Sliders from selectedPresetId */}
+                            {selectedVariation.prompt_payload?.selectedPresetId && (() => {
+                                try {
+                                    const config = JSON.parse(selectedVariation.prompt_payload.selectedPresetId);
+                                    return (
+                                        <div className="space-y-2 pt-2 border-t border-white/5">
+                                            {/* PhotoScaler */}
+                                            {config.photoscaler?.sliders && (
+                                                <div>
+                                                    <p className="text-[9px] text-cyan-400 uppercase font-bold mb-1">📷 PhotoScaler</p>
+                                                    <div className="space-y-0.5">
+                                                        {config.photoscaler.sliders.map((s: {name: string, value: number}) => (
+                                                            <div key={s.name} className="flex justify-between text-[9px]">
+                                                                <span className="text-gray-500 truncate">{s.name.replace(/_/g, ' ')}</span>
+                                                                <span className={`font-mono ${s.value > 7 ? 'text-amber-400' : s.value > 4 ? 'text-white' : 'text-gray-600'}`}>{s.value}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {/* StyleScaler */}
+                                            {config.stylescaler?.sliders && (
+                                                <div>
+                                                    <p className="text-[9px] text-pink-400 uppercase font-bold mb-1">🎨 StyleScaler</p>
+                                                    <div className="space-y-0.5">
+                                                        {config.stylescaler.sliders.map((s: {name: string, value: number}) => (
+                                                            <div key={s.name} className="flex justify-between text-[9px]">
+                                                                <span className="text-gray-500 truncate">{s.name.replace(/_/g, ' ')}</span>
+                                                                <span className={`font-mono ${s.value > 7 ? 'text-amber-400' : s.value > 4 ? 'text-white' : 'text-gray-600'}`}>{s.value}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {/* LightScaler */}
+                                            {config.lightscaler?.sliders && (
+                                                <div>
+                                                    <p className="text-[9px] text-orange-400 uppercase font-bold mb-1">☀️ LightScaler</p>
+                                                    <div className="space-y-0.5">
+                                                        {config.lightscaler.sliders.map((s: {name: string, value: number}) => (
+                                                            <div key={s.name} className="flex justify-between text-[9px]">
+                                                                <span className="text-gray-500 truncate">{s.name.replace(/_/g, ' ')}</span>
+                                                                <span className={`font-mono ${s.value > 7 ? 'text-amber-400' : s.value > 4 ? 'text-white' : 'text-gray-600'}`}>{s.value}</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                } catch {
+                                    return null;
+                                }
+                            })()}
+
+                            {/* Fallback: Mixer resumen si no hay sliders */}
+                            {!selectedVariation.prompt_payload?.selectedPresetId && selectedVariation.prompt_payload?.mixer && (
                                 <div className="space-y-1.5 pt-2 border-t border-white/5">
                                     <p className="text-[9px] text-gray-600 uppercase">Parámetros</p>
                                     <MixerBar label="Estilo" value={selectedVariation.prompt_payload.mixer.stylism || 5} color="text-pink-400" icon={Palette} />
