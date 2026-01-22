@@ -554,23 +554,6 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
                   </div>
                 </div>
               </div>
-                    Manual
-                  </button>
-                  {systemPresets.map(preset => (
-                    <button
-                      key={preset.id}
-                      onClick={() => loadPreset(preset)}
-                      className={`px-3 py-1.5 rounded-lg text-[9px] font-medium transition-all ${
-                        selectedPresetId === preset.id 
-                          ? 'bg-white text-black' 
-                          : 'bg-neutral-800/50 text-neutral-400 hover:bg-neutral-700/50'
-                      }`}
-                    >
-                      {preset.name}
-                    </button>
-                  ))}
-                </div>
-              </div>
 
               {/* Save Preset Dialog */}
               {showSaveDialog && (
