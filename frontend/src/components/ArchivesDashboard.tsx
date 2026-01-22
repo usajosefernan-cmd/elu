@@ -758,6 +758,141 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack, us
                     )}
                 </div>
             )}
+
+            {/* Modal Guardar Preset */}
+            {showSavePresetDialog && selectedVariation && (
+                <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-black/80" onClick={() => setShowSavePresetDialog(false)} />
+                    <div className="relative bg-neutral-900 border border-neutral-700 rounded-xl p-4 w-full max-w-sm shadow-2xl">
+                        <button
+                            onClick={() => setShowSavePresetDialog(false)}
+                            className="absolute top-3 right-3 p-1 hover:bg-white/10 rounded"
+                        >
+                            <X size={16} className="text-neutral-500" />
+                        </button>
+                        
+                        <h3 className="text-white font-semibold mb-1">Guardar como Preset</h3>
+                        <p className="text-neutral-500 text-xs mb-4">
+                            Guarda esta configuración para usarla en futuras fotos
+                        </p>
+                        
+                        {savePresetSuccess ? (
+                            <div className="text-center py-6">
+                                <div className="w-12 h-12 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-3">
+                                    <Check size={24} className="text-green-400" />
+                                </div>
+                                <p className="text-green-400 font-medium">¡Preset guardado!</p>
+                                <p className="text-neutral-500 text-xs mt-1">Lo encontrarás en "Mis presets"</p>
+                                <button
+                                    onClick={() => setShowSavePresetDialog(false)}
+                                    className="mt-4 px-6 py-2 bg-white/10 hover:bg-white/20 rounded-lg text-white text-sm transition-all"
+                                >
+                                    Cerrar
+                                </button>
+                            </div>
+                        ) : (
+                            <>
+                                <input
+                                    type="text"
+                                    value={presetName}
+                                    onChange={(e) => setPresetName(e.target.value)}
+                                    placeholder="Nombre del preset..."
+                                    className="w-full px-3 py-2.5 bg-neutral-800 border border-neutral-700 rounded-lg text-white text-sm placeholder-neutral-500 focus:outline-none focus:border-green-500 mb-4"
+                                    autoFocus
+                                />
+                                
+                                {/* Preview de sliders */}
+                                {selectedVariation.prompt_payload?.selectedPresetId && (() => {
+                                    try {
+                                        const config = JSON.parse(selectedVariation.prompt_payload.selectedPresetId);
+                                        const totalSliders = 
+                                            (config.photoscaler?.sliders?.length || 0) +
+                                            (config.stylescaler?.sliders?.length || 0) +
+                                            (config.lightscaler?.sliders?.length || 0);
+                                        return (
+                                            <div className="bg-neutral-800/50 rounded-lg p-2 mb-4 text-xs text-neutral-400">
+                                                <span className="text-neutral-500">Se guardarán </span>
+                                                <span className="text-white font-medium">{totalSliders} sliders</span>
+                                                <span className="text-neutral-500"> de los 3 pilares</span>
+                                            </div>
+                                        );
+                                    } catch {
+                                        return null;
+                                    }
+                                })()}
+                                
+                                <div className="flex gap-2">
+                                    <button
+                                        onClick={() => setShowSavePresetDialog(false)}
+                                        className="flex-1 py-2.5 bg-neutral-800 hover:bg-neutral-700 rounded-lg text-neutral-400 text-sm transition-all"
+                                    >
+                                        Cancelar
+                                    </button>
+                                    <button
+                                        onClick={async () => {
+                                            if (!userId || !presetName.trim() || !selectedVariation.prompt_payload?.selectedPresetId) return;
+                                            
+                                            setIsSavingPreset(true);
+                                            try {
+                                                const config = JSON.parse(selectedVariation.prompt_payload.selectedPresetId);
+                                                
+                                                // Convertir formato de array a objeto
+                                                const sliderValues: Record<string, Record<string, number>> = {
+                                                    photoscaler: {},
+                                                    stylescaler: {},
+                                                    lightscaler: {}
+                                                };
+                                                
+                                                if (config.photoscaler?.sliders) {
+                                                    for (const s of config.photoscaler.sliders) {
+                                                        sliderValues.photoscaler[s.name] = s.value;
+                                                    }
+                                                }
+                                                if (config.stylescaler?.sliders) {
+                                                    for (const s of config.stylescaler.sliders) {
+                                                        sliderValues.stylescaler[s.name] = s.value;
+                                                    }
+                                                }
+                                                if (config.lightscaler?.sliders) {
+                                                    for (const s of config.lightscaler.sliders) {
+                                                        sliderValues.lightscaler[s.name] = s.value;
+                                                    }
+                                                }
+                                                
+                                                const result = await saveUserPreset(
+                                                    userId,
+                                                    presetName.trim(),
+                                                    sliderValues,
+                                                    []
+                                                );
+                                                
+                                                if (result) {
+                                                    setSavePresetSuccess(true);
+                                                } else {
+                                                    alert('Error al guardar el preset');
+                                                }
+                                            } catch (e) {
+                                                console.error('Error saving preset:', e);
+                                                alert('Error al guardar el preset');
+                                            }
+                                            setIsSavingPreset(false);
+                                        }}
+                                        disabled={!presetName.trim() || isSavingPreset}
+                                        className="flex-1 py-2.5 bg-green-500 hover:bg-green-400 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-black font-semibold text-sm transition-all flex items-center justify-center gap-2"
+                                    >
+                                        {isSavingPreset ? (
+                                            <Loader2 size={14} className="animate-spin" />
+                                        ) : (
+                                            <Save size={14} />
+                                        )}
+                                        Guardar
+                                    </button>
+                                </div>
+                            </>
+                        )}
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
