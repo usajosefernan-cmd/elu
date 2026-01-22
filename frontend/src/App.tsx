@@ -1491,6 +1491,7 @@ const App: React.FC = () => {
                 tokensRequired={10}
                 userTokens={userTokenBalance}
                 userProfile={(userProfile?.profile_type as 'auto' | 'user' | 'pro' | 'prolux') || 'auto'}
+                userId={user?.id}
             />
 
             {/* Legacy MobileConfigWizard disabled for v28 flow */}
