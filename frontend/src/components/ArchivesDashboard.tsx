@@ -2,10 +2,11 @@
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { getGenerations } from '../services/historyService';
 import { GenerationSession, ArchivedVariation } from '../types';
-import { ArrowLeft, FolderOpen, Crown, Loader2, Sparkles, Copy, Palette, Sun, RefreshCw, Home, User, Camera, ZoomIn, ZoomOut, Move } from 'lucide-react';
+import { ArrowLeft, FolderOpen, Crown, Loader2, Sparkles, Copy, Palette, Sun, RefreshCw, Home, User, Camera, ZoomIn, ZoomOut, Move, Save, X, Check } from 'lucide-react';
 import { getDisplayUrl, getThumbnailUrl } from '../utils/imageUtils';
 import { MasterConfigModal } from './MasterConfigModal';
 import { LuxMixer } from '../types';
+import { saveUserPreset } from '../services/smartPresetsService';
 
 interface ArchivesDashboardProps {
     onBack: () => void;
