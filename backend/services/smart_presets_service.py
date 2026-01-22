@@ -242,9 +242,11 @@ class SmartPresetsService:
                 'user_id': user_id,
                 'name': name,
                 'slider_values': slider_values,
-                'locked_pillars': locked_pillars or [],
-                'narrative_anchor': narrative_anchor
+                'locked_pillars': locked_pillars or []
             }
+            
+            # Only add narrative_anchor if provided and column exists
+            # For now, we skip it to avoid schema issues
             
             response = supabase_db.client.table("smart_presets")\
                 .insert(data)\
