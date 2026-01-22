@@ -146,26 +146,30 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
         setBeforeImgSize({ w: img.naturalWidth, h: img.naturalHeight });
     }, []);
 
-    // Wheel zoom
+    // Wheel zoom - SIEMPRE centrado en la imagen
     const handleWheel = useCallback((e: React.WheelEvent) => {
         if (!isImageLoaded || !containerRef.current) return;
         e.preventDefault();
         
         const rect = containerRef.current.getBoundingClientRect();
-        const mouseX = e.clientX - rect.left;
-        const mouseY = e.clientY - rect.top;
+        
+        // Calcular el CENTRO de la imagen visible (no el cursor)
+        const imageWidth = displaySize.w || afterImgSize.w;
+        const imageHeight = displaySize.h || afterImgSize.h;
+        const imageCenterX = translate.x + (imageWidth * scale) / 2;
+        const imageCenterY = translate.y + (imageHeight * scale) / 2;
         
         const delta = -e.deltaY * 0.001;
         const newScale = Math.min(4, Math.max(0.1, scale + delta * scale));
         
-        // Zoom hacia el punto del cursor
+        // Zoom hacia el centro de la imagen
         const scaleRatio = newScale / scale;
-        const newTranslateX = mouseX - (mouseX - translate.x) * scaleRatio;
-        const newTranslateY = mouseY - (mouseY - translate.y) * scaleRatio;
+        const newTranslateX = imageCenterX - (imageCenterX - translate.x) * scaleRatio;
+        const newTranslateY = imageCenterY - (imageCenterY - translate.y) * scaleRatio;
         
         setScale(newScale);
         setTranslate({ x: newTranslateX, y: newTranslateY });
-    }, [isImageLoaded, scale, translate]);
+    }, [isImageLoaded, scale, translate, displaySize, afterImgSize]);
 
     // Pan handlers
     const handleMouseDown = useCallback((e: React.MouseEvent) => {
