@@ -261,27 +261,19 @@ class SmartPresetsService:
             raise Exception(f"Failed to save preset: {e}")
     
     async def delete_user_preset(self, user_id: str, preset_id: str) -> bool:
-        """Elimina un preset del usuario."""
-        # Intentar eliminar de Supabase
+        """Elimina un preset del usuario desde Supabase (obligatorio)."""
         try:
             response = supabase_db.client.table("smart_presets")\
                 .delete()\
                 .eq("id", preset_id)\
                 .eq("user_id", user_id)\
                 .execute()
+            
+            print(f"SmartPresetsService: Deleted preset {preset_id} for user {user_id}")
             return True
         except Exception as e:
-            print(f"SmartPresetsService: Supabase delete error: {e}")
-        
-        # Fallback a memoria local
-        if hasattr(self, '_user_presets') and user_id in self._user_presets:
-            self._user_presets[user_id] = [
-                p for p in self._user_presets[user_id] 
-                if p.get('id') != preset_id
-            ]
-            return True
-        
-        return False
+            print(f"SmartPresetsService: Error deleting preset from Supabase: {e}")
+            raise Exception(f"Failed to delete preset: {e}")
     
     def apply_smart_locks(self, preset: SmartPreset, slider_config: Dict) -> Dict:
         """
