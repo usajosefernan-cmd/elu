@@ -1548,7 +1548,7 @@ const App: React.FC = () => {
                 <Route path="/" element={StudioLayout} />
 
                 {/* APP VIEWS */}
-                <Route path="/archives" element={<ArchivesDashboard onBack={navigateToHome} />} />
+                <Route path="/archives" element={<ArchivesDashboard onBack={navigateToHome} userId={userProfile?.id} />} />
                 <Route path="/admin" element={
                     <ProtectedAdminRoute
                         userProfile={userProfile}
