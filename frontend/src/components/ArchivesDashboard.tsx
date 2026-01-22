@@ -38,7 +38,7 @@ const getSmallThumb = (url: string) => {
     return url;
 };
 
-export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) => {
+export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack, userId }) => {
     const [sessions, setSessions] = useState<GenerationSession[]>([]);
     const [selectedSessionId, setSelectedSessionId] = useState<string | null>(null);
     const [selectedVariation, setSelectedVariation] = useState<ArchivedVariation | null>(null);
@@ -46,6 +46,12 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
 
     const [isMasterConfigOpen, setIsMasterConfigOpen] = useState(false);
     const [isProcessingMatrix, setIsProcessingMatrix] = useState(false);
+
+    // Save Preset state
+    const [showSavePresetDialog, setShowSavePresetDialog] = useState(false);
+    const [presetName, setPresetName] = useState('');
+    const [isSavingPreset, setIsSavingPreset] = useState(false);
+    const [savePresetSuccess, setSavePresetSuccess] = useState(false);
 
     // Comparador state
     const [sliderPosition, setSliderPosition] = useState(50);
