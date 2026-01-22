@@ -10,6 +10,7 @@ import { saveUserPreset } from '../services/smartPresetsService';
 
 interface ArchivesDashboardProps {
     onBack: () => void;
+    userId?: string;
 }
 
 // Componente para mostrar barra de ajuste
