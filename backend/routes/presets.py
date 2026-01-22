@@ -20,25 +20,31 @@ async def get_user_presets(user_id: str):
 
 @router.post("/user/{user_id}")
 async def save_user_preset(user_id: str, body: dict):
-    """Guarda un nuevo preset para el usuario."""
-    result = await smart_presets_service.save_user_preset(
-        user_id=user_id,
-        name=body.get('name', 'My Preset'),
-        slider_values=body.get('slider_values', {}),
-        locked_pillars=body.get('locked_pillars', []),
-        narrative_anchor=body.get('narrative_anchor')
-    )
-    
-    if result:
-        return {"success": True, "preset": result}
-    return {"success": False, "error": "Failed to save preset"}
+    """Guarda un nuevo preset para el usuario en Supabase."""
+    try:
+        result = await smart_presets_service.save_user_preset(
+            user_id=user_id,
+            name=body.get('name', 'My Preset'),
+            slider_values=body.get('slider_values', {}),
+            locked_pillars=body.get('locked_pillars', []),
+            narrative_anchor=body.get('narrative_anchor')
+        )
+        
+        if result:
+            return {"success": True, "preset": result}
+        return {"success": False, "error": "Failed to save preset - no data returned"}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 @router.delete("/user/{user_id}/{preset_id}")
 async def delete_user_preset(user_id: str, preset_id: str):
-    """Elimina un preset del usuario."""
-    success = await smart_presets_service.delete_user_preset(user_id, preset_id)
-    return {"success": success}
+    """Elimina un preset del usuario de Supabase."""
+    try:
+        success = await smart_presets_service.delete_user_preset(user_id, preset_id)
+        return {"success": success}
+    except Exception as e:
+        return {"success": False, "error": str(e)}
 
 
 @router.get("/{preset_id}")
