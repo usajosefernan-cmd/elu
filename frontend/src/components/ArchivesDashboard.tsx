@@ -219,9 +219,46 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
         setIsDraggingSlider(false);
     }, []);
 
-    // Zoom controls
-    const zoomIn = () => setScale(s => Math.min(4, s * 1.3));
-    const zoomOut = () => setScale(s => Math.max(0.1, s / 1.3));
+    // Zoom controls - centrado en la imagen
+    const zoomIn = () => {
+        if (!containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        const imageWidth = displaySize.w || afterImgSize.w;
+        const imageHeight = displaySize.h || afterImgSize.h;
+        
+        const newScale = Math.min(4, scale * 1.3);
+        const scaleRatio = newScale / scale;
+        
+        // Centro del contenedor
+        const containerCenterX = rect.width / 2;
+        const containerCenterY = rect.height / 2;
+        
+        // Ajustar translate para mantener centrado
+        const newTranslateX = containerCenterX - (containerCenterX - translate.x) * scaleRatio;
+        const newTranslateY = containerCenterY - (containerCenterY - translate.y) * scaleRatio;
+        
+        setScale(newScale);
+        setTranslate({ x: newTranslateX, y: newTranslateY });
+    };
+    
+    const zoomOut = () => {
+        if (!containerRef.current) return;
+        const rect = containerRef.current.getBoundingClientRect();
+        
+        const newScale = Math.max(0.1, scale / 1.3);
+        const scaleRatio = newScale / scale;
+        
+        // Centro del contenedor
+        const containerCenterX = rect.width / 2;
+        const containerCenterY = rect.height / 2;
+        
+        // Ajustar translate para mantener centrado
+        const newTranslateX = containerCenterX - (containerCenterX - translate.x) * scaleRatio;
+        const newTranslateY = containerCenterY - (containerCenterY - translate.y) * scaleRatio;
+        
+        setScale(newScale);
+        setTranslate({ x: newTranslateX, y: newTranslateY });
+    };
 
     const handleConfirmMaster = async (config: any) => {
         setIsMasterConfigOpen(false);
