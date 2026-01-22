@@ -460,55 +460,49 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
           {/* Non-AUTO: Presets + Sliders */}
           {activeProfile !== 'auto' && (
             <>
-              {/* Presets Section */}
+              {/* Presets Section - TODOS VISIBLES */}
               <div className="px-4 py-3 border-b border-neutral-800/50">
-                <div className="flex items-center justify-between mb-2">
+                <div className="flex items-center justify-between mb-3">
                   <p className="text-[10px] text-neutral-500 uppercase tracking-wide">Presets</p>
-                  <div className="flex items-center gap-1">
-                    {userId && userPresets.length > 0 && (
-                      <button
-                        onClick={() => setShowUserPresets(!showUserPresets)}
-                        className={`px-2 py-1 rounded text-[9px] flex items-center gap-1 transition-all ${
-                          showUserPresets ? 'bg-blue-500/20 text-blue-400' : 'bg-neutral-800/50 text-neutral-400 hover:bg-neutral-700/50'
-                        }`}
-                      >
-                        <FolderOpen size={10} />
-                        Mis presets ({userPresets.length})
-                      </button>
-                    )}
-                    {userId && (
-                      <button
-                        onClick={() => setShowSaveDialog(true)}
-                        className="px-2 py-1 rounded text-[9px] bg-green-500/20 text-green-400 hover:bg-green-500/30 flex items-center gap-1 transition-all"
-                      >
-                        <Save size={10} />
-                        Guardar
-                      </button>
-                    )}
-                  </div>
+                  {userId && (
+                    <button
+                      onClick={() => setShowSaveDialog(true)}
+                      className="px-2 py-1 rounded text-[9px] bg-green-500/20 text-green-400 hover:bg-green-500/30 flex items-center gap-1 transition-all"
+                    >
+                      <Save size={10} />
+                      Guardar actual
+                    </button>
+                  )}
                 </div>
                 
-                {/* User Presets */}
-                {showUserPresets && userPresets.length > 0 && (
-                  <div className="mb-3 p-2 bg-blue-500/5 rounded-lg border border-blue-500/20">
-                    <p className="text-[9px] text-blue-400 mb-1.5 uppercase">Mis presets guardados</p>
+                {/* Mis Presets - Siempre visibles si existen */}
+                {userPresets.length > 0 && (
+                  <div className="mb-3">
+                    <p className="text-[9px] text-blue-400 mb-1.5 uppercase font-semibold flex items-center gap-1">
+                      <FolderOpen size={10} />
+                      Mis Presets ({userPresets.length})
+                    </p>
                     <div className="flex flex-wrap gap-1.5">
                       {userPresets.map(preset => (
-                        <div key={preset.id} className="flex items-center gap-1">
+                        <div key={preset.id} className="flex items-center">
                           <button
                             onClick={() => loadPreset(preset)}
-                            className={`px-2.5 py-1.5 rounded-lg text-[9px] font-medium transition-all ${
+                            className={`px-3 py-1.5 rounded-l-lg text-[9px] font-medium transition-all ${
                               selectedPresetId === preset.id 
                                 ? 'bg-blue-500 text-white' 
-                                : 'bg-neutral-800/70 text-neutral-300 hover:bg-neutral-700/70'
+                                : 'bg-blue-500/10 text-blue-300 hover:bg-blue-500/20 border border-blue-500/30'
                             }`}
                           >
                             {preset.name}
                           </button>
                           <button
                             onClick={() => handleDeletePreset(preset.id)}
-                            className="p-1 rounded hover:bg-red-500/20 text-neutral-500 hover:text-red-400 transition-all"
-                            title="Eliminar preset"
+                            className={`px-1.5 py-1.5 rounded-r-lg transition-all ${
+                              selectedPresetId === preset.id 
+                                ? 'bg-blue-600 text-white hover:bg-red-500' 
+                                : 'bg-blue-500/10 text-blue-300/50 hover:bg-red-500/20 hover:text-red-400 border border-l-0 border-blue-500/30'
+                            }`}
+                            title="Eliminar"
                           >
                             <Trash2 size={10} />
                           </button>
@@ -518,16 +512,48 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
                   </div>
                 )}
                 
-                {/* System Presets */}
-                <div className="flex gap-1.5 flex-wrap">
-                  <button
-                    onClick={() => setSelectedPresetId(null)}
-                    className={`px-3 py-1.5 rounded-lg text-[9px] font-medium transition-all ${
-                      !selectedPresetId 
-                        ? 'bg-white text-black' 
-                        : 'bg-neutral-800/50 text-neutral-400 hover:bg-neutral-700/50'
-                    }`}
-                  >
+                {/* Presets de Fábrica */}
+                <div>
+                  <p className="text-[9px] text-neutral-500 mb-1.5 uppercase font-semibold">
+                    Presets LuxScaler ({systemPresets.length})
+                  </p>
+                  <div className="flex gap-1.5 flex-wrap">
+                    <button
+                      onClick={() => {
+                        setSelectedPresetId(null);
+                        // Reset to defaults
+                        const defaults: Record<string, Record<string, number>> = { photoscaler: {}, stylescaler: {}, lightscaler: {} };
+                        for (const [pillar, config] of Object.entries(PILLAR_CONFIG)) {
+                          for (const slider of config.sliders) {
+                            defaults[pillar][slider.name] = 5;
+                          }
+                        }
+                        setSliderValues(defaults);
+                      }}
+                      className={`px-3 py-1.5 rounded-lg text-[9px] font-medium transition-all ${
+                        !selectedPresetId 
+                          ? 'bg-white text-black' 
+                          : 'bg-neutral-800/50 text-neutral-400 hover:bg-neutral-700/50'
+                      }`}
+                    >
+                      Manual
+                    </button>
+                    {systemPresets.map(preset => (
+                      <button
+                        key={preset.id}
+                        onClick={() => loadPreset(preset)}
+                        className={`px-3 py-1.5 rounded-lg text-[9px] font-medium transition-all ${
+                          selectedPresetId === preset.id 
+                            ? 'bg-white text-black' 
+                            : 'bg-neutral-800/50 text-neutral-400 hover:bg-neutral-700/50'
+                        }`}
+                      >
+                        {preset.name}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
                     Manual
                   </button>
                   {systemPresets.map(preset => (
