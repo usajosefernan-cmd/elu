@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import { X, Lock, Zap, Sparkles, Camera, Sun, Palette, ChevronLeft, ChevronRight, AlertTriangle } from 'lucide-react';
-import { getSystemPresets, SmartPreset } from '../services/smartPresetsService';
+import React, { useState, useEffect, useCallback } from 'react';
+import { X, Lock, Zap, Sparkles, Camera, Sun, Palette, ChevronLeft, ChevronRight, AlertTriangle, Save, Trash2, FolderOpen } from 'lucide-react';
+import { getSystemPresets, getUserPresets, saveUserPreset, deleteUserPreset, SmartPreset } from '../services/smartPresetsService';
 
 // ===========================================
 // TYPES
@@ -36,6 +36,7 @@ interface UnifiedConfigModalProps {
   imageUrl: string;
   analysis: VisionAnalysis | null;
   userProfile: 'auto' | 'user' | 'pro' | 'prolux';
+  userId?: string;
   onConfirm: (config: { mode: string; settings: any; preset?: string }) => void;
   onCancel: () => void;
   tokensRequired: number;
@@ -110,25 +111,6 @@ const PROFILE_VISIBLE_SLIDERS: Record<string, string[] | 'all'> = {
   prolux: 'all'
 };
 
-// Presets con sliders bloqueados
-const PRESET_LOCKED_SLIDERS: Record<string, string[]> = {
-  'preset_natural': ['grano_filmico', 'look_cine', 'atmosfera'],
-  'preset_editorial': ['look_cine', 'styling_piel', 'styling_pelo', 'contraste'],
-  'preset_cinematic': ['look_cine', 'grano_filmico', 'atmosfera', 'contraste', 'estilo_autor'],
-  'preset_portrait_pro': ['styling_piel', 'styling_pelo', 'maquillaje', 'key_light', 'fill_light'],
-  'preset_real_estate': ['geometria', 'limpieza_entorno', 'key_light', 'fill_light'],
-  'preset_restoration': ['limpieza_artefactos', 'enfoque', 'sintesis_adn', 'resolucion']
-};
-
-const PRESET_NAMES: Record<string, string> = {
-  'preset_natural': 'Natural',
-  'preset_editorial': 'Editorial',
-  'preset_cinematic': 'Cine',
-  'preset_portrait_pro': 'Retrato',
-  'preset_real_estate': 'Inmueble',
-  'preset_restoration': 'Restaurar'
-};
-
 const INTENSITY_LEVELS = [
   { key: 'minimal', label: 'Min', mult: 0.3 },
   { key: 'subtle', label: 'Sutil', mult: 0.6 },
@@ -155,14 +137,14 @@ const CompactSlider: React.FC<{
   
   return (
     <div className="flex items-center gap-1.5 group">
-      <span className={`text-[8px] w-12 truncate ${locked ? 'text-neutral-600' : 'text-neutral-400'}`}>
+      <span className={`text-[9px] w-14 truncate ${locked ? 'text-neutral-600' : 'text-neutral-400'}`}>
         {label}
       </span>
       {locked && <Lock size={8} className="text-neutral-600 flex-shrink-0" />}
-      <div className="flex-1 relative h-4 flex items-center">
-        <div className="absolute inset-x-0 h-1 bg-neutral-800 rounded-full" />
+      <div className="flex-1 relative h-5 flex items-center">
+        <div className="absolute inset-x-0 h-1.5 bg-neutral-800 rounded-full" />
         <div 
-          className={`absolute left-0 h-1 rounded-full transition-all ${locked ? 'bg-neutral-700' : colorClasses[color]}`}
+          className={`absolute left-0 h-1.5 rounded-full transition-all ${locked ? 'bg-neutral-700' : colorClasses[color]}`}
           style={{ width: `${value * 10}%` }}
         />
         <input
@@ -174,17 +156,16 @@ const CompactSlider: React.FC<{
           onChange={(e) => onChange(parseInt(e.target.value))}
           className="absolute inset-0 w-full opacity-0 cursor-pointer disabled:cursor-not-allowed"
         />
-        {/* Thumb indicator */}
         <div 
-          className={`absolute w-2.5 h-2.5 rounded-full border-2 transform -translate-x-1/2 transition-all
+          className={`absolute w-3 h-3 rounded-full border-2 transform -translate-x-1/2 transition-all
             ${locked ? 'bg-neutral-700 border-neutral-600' : `${colorClasses[color]} border-white`}
             ${!locked && 'group-hover:scale-125'}
           `}
           style={{ left: `${value * 10}%` }}
         />
       </div>
-      <span className={`text-[9px] w-3 text-right font-mono ${
-        value >= 9 ? 'text-red-400' : value >= 7 ? 'text-amber-400' : locked ? 'text-neutral-600' : 'text-neutral-400'
+      <span className={`text-[10px] w-4 text-right font-mono ${
+        value >= 9 ? 'text-red-400 font-bold' : value >= 7 ? 'text-amber-400' : locked ? 'text-neutral-600' : 'text-neutral-400'
       }`}>
         {value}
       </span>
@@ -200,6 +181,7 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
   imageUrl,
   analysis,
   userProfile = 'auto',
+  userId,
   onConfirm,
   onCancel,
   tokensRequired,
@@ -215,14 +197,30 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
     stylescaler: {},
     lightscaler: {}
   });
-  const [presets, setPresets] = useState<SmartPreset[]>([]);
+  
+  // Presets state
+  const [systemPresets, setSystemPresets] = useState<SmartPreset[]>([]);
+  const [userPresets, setUserPresets] = useState<SmartPreset[]>([]);
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [newPresetName, setNewPresetName] = useState('');
+  const [showUserPresets, setShowUserPresets] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
 
   // Load presets
   useEffect(() => {
-    getSystemPresets().then(setPresets);
-  }, []);
+    const loadPresets = async () => {
+      const system = await getSystemPresets();
+      setSystemPresets(system);
+      
+      if (userId) {
+        const user = await getUserPresets(userId);
+        setUserPresets(user);
+      }
+    };
+    loadPresets();
+  }, [userId]);
 
-  // Initialize slider values from analysis
+  // Initialize slider values
   useEffect(() => {
     if (analysis?.auto_settings) {
       setSliderValues({
@@ -231,7 +229,7 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
         lightscaler: { ...analysis.auto_settings.lightscaler }
       });
     } else {
-      // Default values
+      // Default values = 5
       const defaults: Record<string, Record<string, number>> = { photoscaler: {}, stylescaler: {}, lightscaler: {} };
       for (const [pillar, config] of Object.entries(PILLAR_CONFIG)) {
         for (const slider of config.sliders) {
@@ -242,29 +240,64 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
     }
   }, [analysis?.auto_settings]);
 
-  // When preset is selected, load its locked values
-  useEffect(() => {
-    if (selectedPresetId) {
-      const preset = presets.find(p => p.id === selectedPresetId);
-      if (preset) {
-        const lockedSliders = PRESET_LOCKED_SLIDERS[selectedPresetId] || [];
-        const presetConfig = preset.slider_values;
-        
-        setSliderValues(prev => {
-          const updated = { ...prev };
-          for (const pillar of ['photoscaler', 'stylescaler', 'lightscaler'] as PillarKey[]) {
-            updated[pillar] = { ...prev[pillar] };
-            for (const [sliderName, value] of Object.entries(presetConfig[pillar] || {})) {
-              if (lockedSliders.includes(sliderName)) {
-                updated[pillar][sliderName] = value;
-              }
-            }
-          }
-          return updated;
-        });
+  // Load preset values when selected
+  const loadPreset = useCallback((preset: SmartPreset) => {
+    const newValues: Record<string, Record<string, number>> = {
+      photoscaler: {},
+      stylescaler: {},
+      lightscaler: {}
+    };
+    
+    for (const pillar of ['photoscaler', 'stylescaler', 'lightscaler'] as PillarKey[]) {
+      const presetPillar = preset.slider_values?.[pillar] || {};
+      // Merge with defaults
+      for (const slider of PILLAR_CONFIG[pillar].sliders) {
+        newValues[pillar][slider.name] = presetPillar[slider.name] ?? 5;
       }
     }
-  }, [selectedPresetId, presets]);
+    
+    setSliderValues(newValues);
+    setSelectedPresetId(preset.id);
+    setShowUserPresets(false);
+  }, []);
+
+  // Save current config as user preset
+  const handleSavePreset = async () => {
+    if (!userId || !newPresetName.trim()) return;
+    
+    setIsSaving(true);
+    try {
+      const result = await saveUserPreset(
+        userId,
+        newPresetName.trim(),
+        sliderValues as SmartPreset['slider_values'],
+        [],
+        undefined
+      );
+      
+      if (result) {
+        setUserPresets(prev => [...prev, result]);
+        setShowSaveDialog(false);
+        setNewPresetName('');
+      }
+    } catch (e) {
+      console.error('Error saving preset:', e);
+    }
+    setIsSaving(false);
+  };
+
+  // Delete user preset
+  const handleDeletePreset = async (presetId: string) => {
+    if (!userId) return;
+    
+    const success = await deleteUserPreset(userId, presetId);
+    if (success) {
+      setUserPresets(prev => prev.filter(p => p.id !== presetId));
+      if (selectedPresetId === presetId) {
+        setSelectedPresetId(null);
+      }
+    }
+  };
 
   if (!isVisible) return null;
 
@@ -282,19 +315,14 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
     return config;
   };
 
-  // Check if slider is locked by preset
-  const isSliderLocked = (sliderName: string): boolean => {
-    if (!selectedPresetId) return false;
-    return (PRESET_LOCKED_SLIDERS[selectedPresetId] || []).includes(sliderName);
-  };
-
   // Update slider value
   const updateSlider = (pillar: PillarKey, sliderName: string, value: number) => {
-    if (isSliderLocked(sliderName)) return;
     setSliderValues(prev => ({
       ...prev,
       [pillar]: { ...prev[pillar], [sliderName]: value }
     }));
+    // Clear preset selection when manually changing
+    setSelectedPresetId(null);
   };
 
   // Build final config
@@ -330,7 +358,7 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
   const visibleSliders = getVisibleSliders();
   const showSliders = activeProfile !== 'auto' && visibleSliders.length > 0;
 
-  // Count active sliders per pillar
+  // Count active sliders per pillar (different from 5)
   const countActiveInPillar = (pillarKey: PillarKey): number => {
     const pillar = PILLAR_CONFIG[pillarKey];
     return pillar.sliders.filter(s => {
@@ -341,20 +369,14 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
 
   // Pillar tabs
   const pillars: PillarKey[] = ['photoscaler', 'stylescaler', 'lightscaler'];
-  const currentPillarIndex = pillars.indexOf(activePillar);
-
-  const navigatePillar = (direction: -1 | 1) => {
-    const newIndex = (currentPillarIndex + direction + 3) % 3;
-    setActivePillar(pillars[newIndex]);
-  };
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center p-2" data-testid="unified-config-modal">
       <div className="absolute inset-0 bg-black/95" onClick={onCancel} />
       
-      <div className="relative bg-neutral-950 border border-neutral-800 w-full max-w-lg rounded-xl overflow-hidden flex flex-col shadow-2xl" style={{ maxHeight: '85vh' }}>
+      <div className="relative bg-neutral-950 border border-neutral-800 w-full max-w-lg rounded-xl overflow-hidden flex flex-col shadow-2xl" style={{ maxHeight: '90vh' }}>
         
-        {/* Header con imagen y categoría */}
+        {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-neutral-800 bg-neutral-900/50">
           <img src={imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover ring-1 ring-white/10" />
           <div className="flex-1 min-w-0">
@@ -434,9 +456,65 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
           {/* Non-AUTO: Presets + Sliders */}
           {activeProfile !== 'auto' && (
             <>
-              {/* Presets */}
+              {/* Presets Section */}
               <div className="px-4 py-3 border-b border-neutral-800/50">
-                <p className="text-[10px] text-neutral-500 uppercase tracking-wide mb-2">Preset base</p>
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] text-neutral-500 uppercase tracking-wide">Presets</p>
+                  <div className="flex items-center gap-1">
+                    {userId && userPresets.length > 0 && (
+                      <button
+                        onClick={() => setShowUserPresets(!showUserPresets)}
+                        className={`px-2 py-1 rounded text-[9px] flex items-center gap-1 transition-all ${
+                          showUserPresets ? 'bg-blue-500/20 text-blue-400' : 'bg-neutral-800/50 text-neutral-400 hover:bg-neutral-700/50'
+                        }`}
+                      >
+                        <FolderOpen size={10} />
+                        Mis presets ({userPresets.length})
+                      </button>
+                    )}
+                    {userId && (
+                      <button
+                        onClick={() => setShowSaveDialog(true)}
+                        className="px-2 py-1 rounded text-[9px] bg-green-500/20 text-green-400 hover:bg-green-500/30 flex items-center gap-1 transition-all"
+                      >
+                        <Save size={10} />
+                        Guardar
+                      </button>
+                    )}
+                  </div>
+                </div>
+                
+                {/* User Presets */}
+                {showUserPresets && userPresets.length > 0 && (
+                  <div className="mb-3 p-2 bg-blue-500/5 rounded-lg border border-blue-500/20">
+                    <p className="text-[9px] text-blue-400 mb-1.5 uppercase">Mis presets guardados</p>
+                    <div className="flex flex-wrap gap-1.5">
+                      {userPresets.map(preset => (
+                        <div key={preset.id} className="flex items-center gap-1">
+                          <button
+                            onClick={() => loadPreset(preset)}
+                            className={`px-2.5 py-1.5 rounded-lg text-[9px] font-medium transition-all ${
+                              selectedPresetId === preset.id 
+                                ? 'bg-blue-500 text-white' 
+                                : 'bg-neutral-800/70 text-neutral-300 hover:bg-neutral-700/70'
+                            }`}
+                          >
+                            {preset.name}
+                          </button>
+                          <button
+                            onClick={() => handleDeletePreset(preset.id)}
+                            className="p-1 rounded hover:bg-red-500/20 text-neutral-500 hover:text-red-400 transition-all"
+                            title="Eliminar preset"
+                          >
+                            <Trash2 size={10} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {/* System Presets */}
                 <div className="flex gap-1.5 flex-wrap">
                   <button
                     onClick={() => setSelectedPresetId(null)}
@@ -448,33 +526,56 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
                   >
                     Manual
                   </button>
-                  {Object.entries(PRESET_NAMES).map(([id, name]) => (
+                  {systemPresets.map(preset => (
                     <button
-                      key={id}
-                      onClick={() => setSelectedPresetId(id)}
+                      key={preset.id}
+                      onClick={() => loadPreset(preset)}
                       className={`px-3 py-1.5 rounded-lg text-[9px] font-medium transition-all ${
-                        selectedPresetId === id 
+                        selectedPresetId === preset.id 
                           ? 'bg-white text-black' 
                           : 'bg-neutral-800/50 text-neutral-400 hover:bg-neutral-700/50'
                       }`}
                     >
-                      {name}
+                      {preset.name}
                     </button>
                   ))}
                 </div>
               </div>
 
+              {/* Save Preset Dialog */}
+              {showSaveDialog && (
+                <div className="px-4 py-3 bg-green-500/5 border-b border-green-500/20">
+                  <p className="text-[10px] text-green-400 uppercase mb-2">Guardar configuración actual</p>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={newPresetName}
+                      onChange={(e) => setNewPresetName(e.target.value)}
+                      placeholder="Nombre del preset..."
+                      className="flex-1 px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-green-500"
+                      autoFocus
+                    />
+                    <button
+                      onClick={handleSavePreset}
+                      disabled={!newPresetName.trim() || isSaving}
+                      className="px-4 py-2 bg-green-500 text-black rounded-lg text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-400 transition-all"
+                    >
+                      {isSaving ? '...' : 'Guardar'}
+                    </button>
+                    <button
+                      onClick={() => { setShowSaveDialog(false); setNewPresetName(''); }}
+                      className="px-3 py-2 bg-neutral-800 text-neutral-400 rounded-lg text-sm hover:bg-neutral-700 transition-all"
+                    >
+                      Cancelar
+                    </button>
+                  </div>
+                </div>
+              )}
+
               {/* Pillar tabs */}
               {showSliders && (
                 <div className="px-4 py-2 border-b border-neutral-800/50">
                   <div className="flex items-center gap-1">
-                    <button 
-                      onClick={() => navigatePillar(-1)}
-                      className="p-1.5 hover:bg-neutral-800 rounded-lg"
-                    >
-                      <ChevronLeft size={14} className="text-neutral-500" />
-                    </button>
-                    
                     {pillars.map(pillarKey => {
                       const pillar = PILLAR_CONFIG[pillarKey];
                       const Icon = pillar.icon;
@@ -486,9 +587,9 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
                           key={pillarKey}
                           onClick={() => setActivePillar(pillarKey)}
                           data-testid={`pillar-tab-${pillarKey}`}
-                          className={`flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-[10px] font-medium transition-all ${
+                          className={`flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-lg text-[10px] font-medium transition-all ${
                             isActive 
-                              ? `bg-${pillar.color}-500/20 text-${pillar.color}-400 ring-1 ring-${pillar.color}-500/30` 
+                              ? 'ring-1' 
                               : 'text-neutral-500 hover:bg-neutral-800/50'
                           }`}
                           style={isActive ? { 
@@ -497,60 +598,45 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
                                            'rgba(245,158,11,0.15)',
                             color: pillar.color === 'cyan' ? '#22d3ee' : 
                                    pillar.color === 'pink' ? '#f472b6' : 
-                                   '#fbbf24'
+                                   '#fbbf24',
+                            borderColor: pillar.color === 'cyan' ? 'rgba(6,182,212,0.3)' : 
+                                        pillar.color === 'pink' ? 'rgba(236,72,153,0.3)' : 
+                                        'rgba(245,158,11,0.3)'
                           } : {}}
                         >
                           <Icon size={12} />
                           {pillar.label}
                           {activeCount > 0 && (
-                            <span className="text-[8px] px-1 py-0.5 bg-white/10 rounded">
+                            <span className="text-[8px] px-1.5 py-0.5 bg-white/10 rounded-full">
                               {activeCount}
                             </span>
                           )}
                         </button>
                       );
                     })}
-                    
-                    <button 
-                      onClick={() => navigatePillar(1)}
-                      className="p-1.5 hover:bg-neutral-800 rounded-lg"
-                    >
-                      <ChevronRight size={14} className="text-neutral-500" />
-                    </button>
                   </div>
                 </div>
               )}
 
-              {/* Sliders for active pillar - ALL VISIBLE AT ONCE */}
+              {/* Sliders for active pillar */}
               {showSliders && (
-                <div className="px-4 py-3 space-y-2">
+                <div className="px-4 py-3 space-y-1.5">
                   {PILLAR_CONFIG[activePillar].sliders
                     .filter(s => visibleSliders.includes(s.name))
                     .map(slider => {
                       const value = sliderValues[activePillar]?.[slider.name] ?? 5;
-                      const locked = isSliderLocked(slider.name);
                       
                       return (
                         <CompactSlider
                           key={slider.name}
                           label={slider.label}
                           value={value}
-                          locked={locked}
+                          locked={false}
                           color={PILLAR_CONFIG[activePillar].color}
                           onChange={(v) => updateSlider(activePillar, slider.name, v)}
                         />
                       );
                     })}
-                  
-                  {/* Quick stats */}
-                  <div className="pt-2 mt-2 border-t border-neutral-800/50 flex justify-between text-[9px] text-neutral-600">
-                    <span>
-                      {PILLAR_CONFIG[activePillar].sliders.filter(s => visibleSliders.includes(s.name)).length} sliders
-                    </span>
-                    <span>
-                      {selectedPresetId && `${(PRESET_LOCKED_SLIDERS[selectedPresetId] || []).length} bloqueados`}
-                    </span>
-                  </div>
                 </div>
               )}
             </>
