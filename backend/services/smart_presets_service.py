@@ -215,25 +215,18 @@ class SmartPresetsService:
         return None
     
     async def get_user_presets(self, user_id: str) -> List[Dict]:
-        """Obtiene los presets personalizados de un usuario."""
-        # Primero intentar memoria local
-        user_presets_key = f"user_presets_{user_id}"
-        if hasattr(self, '_user_presets') and user_id in self._user_presets:
-            return self._user_presets.get(user_id, [])
-        
+        """Obtiene los presets personalizados de un usuario desde Supabase."""
         try:
             response = supabase_db.client.table("smart_presets")\
                 .select("*")\
                 .eq("user_id", user_id)\
+                .order("created_at", desc=True)\
                 .execute()
             
             return response.data or []
         except Exception as e:
-            print(f"SmartPresetsService: Error getting user presets (table may not exist): {e}")
-            # Retornar desde memoria local si existe
-            if hasattr(self, '_user_presets'):
-                return self._user_presets.get(user_id, [])
-            return []
+            print(f"SmartPresetsService: Error getting user presets from Supabase: {e}")
+            raise Exception(f"Failed to get user presets: {e}")
     
     async def save_user_preset(
         self, 
@@ -243,48 +236,29 @@ class SmartPresetsService:
         locked_pillars: List[str] = None,
         narrative_anchor: str = None
     ) -> Optional[Dict]:
-        """Guarda un nuevo preset para el usuario."""
-        import uuid
-        from datetime import datetime
-        
-        # Crear estructura del preset
-        preset_data = {
-            'id': str(uuid.uuid4()),
-            'user_id': user_id,
-            'name': name,
-            'slider_values': slider_values,
-            'locked_pillars': locked_pillars or [],
-            'narrative_anchor': narrative_anchor,
-            'created_at': datetime.now().isoformat()
-        }
-        
-        # Intentar guardar en Supabase
+        """Guarda un nuevo preset para el usuario en Supabase (obligatorio)."""
         try:
+            data = {
+                'user_id': user_id,
+                'name': name,
+                'slider_values': slider_values,
+                'locked_pillars': locked_pillars or [],
+                'narrative_anchor': narrative_anchor
+            }
+            
             response = supabase_db.client.table("smart_presets")\
-                .insert({
-                    'user_id': user_id,
-                    'name': name,
-                    'slider_values': slider_values,
-                    'locked_pillars': locked_pillars or [],
-                    'narrative_anchor': narrative_anchor
-                })\
+                .insert(data)\
                 .execute()
             
             if response.data:
+                print(f"SmartPresetsService: Saved preset '{name}' for user {user_id}")
                 return response.data[0]
+            
+            raise Exception("No data returned from insert")
+            
         except Exception as e:
-            print(f"SmartPresetsService: Supabase error, using local storage: {e}")
-        
-        # Fallback a memoria local
-        if not hasattr(self, '_user_presets'):
-            self._user_presets = {}
-        
-        if user_id not in self._user_presets:
-            self._user_presets[user_id] = []
-        
-        self._user_presets[user_id].append(preset_data)
-        print(f"SmartPresetsService: Saved preset locally for user {user_id}")
-        return preset_data
+            print(f"SmartPresetsService: Error saving preset to Supabase: {e}")
+            raise Exception(f"Failed to save preset: {e}")
     
     async def delete_user_preset(self, user_id: str, preset_id: str) -> bool:
         """Elimina un preset del usuario."""
