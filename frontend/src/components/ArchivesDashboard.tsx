@@ -519,8 +519,49 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack, us
                             {selectedVariation.prompt_payload?.selectedPresetId && (() => {
                                 try {
                                     const config = JSON.parse(selectedVariation.prompt_payload.selectedPresetId);
+                                    
+                                    // Función para extraer slider_values del config
+                                    const extractSliderValues = () => {
+                                        const values: Record<string, Record<string, number>> = {
+                                            photoscaler: {},
+                                            stylescaler: {},
+                                            lightscaler: {}
+                                        };
+                                        if (config.photoscaler?.sliders) {
+                                            for (const s of config.photoscaler.sliders) {
+                                                values.photoscaler[s.name] = s.value;
+                                            }
+                                        }
+                                        if (config.stylescaler?.sliders) {
+                                            for (const s of config.stylescaler.sliders) {
+                                                values.stylescaler[s.name] = s.value;
+                                            }
+                                        }
+                                        if (config.lightscaler?.sliders) {
+                                            for (const s of config.lightscaler.sliders) {
+                                                values.lightscaler[s.name] = s.value;
+                                            }
+                                        }
+                                        return values;
+                                    };
+                                    
                                     return (
                                         <div className="space-y-2 pt-2 border-t border-white/5">
+                                            {/* Botón Guardar como Preset */}
+                                            {userId && (
+                                                <button
+                                                    onClick={() => {
+                                                        setPresetName('');
+                                                        setSavePresetSuccess(false);
+                                                        setShowSavePresetDialog(true);
+                                                    }}
+                                                    className="w-full py-2 px-3 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 rounded-lg flex items-center justify-center gap-2 text-green-400 text-[10px] font-semibold transition-all"
+                                                >
+                                                    <Save size={12} />
+                                                    Guardar como Preset
+                                                </button>
+                                            )}
+                                            
                                             {/* PhotoScaler */}
                                             {config.photoscaler?.sliders && (
                                                 <div>
