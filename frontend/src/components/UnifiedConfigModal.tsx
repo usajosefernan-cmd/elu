@@ -209,16 +209,20 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
   // Load presets
   useEffect(() => {
     const loadPresets = async () => {
+      console.log('Loading presets... userId:', userId);
+      
       const system = await getSystemPresets();
+      console.log('System presets loaded:', system.length);
       setSystemPresets(system);
       
       if (userId) {
         const user = await getUserPresets(userId);
+        console.log('User presets loaded:', user.length, user);
         setUserPresets(user);
       }
     };
     loadPresets();
-  }, [userId]);
+  }, [userId, isVisible]); // Also reload when modal opens
 
   // Initialize slider values
   useEffect(() => {
