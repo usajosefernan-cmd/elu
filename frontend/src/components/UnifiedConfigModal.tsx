@@ -203,7 +203,6 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
   const [userPresets, setUserPresets] = useState<SmartPreset[]>([]);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
-  const [showUserPresets, setShowUserPresets] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Load presets
