@@ -186,9 +186,18 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack }) 
         if (!containerRef.current) return;
         
         if (isDraggingSlider) {
+            // Calcular posición relativa a la IMAGEN transformada, no al contenedor
             const rect = containerRef.current.getBoundingClientRect();
-            const x = e.clientX - rect.left;
-            const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+            const mouseX = e.clientX - rect.left;
+            
+            // Convertir coordenadas del mouse a coordenadas de la imagen
+            // Teniendo en cuenta translate y scale
+            const imageX = (mouseX - translate.x) / scale;
+            
+            // Calcular porcentaje basado en el ancho real de la imagen
+            const imageWidth = displaySize.w || afterImgSize.w || rect.width;
+            const percentage = Math.max(0, Math.min(100, (imageX / imageWidth) * 100));
+            
             setSliderPosition(percentage);
             return;
         }
