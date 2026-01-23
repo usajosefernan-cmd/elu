@@ -41,7 +41,7 @@ import { UpscalePage } from './pages/UpscalePage';
 import { CookieBanner } from './components/CookieBanner';
 import { AgentStatus, AgentMessage, LuxConfig, UserProfile, ArchivedVariation, SemanticAnalysis } from './types';
 import { compressAndResizeImage, uploadImageToStorage, generatePreviewGrid, analyzeImage, generateMaster } from './services/geminiService';
-import { analyzeImageWithVision, analyzeImageBase64WithVision, compilePrompt, generateEnhancedImage } from './services/edgeFunctionsService';
+import { analyzeImageWithVision, analyzeImageBase64WithVision, compilePrompt, generateEnhancedImage, generateImageWithSliders } from './services/edgeFunctionsService';
 import { getCurrentUserProfile, signOutUser } from './services/authService';
 import { spendLumens, getBalance } from './services/paymentService';
 import { getDisplayUrl, getMasterUrl, getThumbnailUrl } from './utils/imageUtils';
