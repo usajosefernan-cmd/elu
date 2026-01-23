@@ -1,8 +1,7 @@
-// LuxScaler v40.0 - Universal Cinematic Production Protocol
-// Supabase Edge Function: prompt-compiler
+// LuxScaler v40.0 - Prompt Compiler with FORENSIC/CREATIVE/PRESET modes
+// Supabase Edge Function
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -14,6 +13,7 @@ const corsHeaders = {
 // ============================================================
 const UNIVERSAL_TEMPLATE_V40 = `[SYSTEM OVERRIDE: UNIVERSAL CINEMATIC PRODUCTION PROTOCOL v40.0]
 [TASK: HIGH-BUDGET "VIRTUAL RESHOOT" // HYPER-REALISTIC PRODUCTION]
+[MODE: {{MODE}}]
 
 === 🎬 THE NEW DIRECTIVE: "THE TALENT vs. THE PRODUCTION" ===
 You are no longer just restoring a photo. You are the Director of Photography (DOP) and Production Designer for a $100M blockbuster movie scene based on the input image.
@@ -35,14 +35,7 @@ Imagine the person(s) in the [INPUT_IMAGE] are A-List actors booked for a high-e
 
 ---
 
-=== 🔓 SECTION 2: AUTHORIZED PRODUCTION CHANGES (WRITE-ACCESS) ===
-*You have an unlimited budget to upgrade these elements IF the injected parameters demand it:*
-
-1.  **WARDROBE & STYLING (via [S2], [S3]):** You may completely replace clothing with high-end designer alternatives. You may restyle hair into luxurious, professional looks, changing volume and texture as requested.
-2.  **ENVIRONMENT & TIME (via [S5], [L5], [S7]):** You may transport the subject to a idealized version of the location, or a completely new "set" if requested. You may shift time from noon to "Golden Hour" or "Blue Hour".
-3.  **CAMERA & LENS (via [P2], [P3], [P8], [S6]):** You may radically change the framing (e.g., ultra-wide cinematic crop) and depth of field (e.g., f/0.95 Noctilux bokeh) to create drama.
-
----
+{{PERMISSIVE_ZONES}}
 
 === 🎛️ THE PRODUCTION PARAMETERS (INJECTION BLOCK) ===
 *Apply these specific high-budget physics and styling rules:*
@@ -98,18 +91,40 @@ Imagine the person(s) in the [INPUT_IMAGE] are A-List actors booked for a high-e
 **FINAL ACTION:**
 Execute the "Virtual Reshoot" with maximum production value. Make it look like a magazine cover or a movie still, but ensure the subject's mother would still recognize them instantly.`;
 
+// Permissive zones block for CREATIVE mode
+const PERMISSIVE_ZONES_BLOCK = `=== 🔓 SECTION 2: AUTHORIZED PRODUCTION CHANGES (WRITE-ACCESS) ===
+*You have an unlimited budget to upgrade these elements IF the injected parameters demand it:*
+
+1.  **WARDROBE & STYLING (via [S2], [S3]):** You may completely replace clothing with high-end designer alternatives. You may restyle hair into luxurious, professional looks, changing volume and texture as requested.
+2.  **ENVIRONMENT & TIME (via [S5], [L5], [S7]):** You may transport the subject to a idealized version of the location, or a completely new "set" if requested. You may shift time from noon to "Golden Hour" or "Blue Hour".
+3.  **CAMERA & LENS (via [P2], [P3], [P8], [S6]):** You may radically change the framing (e.g., ultra-wide cinematic crop) and depth of field (e.g., f/0.95 Noctilux bokeh) to create drama.
+
+---
+`;
+
+// Forensic zones block - more restrictive
+const FORENSIC_ZONES_BLOCK = `=== 🔓 SECTION 2: RESTORATION ONLY (FORENSIC MODE) ===
+*In FORENSIC mode, you are a RESTORER, not a CREATOR. Preserve everything except technical flaws:*
+
+1.  **WARDROBE:** Keep the exact same clothing. Only fix wrinkles, remove lint, enhance texture.
+2.  **ENVIRONMENT:** Keep the exact same location. Only clean up distractions, fix lighting issues.
+3.  **CAMERA:** Simulate a better lens capturing the SAME scene. Do not re-frame dramatically.
+
+**CRITICAL:** The output should look like "the same photo taken with a $50,000 camera" - NOT a reimagined scene.
+
+---
+`;
+
 // ============================================================
-// SLIDER DEFINITIONS v29 - Complete table with all 27 sliders
+// SLIDER DEFINITIONS v29
 // ============================================================
 const SLIDER_DEFINITIONS: Record<string, {
   id: string;
   pilar: string;
-  ui_title: string;
   levels: Record<string, string>;
 }> = {
-  // PHOTOSCALER (P1-P9)
   "limpieza_artefactos": {
-    id: "p1", pilar: "PHOTOSCALER", ui_title: "Limpieza de Señal",
+    id: "p1", pilar: "PHOTOSCALER",
     levels: {
       OFF: 'PRESERVE PATINA. Treat sensor noise and grain as essential texture. Do not denoise. Maintain organic "film" feel.',
       LOW: "CHROMA DENOISE. Remove only color noise (purple/green blotches). Keep Luminance grain to prevent waxy skin.",
@@ -119,7 +134,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "geometria": {
-    id: "p2", pilar: "PHOTOSCALER", ui_title: "Corrección Técnica",
+    id: "p2", pilar: "PHOTOSCALER",
     levels: {
       OFF: "OPTICAL LOCK. Preserve original lens character (including barrel/pincushion distortion). Do not crop.",
       LOW: "LENS PROFILE FIX. Correct vignetting (dark corners) and chromatic aberration (color fringing). Keep perspective.",
@@ -129,7 +144,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "optica_nitidez": {
-    id: "p3", pilar: "PHOTOSCALER", ui_title: "Definición Cristalina",
+    id: "p3", pilar: "PHOTOSCALER",
     levels: {
       OFF: 'VINTAGE OPTICS. Maintain lens softness, spherical aberration, and "dreamy" lack of contrast. Preserve bloom.',
       LOW: "KIT LENS SHARP. Remove diffraction softness. Apply subtle Unsharp Mask (Radius 0.5px) to define edges.",
@@ -139,7 +154,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "chronos": {
-    id: "p4", pilar: "PHOTOSCALER", ui_title: "Congelar Acción",
+    id: "p4", pilar: "PHOTOSCALER",
     levels: {
       OFF: "NATURAL DRAG. Preserve motion blur in moving objects to convey speed/action. Cinematic shutter (1/50s).",
       LOW: "STABILIZATION (IS). Remove handheld camera shake (trepidation). Keep motion blur only on very fast objects.",
@@ -149,7 +164,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "senal_raw": {
-    id: "p5", pilar: "PHOTOSCALER", ui_title: "Rango Dinámico",
+    id: "p5", pilar: "PHOTOSCALER",
     levels: {
       OFF: "ORIGINAL EXPOSURE. Keep crushed blacks (Zone 0) and blown highlights (Zone 10) as mood/style choice.",
       LOW: 'HISTOGRAM SAFE. Stretch contrast to ensure data exists in shadows. Fix "grey" blacks. Normalized exposure.',
@@ -159,7 +174,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "sintesis_adn": {
-    id: "p6", pilar: "PHOTOSCALER", ui_title: "Textura Táctil",
+    id: "p6", pilar: "PHOTOSCALER",
     levels: {
       OFF: "SOFT FOCUS. Maintain low-frequency details only. Smooth/plastic look is acceptable if source dictates.",
       LOW: "TEXTURE ENHANCE. Sharpen existing surface details (fabric, skin) without adding new information.",
@@ -169,7 +184,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "grano_filmico": {
-    id: "p7", pilar: "PHOTOSCALER", ui_title: "Emulsión Fílmica",
+    id: "p7", pilar: "PHOTOSCALER",
     levels: {
       OFF: "DIGITAL CLEAN. Modern sensor look. Zero grain. Clinical perfection.",
       LOW: "ISO 100 GRAIN. Very fine, almost invisible structure. Adds subtle cohesion to digital pixels.",
@@ -179,17 +194,17 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "apertura_bokeh": {
-    id: "p8", pilar: "PHOTOSCALER", ui_title: "Profundidad de Campo",
+    id: "p8", pilar: "PHOTOSCALER",
     levels: {
-      OFF: "HYPERFOCAL (f/16). EVERYTHING IN FOCUS. From foreground to infinity. Maximum context visibility. Landscape standard.",
-      LOW: "COMMERCIAL (f/8). DEEP DEPTH OF FIELD. Subject clearly sharp, background distinct but slightly softer. Group photo standard.",
-      MED: "ENVIRONMENTAL (f/4). NATURAL SEPARATION. Subject pops, background is blurry but recognizable (Contextual).",
-      HIGH: "PORTRAIT (f/1.8). CREAMY BOKEH. Background is washed out. Strong subject separation. Soft highlight circles.",
+      OFF: "HYPERFOCAL (f/16). EVERYTHING IN FOCUS. From foreground to infinity. Maximum context visibility.",
+      LOW: "COMMERCIAL (f/8). DEEP DEPTH OF FIELD. Subject clearly sharp, background distinct but slightly softer.",
+      MED: "ENVIRONMENTAL (f/4). NATURAL SEPARATION. Subject pops, background is blurry but recognizable.",
+      HIGH: "PORTRAIT (f/1.8). CREAMY BOKEH. Background is washed out. Strong subject separation.",
       FORCE: "NOCTILUX DREAM (f/0.95). EXTREME BOKEH. RAZOR-THIN FOCAL PLANE. BACKGROUND OBLITERATED INTO CREAMY AESTHETIC."
     }
   },
   "resolucion": {
-    id: "p9", pilar: "PHOTOSCALER", ui_title: "Densidad de Píxel",
+    id: "p9", pilar: "PHOTOSCALER",
     levels: {
       OFF: "NATIVE RES. Keep original pixel count. Upscale via simple bicubic if needed.",
       LOW: "SMART UPSCALE (2x). Maintain edge integrity. Smooth out jaggies/pixelation.",
@@ -198,19 +213,18 @@ const SLIDER_DEFINITIONS: Record<string, {
       FORCE: "PHASE ONE IQ4 QUALITY. 150MP SENSOR SIMULATION. PRINT-READY DENSITY. REMOVE PIXEL GRID."
     }
   },
-  // STYLESCALER (S1-S9)
   "styling_piel": {
-    id: "s1", pilar: "STYLESCALER", ui_title: "Grooming Pro",
+    id: "s1", pilar: "STYLESCALER",
     levels: {
       OFF: "BIOMETRIC LOCK. Preserve all acne, scars, redness, and oil. Documentary skin reality.",
       LOW: "HEALTHY GLOW. Remove temporary redness/blotchiness. Even out skin tone. Keep moles/freckles.",
       MED: "STUDIO MATTE. Commercial retouch. Soften pores. Remove shine/oil. Brighten under-eyes.",
       HIGH: "HIGH-END EDITORIAL. Frequency Separation. Flawless texture. Defined features. Porcelain finish.",
-      FORCE: "HIGH-END RETOUCHING. FLAWLESS COMPLEXION. RETAIN NATURAL PORES & VELLUS HAIR. EVEN SKIN TONE. VOGUE COVER STANDARD."
+      FORCE: "HIGH-END RETOUCHING. FLAWLESS COMPLEXION. RETAIN NATURAL PORES & VELLUS HAIR. VOGUE COVER STANDARD."
     }
   },
   "styling_pelo": {
-    id: "s2", pilar: "STYLESCALER", ui_title: "Estilismo Capilar",
+    id: "s2", pilar: "STYLESCALER",
     levels: {
       OFF: 'NATURAL MESS. Keep flyaways, frizz, and messy hairline. Authentic "bed head".',
       LOW: "FRIZZ CONTROL. Smooth out humidity frizz. Tame stray hairs. Healthy shine.",
@@ -220,7 +234,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "styling_ropa": {
-    id: "s3", pilar: "STYLESCALER", ui_title: "Sastrería Digital",
+    id: "s3", pilar: "STYLESCALER",
     levels: {
       OFF: "FABRIC LOCK. Keep wrinkles, stains, lint, and wear. Authentic clothing state.",
       LOW: "STEAM IRON. Remove accidental fold lines and lint. Refresh fabric appearance.",
@@ -230,7 +244,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "maquillaje": {
-    id: "s4", pilar: "STYLESCALER", ui_title: "MUA Profesional",
+    id: "s4", pilar: "STYLESCALER",
     levels: {
       OFF: "BARE FACE. No makeup. Visible capillaries and natural pallor.",
       LOW: '"No-makeup" look. Subtle lip tint. Mascara definition.',
@@ -240,7 +254,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "limpieza_entorno": {
-    id: "s5", pilar: "STYLESCALER", ui_title: "Set Design",
+    id: "s5", pilar: "STYLESCALER",
     levels: {
       OFF: "JOURNALISTIC. Do not touch anything. Keep trash, cables, and clutter.",
       LOW: "TIDY UP. Remove obvious trash (papers, cups) from floor/tables.",
@@ -250,7 +264,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "reencuadre_ia": {
-    id: "s6", pilar: "STYLESCALER", ui_title: "Composición Pro",
+    id: "s6", pilar: "STYLESCALER",
     levels: {
       OFF: "ORIGINAL FRAME. Do not crop. Respect user's framing errors.",
       LOW: "RULE OF THIRDS. Subtle crop to align eyes/horizon to grid.",
@@ -260,7 +274,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "atmosfera": {
-    id: "s7", pilar: "STYLESCALER", ui_title: "Profundidad Aérea",
+    id: "s7", pilar: "STYLESCALER",
     levels: {
       OFF: "VACUUM CLARITY. Zero haze. Transparent air. Maximum distance visibility.",
       LOW: "DEPTH HINT. Subtle aerial perspective (blueish distance). Separate planes.",
@@ -270,7 +284,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "look_cine": {
-    id: "s8", pilar: "STYLESCALER", ui_title: "Etalonaje (Color)",
+    id: "s8", pilar: "STYLESCALER",
     levels: {
       OFF: "REC.709 STD. Standard broadcast color. Neutral and accurate.",
       LOW: "WHITE BALANCE. Correct color casts (remove green/orange tints). Neutral greys.",
@@ -280,7 +294,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "materiales_pbr": {
-    id: "s9", pilar: "STYLESCALER", ui_title: "Reflejos Físicos",
+    id: "s9", pilar: "STYLESCALER",
     levels: {
       OFF: "MATTE FINISH. Diffuse reflection. No specular highlights. Flat look.",
       LOW: "NATURAL SHINE. Standard gloss on plastic/metal. Accurate physics.",
@@ -289,9 +303,8 @@ const SLIDER_DEFINITIONS: Record<string, {
       FORCE: "PERFECT SPECULARITY. CONTROLLED REFLECTIONS. HIGH-GLOSS FINISH. SURFACE POLARIZATION."
     }
   },
-  // LIGHTSCALER (L1-L9)
   "key_light": {
-    id: "L1", pilar: "LIGHTSCALER", ui_title: "Luz Principal",
+    id: "L1", pilar: "LIGHTSCALER",
     levels: {
       OFF: "AMBIENT ONLY. Use available light. Flat or chaotic natural lighting.",
       LOW: "REFLECTOR FILL. Bounce light back to face. Reduce dark shadows under eyes.",
@@ -301,7 +314,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "fill_light": {
-    id: "L2", pilar: "LIGHTSCALER", ui_title: "Luz de Relleno",
+    id: "L2", pilar: "LIGHTSCALER",
     levels: {
       OFF: "NATURAL RATIO. Keep original contrast between light and dark side.",
       LOW: "NEGATIVE FILL. Block light (Black Flag) to deepen shadow side.",
@@ -311,7 +324,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "rim_light": {
-    id: "L3", pilar: "LIGHTSCALER", ui_title: "Luz de Recorte",
+    id: "L3", pilar: "LIGHTSCALER",
     levels: {
       OFF: "NO BACKLIGHT. Subject blends into background. 2D look.",
       LOW: "SUBTLE KICKER. Edge light on hair/shoulders to separate form.",
@@ -321,7 +334,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "volumetria": {
-    id: "L4", pilar: "LIGHTSCALER", ui_title: "Haces de Luz",
+    id: "L4", pilar: "LIGHTSCALER",
     levels: {
       OFF: "INVISIBLE AIR. Light travels invisibly. No scattering.",
       LOW: "SOFT BLOOM. Light sources glow slightly (Halation).",
@@ -331,7 +344,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "temperatura": {
-    id: "L5", pilar: "LIGHTSCALER", ui_title: "Balance de Blancos",
+    id: "L5", pilar: "LIGHTSCALER",
     levels: {
       OFF: "NEUTRAL. 5500K Daylight. White is White.",
       LOW: "WARM / COOL. Subtle shift (+/- 500K) for mood.",
@@ -341,7 +354,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "contraste": {
-    id: "L6", pilar: "LIGHTSCALER", ui_title: "Curva de Tonos",
+    id: "L6", pilar: "LIGHTSCALER",
     levels: {
       OFF: "LINEAR. Flat profile. Low contrast. Maximum data preservation.",
       LOW: "S-CURVE. Standard photography contrast. Correct blacks.",
@@ -351,7 +364,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "sombras": {
-    id: "L7", pilar: "LIGHTSCALER", ui_title: "Densidad de Negros",
+    id: "L7", pilar: "LIGHTSCALER",
     levels: {
       OFF: "STANDARD. Black point at 0. Details visible in darks.",
       LOW: "MATTE BLACK. Lifted blacks (faded vintage look).",
@@ -361,7 +374,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "estilo_autor": {
-    id: "L8", pilar: "LIGHTSCALER", ui_title: "Esquema Dramático",
+    id: "L8", pilar: "LIGHTSCALER",
     levels: {
       OFF: "SNAPSHOT. Random, uncurated lighting. Reality.",
       LOW: "COMMERCIAL. Clean, even, safe lighting. Stock photo look.",
@@ -371,7 +384,7 @@ const SLIDER_DEFINITIONS: Record<string, {
     }
   },
   "reflejos": {
-    id: "L9", pilar: "LIGHTSCALER", ui_title: "Brillo de Piel",
+    id: "L9", pilar: "LIGHTSCALER",
     levels: {
       OFF: "MATTE / POWDER. Dry skin. No shine. Flat finish.",
       LOW: "HEALTHY SHEEN. Natural oil hydration. Subtle highlights on nose/forehead.",
@@ -382,7 +395,6 @@ const SLIDER_DEFINITIONS: Record<string, {
   }
 };
 
-// Mapping from slider key_id to template placeholder
 const SLIDER_KEY_TO_PLACEHOLDER: Record<string, string> = {
   "limpieza_artefactos": "p1", "geometria": "p2", "optica_nitidez": "p3",
   "chronos": "p4", "senal_raw": "p5", "sintesis_adn": "p6",
@@ -395,69 +407,36 @@ const SLIDER_KEY_TO_PLACEHOLDER: Record<string, string> = {
   "sombras": "L7", "estilo_autor": "L8", "reflejos": "L9"
 };
 
-// Convert value (0-10) to level name
+// Creative sliders that trigger CREATIVE mode
+const CREATIVE_SLIDERS = ["styling_ropa", "styling_pelo", "limpieza_entorno", "reencuadre_ia", "atmosfera"];
+
 function getLevelFromValue(value: number): string {
   if (value === 0) return "OFF";
   if (value >= 1 && value <= 3) return "LOW";
   if (value >= 4 && value <= 6) return "MED";
   if (value >= 7 && value <= 9) return "HIGH";
-  return "FORCE"; // 10
+  return "FORCE";
 }
 
-// Get instruction for a slider at a specific value
 function getSliderInstruction(keyId: string, value: number): string {
   const slider = SLIDER_DEFINITIONS[keyId];
   if (!slider) return `[UNKNOWN SLIDER: ${keyId}]`;
-  
   const level = getLevelFromValue(value);
   return slider.levels[level] || `[NO INSTRUCTION FOR ${level}]`;
 }
 
-// Assemble the complete prompt from slider values
-function assemblePrompt(sliderConfig: Record<string, Record<string, number>>): {
-  prompt: string;
-  levelsUsed: Record<string, string>;
-  activeSliders: number;
-} {
-  // Flatten slider values
-  const flatSliders: Record<string, number> = {};
-  for (const [pilar, sliders] of Object.entries(sliderConfig)) {
-    if (sliders && typeof sliders === 'object') {
-      for (const [key, value] of Object.entries(sliders)) {
-        if (typeof value === 'number') {
-          flatSliders[key] = value;
-        }
-      }
+// Detect if creative sliders are active (HIGH or FORCE)
+function detectCreativeMode(flatSliders: Record<string, number>): boolean {
+  for (const key of CREATIVE_SLIDERS) {
+    const value = flatSliders[key];
+    if (value !== undefined && value >= 7) {
+      return true;
     }
   }
-
-  // Build replacement dict
-  const replacements: Record<string, string> = {};
-  const levelsUsed: Record<string, string> = {};
-  let activeSliders = 0;
-
-  for (const [keyId, placeholder] of Object.entries(SLIDER_KEY_TO_PLACEHOLDER)) {
-    const value = flatSliders[keyId] ?? 5; // Default to 5 (MED)
-    const instruction = getSliderInstruction(keyId, value);
-    const level = getLevelFromValue(value);
-    
-    replacements[`{{${placeholder}}}`] = instruction;
-    levelsUsed[placeholder] = level;
-    
-    if (keyId in flatSliders) activeSliders++;
-  }
-
-  // Perform replacements
-  let prompt = UNIVERSAL_TEMPLATE_V40;
-  for (const [placeholder, instruction] of Object.entries(replacements)) {
-    prompt = prompt.replace(placeholder, instruction);
-  }
-
-  return { prompt, levelsUsed, activeSliders };
+  return false;
 }
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -465,35 +444,132 @@ serve(async (req) => {
   try {
     const body = await req.json();
     
-    // Support both nested and flat slider configs
-    let sliderConfig = body.sliderConfig || body.config || {};
+    // Support multiple input formats
+    let sliderConfig = body.sliderConfig || body.config || body.sliders || {};
+    const mode = body.mode || "AUTO"; // FORENSIC, CREATIVE, PRESET, AUTO
+    const savedConfig = body.saved_config || body.savedConfig || null;
+
+    // Flatten slider values
+    const flatSliders: Record<string, number> = {};
     
-    // If flat format (legacy), convert to nested
-    if (!sliderConfig.photoscaler && !sliderConfig.stylescaler && !sliderConfig.lightscaler) {
-      const nested: Record<string, Record<string, number>> = {
-        photoscaler: {}, stylescaler: {}, lightscaler: {}
-      };
-      for (const [key, value] of Object.entries(sliderConfig)) {
-        const slider = SLIDER_DEFINITIONS[key];
-        if (slider && typeof value === 'number') {
-          const pilar = slider.pilar.toLowerCase();
-          if (pilar in nested) {
-            nested[pilar][key] = value;
+    if (sliderConfig.photoscaler || sliderConfig.stylescaler || sliderConfig.lightscaler) {
+      // Nested format
+      for (const [pilar, sliders] of Object.entries(sliderConfig)) {
+        if (sliders && typeof sliders === 'object') {
+          for (const [key, value] of Object.entries(sliders as Record<string, number>)) {
+            if (typeof value === 'number') {
+              flatSliders[key] = value;
+            }
           }
         }
       }
-      sliderConfig = nested;
+    } else {
+      // Flat format
+      for (const [key, value] of Object.entries(sliderConfig)) {
+        if (typeof value === 'number') {
+          flatSliders[key] = value;
+        }
+      }
     }
 
-    const { prompt, levelsUsed, activeSliders } = assemblePrompt(sliderConfig);
+    // ============================================================
+    // MODE DETECTION & GENERATION CONFIG
+    // ============================================================
+    let generationConfig = {
+      topK: 40,
+      topP: 0.95,
+      maxOutputTokens: 8192,
+      temperature: 0.1,
+      seed: Math.floor(Math.random() * 1000000000)
+    };
+
+    let effectiveMode = mode;
+
+    switch (mode) {
+      case 'FORENSIC':
+        // Restoration mode: Low temperature, maximum fidelity
+        generationConfig.temperature = 0.1;
+        generationConfig.topK = 1;
+        generationConfig.topP = 0.1;
+        effectiveMode = 'FORENSIC';
+        break;
+
+      case 'CREATIVE':
+        // Reimagination mode: Higher temperature for creative changes
+        generationConfig.temperature = 0.65;
+        generationConfig.topK = 40;
+        generationConfig.topP = 0.9;
+        effectiveMode = 'CREATIVE';
+        break;
+
+      case 'PRESET':
+        // Repeat mode: Use saved seed and temperature
+        if (savedConfig) {
+          generationConfig.temperature = savedConfig.temperature || 0.65;
+          generationConfig.seed = savedConfig.seed;
+        }
+        effectiveMode = 'PRESET';
+        break;
+
+      case 'AUTO':
+      default:
+        // Auto-detect based on sliders
+        if (detectCreativeMode(flatSliders)) {
+          generationConfig.temperature = 0.65;
+          generationConfig.topK = 40;
+          generationConfig.topP = 0.9;
+          effectiveMode = 'CREATIVE';
+        } else {
+          generationConfig.temperature = 0.1;
+          generationConfig.topK = 1;
+          generationConfig.topP = 0.1;
+          effectiveMode = 'FORENSIC';
+        }
+        break;
+    }
+
+    // ============================================================
+    // BUILD PROMPT
+    // ============================================================
+    const replacements: Record<string, string> = {};
+    const levelsUsed: Record<string, string> = {};
+    let activeSliders = 0;
+
+    for (const [keyId, placeholder] of Object.entries(SLIDER_KEY_TO_PLACEHOLDER)) {
+      const value = flatSliders[keyId] ?? 5;
+      const instruction = getSliderInstruction(keyId, value);
+      const level = getLevelFromValue(value);
+      
+      replacements[`{{${placeholder}}}`] = instruction;
+      levelsUsed[placeholder] = level;
+      
+      if (keyId in flatSliders) activeSliders++;
+    }
+
+    // Start with template
+    let prompt = UNIVERSAL_TEMPLATE_V40;
+    
+    // Inject mode
+    prompt = prompt.replace("{{MODE}}", effectiveMode);
+    
+    // Inject permissive zones based on mode
+    const zonesBlock = effectiveMode === 'FORENSIC' ? FORENSIC_ZONES_BLOCK : PERMISSIVE_ZONES_BLOCK;
+    prompt = prompt.replace("{{PERMISSIVE_ZONES}}", zonesBlock);
+
+    // Inject slider values
+    for (const [placeholder, instruction] of Object.entries(replacements)) {
+      prompt = prompt.replace(placeholder, instruction);
+    }
 
     return new Response(
       JSON.stringify({
         success: true,
-        prompt,
+        prompt_text: prompt,
+        config: generationConfig,
         version: "v40.0",
         metadata: {
           template: "UNIVERSAL CINEMATIC PRODUCTION PROTOCOL",
+          mode: effectiveMode,
           active_sliders: activeSliders,
           levels_used: levelsUsed,
           identity_lock: true
