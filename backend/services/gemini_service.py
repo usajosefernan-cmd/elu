@@ -104,12 +104,12 @@ class GeminiService:
                 final_prompt = f"{master_prompt}\n\n{user_input_text}\n\nBased on the input image and all instructions above, generate an ENHANCED version of this image. OUTPUT THE MODIFIED IMAGE."
                 contents_parts.append(types.Part.from_text(text=final_prompt))
 
-                # 3. Call API - Note: gemini-2.0-flash-exp-image-generation doesn't support aspect_ratio or image_size
+                # 3. Call API - gemini-2.0-flash-exp with response_modalities for native image generation
                 response = client.models.generate_content(
                     model=current_model_name,
                     contents=[types.Content(role="user", parts=contents_parts)],
                     config=types.GenerateContentConfig(
-                        response_modalities=['TEXT', 'IMAGE'], # CRITICAL per docs
+                        response_modalities=['Text', 'Image'], # Case-sensitive per docs
                         safety_settings=[
                             types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
                             types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
