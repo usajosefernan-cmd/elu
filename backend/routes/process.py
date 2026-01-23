@@ -85,7 +85,7 @@ async def compile_prompt_endpoint(body: dict = Body(...)):
 
     # If sliderConfig is provided in v40 format, use Universal Prompt Assembler
     if slider_config and any(slider_config.values()):
-        from services.prompt_assembler_service import assemble_prompt
+        from services.universal_prompt_assembler import assemble_prompt
         
         # Normalize slider config structure
         normalized_config = {
