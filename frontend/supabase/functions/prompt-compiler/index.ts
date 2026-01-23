@@ -95,29 +95,8 @@ Imagine the person in the input image is an A-List actor.
 **FINAL ACTION:**
 Execute the "Virtual Reshoot". The output must be indistinguishable from a RAW photo taken by a Phase One camera. **PRIORITY: BELIEVABILITY > PERFECTION.**`;
 
-// Permissive zones block for CREATIVE mode
-const PERMISSIVE_ZONES_BLOCK = `=== 🔓 SECTION 2: AUTHORIZED PRODUCTION CHANGES (WRITE-ACCESS) ===
-*You have an unlimited budget to upgrade these elements IF the injected parameters demand it:*
-
-1.  **WARDROBE & STYLING (via [S2], [S3]):** You may completely replace clothing with high-end designer alternatives. You may restyle hair into luxurious, professional looks, changing volume and texture as requested.
-2.  **ENVIRONMENT & TIME (via [S5], [L5], [S7]):** You may transport the subject to a idealized version of the location, or a completely new "set" if requested. You may shift time from noon to "Golden Hour" or "Blue Hour".
-3.  **CAMERA & LENS (via [P2], [P3], [P8], [S6]):** You may radically change the framing (e.g., ultra-wide cinematic crop) and depth of field (e.g., f/0.95 Noctilux bokeh) to create drama.
-
----
-`;
-
-// Forensic zones block - more restrictive
-const FORENSIC_ZONES_BLOCK = `=== 🔓 SECTION 2: RESTORATION ONLY (FORENSIC MODE) ===
-*In FORENSIC mode, you are a RESTORER, not a CREATOR. Preserve everything except technical flaws:*
-
-1.  **WARDROBE:** Keep the exact same clothing. Only fix wrinkles, remove lint, enhance texture.
-2.  **ENVIRONMENT:** Keep the exact same location. Only clean up distractions, fix lighting issues.
-3.  **CAMERA:** Simulate a better lens capturing the SAME scene. Do not re-frame dramatically.
-
-**CRITICAL:** The output should look like "the same photo taken with a $50,000 camera" - NOT a reimagined scene.
-
----
-`;
+// Version constant
+const PROMPT_VERSION = "v40.1";
 
 // ============================================================
 // SLIDER DEFINITIONS v29
