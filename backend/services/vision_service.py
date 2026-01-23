@@ -232,6 +232,9 @@ class VisionService:
         client = genai.Client(api_key=api_key)
         
         try:
+            import time as _time
+            t0 = _time.time()
+            
             # Step 1: Optionally create thumbnail for Proxy Vision
             if use_proxy:
                 thumb_result = await input_normalizer.create_thumbnail(
@@ -242,12 +245,14 @@ class VisionService:
                     image_bytes = thumb_result['thumbnail_bytes']
                     mime_type = 'image/jpeg'
                     aspect_ratio = thumb_result['aspect_ratio']
-                    print(f"VisionService: Using proxy thumbnail ({self.proxy_dimension}px)")
+                    print(f"VisionService: Thumbnail ready in {_time.time()-t0:.2f}s ({self.proxy_dimension}px)")
                 else:
                     # Fallback to full image
                     image_bytes, mime_type, aspect_ratio = await self._get_image_bytes(image_input)
             else:
                 image_bytes, mime_type, aspect_ratio = await self._get_image_bytes(image_input)
+            
+            t1 = _time.time()
             
             # Step 2: Create image part
             image_part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
@@ -270,6 +275,9 @@ class VisionService:
                     response_mime_type="application/json"
                 )
             )
+            
+            t2 = _time.time()
+            print(f"VisionService: Gemini responded in {t2-t1:.2f}s (total: {t2-t0:.2f}s)")
             
             # Step 4: Parse JSON response
             response_text = response.text.strip()
