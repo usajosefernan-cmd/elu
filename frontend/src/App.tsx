@@ -421,6 +421,123 @@ const App: React.FC = () => {
         }
     };
 
+    // ============================================================
+    // 🔥 BATCH MODE - Subir múltiples fotos
+    // ============================================================
+    const handleBatchClick = () => {
+        if (userProfile || accessGranted) {
+            batchFileInputRef.current?.click();
+        } else {
+            setIsAccessModalOpen(true);
+        }
+    };
+
+    const handleBatchUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        if (e.target.files && e.target.files.length > 0) {
+            const files = Array.from(e.target.files).slice(0, 10); // Max 10
+            setBatchFiles(files);
+            setBatchMode(true);
+            setBatchProgress({ completed: 0, total: files.length, results: [] });
+            
+            // Abrir modal de configuración para batch
+            setShowVisionConfirm(true);
+        }
+    };
+
+    const processBatchGeneration = async (sliderConfig: Record<string, Record<string, number>>, presetData?: any) => {
+        if (batchFiles.length === 0) return;
+
+        setShowProcessingOverlay(true);
+        setProcessingPhase('generate');
+        setPhaseStartedAt(Date.now());
+        setPhaseEtaSeconds(batchFiles.length * 60); // ~60s per image
+        setPhaseProgress(0);
+        setPhaseLabel(`Procesando lote: 0/${batchFiles.length}`);
+        setElapsedTime(0);
+        setStatus(AgentStatus.GENERATING_PREVIEWS);
+
+        try {
+            // Prepare batch images
+            const batchImages = batchFiles.map((file, idx) => ({
+                url: '', // Will be converted to base64
+                id: `batch_${idx}_${Date.now()}`,
+                file: file
+            }));
+
+            // Process with progress callback
+            const result = await batchGenerateImages(
+                batchImages,
+                sliderConfig,
+                {
+                    mode: presetData ? 'PRESET' : 'AUTO',
+                    preset_data: presetData,
+                    sequential: true, // One by one for progress updates
+                    onProgress: (completed, total, currentResult) => {
+                        setBatchProgress({ completed, total, results: [...batchProgress.results, currentResult].filter(Boolean) as any[] });
+                        setPhaseProgress((completed / total) * 100);
+                        setPhaseLabel(`Procesando lote: ${completed}/${total}`);
+                    }
+                }
+            );
+
+            // Save all successful results to archive
+            for (const res of result.results) {
+                if (res.success && res.image) {
+                    const nowIso = new Date().toISOString();
+                    const id = `batch-${res.id}`;
+                    
+                    // Convert base64 to blob URL for display
+                    let normalizedImage = res.image.startsWith('data:image') 
+                        ? res.image 
+                        : `data:image/png;base64,${res.image}`;
+                    
+                    try {
+                        const blob = await (await fetch(normalizedImage)).blob();
+                        const objUrl = URL.createObjectURL(blob);
+                        generatedObjectUrlsRef.current.push(objUrl);
+                        normalizedImage = objUrl;
+                    } catch (e) {
+                        console.warn('Batch: Could not convert to blob URL:', e);
+                    }
+
+                    // Add to previews
+                    setPreviews(prev => [...prev, {
+                        id,
+                        generation_id: id,
+                        type: 'preview_watermark',
+                        style_id: 'batch_generated',
+                        image_path: normalizedImage,
+                        prompt_payload: { seed: res.seed, mode: result.batch_info.mode },
+                        seed: res.seed || 0,
+                        rating: 0,
+                        is_selected: true,
+                        created_at: nowIso,
+                    }]);
+                }
+            }
+
+            // Navigate to archives to see all results
+            navigate('/archives');
+            
+            setToastState({
+                isOpen: true,
+                title: '¡Lote completado!',
+                message: `${result.batch_info.successful}/${result.batch_info.total} imágenes procesadas con el mismo estilo.`,
+                type: 'success'
+            });
+
+        } catch (error: any) {
+            console.error('Batch generation error:', error);
+            setAgentMsg({ text: `Error en lote: ${error.message}`, type: 'error' });
+        } finally {
+            setShowProcessingOverlay(false);
+            setBatchMode(false);
+            setBatchFiles([]);
+            setBatchProgress({ completed: 0, total: 0, results: [] });
+            if (batchFileInputRef.current) batchFileInputRef.current.value = '';
+        }
+    };
+
     const handleGuestUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
         if (e.target.files && e.target.files[0]) {
             const file = e.target.files[0];
