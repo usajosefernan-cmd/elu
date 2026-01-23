@@ -1040,7 +1040,7 @@ const App: React.FC = () => {
             setQueuePosition(null);
             setSystemLogs([]);
 
-            navigate('/result');
+            // No navegar a /result - mantener en la página actual durante generación
             setStatus(AgentStatus.GENERATING_PREVIEWS);
             setAgentMsg({ text: "Estudio Activo.", type: 'info' });
             addSystemLog("Handshake Seguro Establecido.");
