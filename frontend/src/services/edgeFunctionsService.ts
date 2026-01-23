@@ -140,9 +140,9 @@ const callEdgeFunction = async <T>(
 
   if (canUseSupabaseFn) {
     try {
-      // Use Supabase Edge Functions (increased timeout for proper connection)
+      // Use Supabase Edge Functions (increased timeout for Gemini image generation)
       const controller = new AbortController();
-      const timeoutMs = 30000; // 30 seconds for Gemini operations
+      const timeoutMs = 120000; // 120 seconds - Gemini image generation can take 60-90s
       const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
 
       const response = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
