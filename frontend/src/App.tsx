@@ -1606,8 +1606,8 @@ const App: React.FC = () => {
                 {/* UPSCALE TOOL (Solo desde Admin) */}
                 <Route path="/upscale-tool" element={<UpscalePage />} />
 
-                {/* RESULT PAGE */}
-                <Route path="/result" element={StudioLayout} />
+                {/* RESULT PAGE - Redirigir a Archives */}
+                <Route path="/result" element={<Navigate to="/archives" replace />} />
 
                 {/* 404 FALLBACK */}
                 <Route path="*" element={<Navigate to="/" replace />} />
