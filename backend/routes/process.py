@@ -71,17 +71,65 @@ async def normalize_image(body: dict = Body(...)):
 @router.post("/compile")
 async def compile_prompt_endpoint(body: dict = Body(...)):
     """
-    FastAPI endpoint for prompt compilation v28.0.
+    FastAPI endpoint for prompt compilation v28.0/v40.0.
+    Supports both legacy format (config) and new format (sliderConfig).
     Includes full debug info with vetos, blocks, and sanitization.
     """
-    config = body.get('config') or {}
+    # Support both formats: sliderConfig (v40) and config (legacy)
+    slider_config = body.get('sliderConfig') or body.get('config') or {}
     vision_analysis = body.get('visionAnalysis')
     profile_type = body.get('profileType', 'AUTO')
+    mode = body.get('mode', 'AUTO')
     include_debug = body.get('includeDebug', False)
+    saved_config = body.get('saved_config')
 
-    # Use full compile_prompt for complete response
+    # If sliderConfig is provided in v40 format, use Universal Prompt Assembler
+    if slider_config and any(slider_config.values()):
+        from services.prompt_assembler_service import assemble_prompt
+        
+        # Normalize slider config structure
+        normalized_config = {
+            "photoscaler": slider_config.get('photoscaler', {}),
+            "stylescaler": slider_config.get('stylescaler', {}),
+            "lightscaler": slider_config.get('lightscaler', {})
+        }
+        
+        # Assemble the Universal Prompt v37.0
+        assembly_result = assemble_prompt(normalized_config, include_debug=True)
+        compiled_prompt = assembly_result.get('prompt', '')
+        debug_info = assembly_result.get('debug', {})
+        
+        if not compiled_prompt:
+            return {"success": False, "error": "Prompt assembly failed"}
+        
+        # Generate seed and temperature based on mode
+        import random
+        seed = saved_config.get('seed') if saved_config else random.randint(100000000, 999999999)
+        temperature = saved_config.get('temperature') if saved_config else (0.1 if mode == 'FORENSIC' else 0.7)
+        
+        return {
+            "success": True,
+            "prompt_text": compiled_prompt,
+            "config": {
+                "temperature": temperature,
+                "topK": 40,
+                "topP": 0.95,
+                "maxOutputTokens": 8192,
+                "seed": seed
+            },
+            "version": "v40.1",
+            "metadata": {
+                "template": "universal_v37",
+                "mode": mode if mode != 'AUTO' else 'FORENSIC',
+                "active_sliders": debug_info.get('active_sliders', 0),
+                "levels_used": debug_info.get('levels_used', {}),
+                "identity_lock": True
+            }
+        }
+
+    # Legacy format: use prompt_compiler
     result = await prompt_compiler.compile_prompt(
-        config, 
+        slider_config, 
         vision_analysis,
         profile_type=profile_type
     )
@@ -92,6 +140,7 @@ async def compile_prompt_endpoint(body: dict = Body(...)):
     response = {
         "success": True,
         "prompt": result['compiled_prompt'],
+        "prompt_text": result['compiled_prompt'],  # Also include as prompt_text for v40 compatibility
         "metadata": result['metadata']
     }
     
