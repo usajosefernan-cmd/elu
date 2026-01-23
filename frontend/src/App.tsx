@@ -881,32 +881,25 @@ const App: React.FC = () => {
 
             console.log('[LuxScaler] Final sliderConfig:', JSON.stringify(sliderConfig).slice(0, 200));
 
-            const promptResult = await compilePrompt(
-                sliderConfig,
-                visionAnalysis,
-                userProfile?.profile_type || 'auto'
-            );
+            // v37.0: Use Universal Prompt Assembler directly with slider values
+            // The backend will assemble the prompt using slider_definitions_v29.json
             setProcessingPhase('generate');
             setPhaseStartedAt(Date.now());
             setPhaseEtaSeconds(45);
             setPhaseProgress(15);
             setPhaseLabel('Generando imagen — puedes cerrar esta ventana');
 
-            if (!promptResult.success) {
-                throw new Error(promptResult.error || "Error compilando prompt");
-            }
+            setAgentMsg({ text: "Ensamblando prompt v37.0 y generando imagen...", type: 'info' });
+            addSystemLog(`Enviando ${Object.values(sliderConfig).reduce((acc, p) => acc + (p?.sliders?.length || 0), 0)} sliders al Universal Prompt Assembler v37.0`);
 
-            setAgentMsg({ text: "Generando imagen mejorada...", type: 'info' });
-            addSystemLog(`Prompt compilado: ${promptResult.metadata?.active_sliders} sliders activos`);
-            addSystemLog(`Identity Lock: ${promptResult.metadata?.identity_lock ? 'ACTIVO' : 'DESACTIVADO'}`);
-
-            const generateResult = await generateEnhancedImage(
+            // Generate directly with sliders (uses Universal Prompt Assembler v37.0)
+            const generateResult = await generateImageWithSliders(
                 imageUrl,
-                promptResult.prompt!,
+                sliderConfig,
                 {
                     userMode: userProfile?.profile_type || 'auto',
                     userId: userProfile?.id,
-                    outputType: 'preview_watermark',
+                    includeDebug: true, // Get debug info for Archives
                 }
             );
             setPhaseProgress(100);
@@ -914,6 +907,10 @@ const App: React.FC = () => {
             if (!generateResult.success) {
                 throw new Error(generateResult.error || "Error generando imagen");
             }
+            
+            // Extract debug info from response
+            const promptDebugInfo = generateResult.debug?.slider_debug || {};
+            addSystemLog(`Prompt v37.0 generado con ${Object.keys(promptDebugInfo.levels_used || {}).length} slots`);
 
             // Normalize response into our ArchivedVariation shape
             const outputImage = generateResult.output?.image;
