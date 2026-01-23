@@ -106,16 +106,12 @@ class GeminiService:
                         except Exception as e:
                             print(f"Download error: {e}")
 
-                # 3. Call API
+                # 3. Call API - Note: gemini-2.0-flash-exp-image-generation doesn't support aspect_ratio or image_size
                 response = client.models.generate_content(
                     model=current_model_name,
                     contents=[types.Content(role="user", parts=contents_parts)],
                     config=types.GenerateContentConfig(
                         response_modalities=['TEXT', 'IMAGE'], # CRITICAL per docs
-                        image_config=types.ImageConfig(
-                            aspect_ratio=detected_aspect_ratio, # Use detected aspect ratio
-                            image_size="4K" if "pro" in current_model_name else None # 4K only on Pro
-                        ),
                         safety_settings=[
                             types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
                             types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
