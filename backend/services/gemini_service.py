@@ -76,14 +76,7 @@ class GeminiService:
                 # 2. Construct Contents (Multimodal)
                 contents_parts = []
                 
-                # A. System Instruction (Master Prompt) -> As text part? 
-                # SDK might prefer system_instruction config, but for Image models sometimes prompt is better in contents
-                # Documentation says contents=[prompt, image].
-                # Let's combine master prompt and user input.
-                final_prompt = f"{master_prompt}\n\nUSER REQUEST: {user_input_text}"
-                contents_parts.append(types.Part.from_text(text=final_prompt))
-                
-                # B. Input Image (for Img-to-Img)
+                # B. Input Image FIRST (for Img-to-Img) - Image must come before text in contents
                 detected_aspect_ratio = "1:1"  # Default
                 if image_input:
                     detected_aspect_ratio = self._get_image_aspect_ratio(image_input)
@@ -99,12 +92,17 @@ class GeminiService:
                             print(f"Base64 error: {e}")
                     elif image_input.startswith("http"):
                         try:
-                            resp = requests.get(image_input)
+                            resp = requests.get(image_input, timeout=30)
                             if resp.status_code == 200:
                                 mime_type = resp.headers.get("Content-Type", "image/jpeg")
                                 contents_parts.append(types.Part.from_bytes(data=resp.content, mime_type=mime_type))
+                                print(f"GeminiService: Downloaded image {len(resp.content)} bytes")
                         except Exception as e:
                             print(f"Download error: {e}")
+                
+                # A. Text prompt AFTER image - Explicit instruction to generate enhanced image
+                final_prompt = f"{master_prompt}\n\n{user_input_text}\n\nBased on the input image and all instructions above, generate an ENHANCED version of this image. OUTPUT THE MODIFIED IMAGE."
+                contents_parts.append(types.Part.from_text(text=final_prompt))
 
                 # 3. Call API - Note: gemini-2.0-flash-exp-image-generation doesn't support aspect_ratio or image_size
                 response = client.models.generate_content(
