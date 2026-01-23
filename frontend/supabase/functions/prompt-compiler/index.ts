@@ -512,7 +512,7 @@ serve(async (req) => {
     }
 
     // ============================================================
-    // BUILD PROMPT
+    // BUILD PROMPT v40.1 - GOLD MASTER
     // ============================================================
     const replacements: Record<string, string> = {};
     const levelsUsed: Record<string, string> = {};
@@ -529,15 +529,8 @@ serve(async (req) => {
       if (keyId in flatSliders) activeSliders++;
     }
 
-    // Start with template
+    // Start with GOLD MASTER template v40.1
     let prompt = UNIVERSAL_TEMPLATE_V40;
-    
-    // Inject mode
-    prompt = prompt.replace("{{MODE}}", effectiveMode);
-    
-    // Inject permissive zones based on mode
-    const zonesBlock = effectiveMode === 'FORENSIC' ? FORENSIC_ZONES_BLOCK : PERMISSIVE_ZONES_BLOCK;
-    prompt = prompt.replace("{{PERMISSIVE_ZONES}}", zonesBlock);
 
     // Inject slider values
     for (const [placeholder, instruction] of Object.entries(replacements)) {
@@ -549,9 +542,9 @@ serve(async (req) => {
         success: true,
         prompt_text: prompt,
         config: generationConfig,
-        version: "v40.0",
+        version: PROMPT_VERSION,
         metadata: {
-          template: "UNIVERSAL CINEMATIC PRODUCTION PROTOCOL",
+          template: "UNIVERSAL CINEMATIC PRODUCTION PROTOCOL - GOLD MASTER",
           mode: effectiveMode,
           active_sliders: activeSliders,
           levels_used: levelsUsed,
