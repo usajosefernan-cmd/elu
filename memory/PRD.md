@@ -272,7 +272,7 @@ POST /api/process/compile
 
 ## Changelog
 
-### v29.1 (2025-01-23) - SLIDER DEFINITIONS TABLE
+### v29.1 (2025-01-23) - SLIDER DEFINITIONS TABLE + UNIVERSAL PROMPT ASSEMBLER
 - ✅ **Tabla `slider_definitions_v29.json`:**
   - 27 sliders completos con descripciones para cada nivel
   - Niveles: OFF (0), LOW (1-3), MED (4-6), HIGH (7-9), FORCE (10)
@@ -280,14 +280,19 @@ POST /api/process/compile
 - ✅ **Sincronización con Supabase:**
   - Datos subidos a tabla `macro_definitions` en Supabase
   - Estructura JSONB en campo `affected_sliders`
-- ✅ **Backend Service:**
+- ✅ **Backend Services:**
   - `slider_definitions_service.py` - Servicio local con JSON
   - `supabase_slider_definitions.py` - Servicio Supabase alternativo
+  - `universal_prompt_assembler.py` - Ensamblador de prompts v37.0
 - ✅ **API Endpoints:**
   - `GET /api/slider-definitions/` - Todos los sliders
   - `GET /api/slider-definitions/by-pilar/{pilar}` - Por pilar
   - `GET /api/slider-definitions/slider/{key_id}` - Slider específico
   - `GET /api/slider-definitions/slider/{key_id}/level/{level}` - Descripción de nivel
+  - `POST /api/prompt/assemble` - Ensamblar prompt completo
+  - `POST /api/prompt/preview` - Preview de instrucciones
+  - `GET /api/prompt/mappings` - Mapeo slider→placeholder
+  - `GET /api/prompt/template` - Plantilla Universal v37.0
 
 ### v29.0 (2025-01-21) - VETO ENGINE v2 + CONFLICT RESOLUTION
 - ✅ **Nuevas Reglas de Veto:**
