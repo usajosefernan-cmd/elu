@@ -1594,6 +1594,16 @@ const App: React.FC = () => {
                 className="hidden"
             />
 
+            {/* BATCH UPLOAD INPUT - Multiple files */}
+            <input
+                type="file"
+                ref={batchFileInputRef}
+                onChange={handleBatchUpload}
+                accept="image/*"
+                multiple
+                className="hidden"
+            />
+
             {/* GLOBAL INFO TOAST - Always available */}
             <InfoToast
                 toast={toastState}
