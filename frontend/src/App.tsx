@@ -1623,8 +1623,8 @@ const App: React.FC = () => {
                 onCancel={resetFlow}
             />
 
-            {/* GLOBAL FOOTER - Hidden in Studio/Result/Archives/Canvas */}
-            {(!location.pathname.includes('/result') && !location.pathname.includes('/admin/canvas') && !location.pathname.includes('/archives') && !inputImageUrl) && (
+            {/* GLOBAL FOOTER - Hidden in Studio/Archives/Canvas */}
+            {(!location.pathname.includes('/admin/canvas') && !location.pathname.includes('/archives') && !inputImageUrl) && (
                 <GlobalFooter onNavigate={(view) => {
                     switch (view) {
                         case 'HOME': navigate('/'); break;
