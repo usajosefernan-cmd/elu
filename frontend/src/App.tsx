@@ -1570,6 +1570,7 @@ const App: React.FC = () => {
                     currentView={activeView}
                     onNavigateToStudio={navigateToHome}
                     onUploadProject={handleStartClick}
+                    onBatchUpload={handleBatchClick}
                     onNavigateToArchive={() => navigate('/archives')}
                     onLogin={() => setIsAuthModalOpen(true)}
                     onSignOut={handleSignOut}
