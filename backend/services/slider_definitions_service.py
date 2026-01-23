@@ -1,18 +1,26 @@
 """
-Slider Definitions Service v29
-Provides access to the complete slider definitions with all level descriptions.
+Slider Definitions Service v40 - CINEMATIC EDITION
+Provides access to the complete slider definitions with cinematic-level descriptions.
 """
 import json
 import os
 from typing import Dict, List, Optional
 from functools import lru_cache
 
-# Path to the slider definitions JSON file
+# Path to the slider definitions JSON file - Use v40 cinematic version
 SLIDER_DEFINITIONS_PATH = os.path.join(
     os.path.dirname(os.path.dirname(__file__)), 
     "data", 
-    "slider_definitions_v29.json"
+    "slider_definitions_v40_cinematic.json"
 )
+
+# Fallback to v29 if v40 doesn't exist
+if not os.path.exists(SLIDER_DEFINITIONS_PATH):
+    SLIDER_DEFINITIONS_PATH = os.path.join(
+        os.path.dirname(os.path.dirname(__file__)), 
+        "data", 
+        "slider_definitions_v29.json"
+    )
 
 @lru_cache(maxsize=1)
 def load_slider_definitions() -> Dict:
