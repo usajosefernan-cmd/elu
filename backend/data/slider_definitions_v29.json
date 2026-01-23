@@ -1,0 +1,410 @@
+{
+  "version": "v29",
+  "sliders": [
+    {
+      "id": "p1",
+      "pilar": "PHOTOSCALER",
+      "key_id": "limpieza_artefactos",
+      "ui_title": "Limpieza de Señal",
+      "ui_description": "Gestiona el ruido y la pureza de la imagen sin perder la textura orgánica del sensor.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "PRESERVE PATINA. Treat sensor noise and grain as essential texture. Do not denoise. Maintain organic \"film\" feel.",
+        "LOW": "CHROMA DENOISE. Remove only color noise (purple/green blotches). Keep Luminance grain to prevent waxy skin.",
+        "MED": "SIGNAL POLISH. Standard ISO reduction. Clean smooth surfaces (walls, sky) but protect high-frequency texture areas.",
+        "HIGH": "COMMERCIAL CLEANUP. High-end editorial denoising. Remove all dust spots and sensor dirt. Smooth gradients.",
+        "FORCE": "PRISTINE SIGNAL PROCESSING. HIGH-END FREQUENCY SEPARATION CLEANUP. ZERO ARTIFACTS. PERFECT SENSOR READOUT."
+      }
+    },
+    {
+      "id": "p2",
+      "pilar": "PHOTOSCALER",
+      "key_id": "geometria",
+      "ui_title": "Corrección Técnica",
+      "ui_description": "Corrige la distorsión de la lente y la perspectiva como una cámara técnica.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "OPTICAL LOCK. Preserve original lens character (including barrel/pincushion distortion). Do not crop.",
+        "LOW": "LENS PROFILE FIX. Correct vignetting (dark corners) and chromatic aberration (color fringing). Keep perspective.",
+        "MED": "PERSPECTIVE ALIGN. Straighten horizon line. Fix minor vertical keystoning. Center the subject visually.",
+        "HIGH": "RECTILINEAR MODE. Remove all lens distortion. Straighten architectural lines. Re-compose edges.",
+        "FORCE": "TECHNICAL CAMERA PRECISION. ZERO DISTORTION. TILT-SHIFT LENS ALIGNMENT. PERFECT GRID. FLATTEN FACIAL DISTORTION."
+      }
+    },
+    {
+      "id": "p3",
+      "pilar": "PHOTOSCALER",
+      "key_id": "optica_nitidez",
+      "ui_title": "Definición Cristalina",
+      "ui_description": "Simula la calidad del cristal de la lente (Acutancia y Micro-contraste).",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "VINTAGE OPTICS. Maintain lens softness, spherical aberration, and \"dreamy\" lack of contrast. Preserve bloom.",
+        "LOW": "KIT LENS SHARP. Remove diffraction softness. Apply subtle Unsharp Mask (Radius 0.5px) to define edges.",
+        "MED": "PRO ZOOM (24-70mm). High micro-contrast. Clear texture separation. Modern lens coating look (no glare).",
+        "HIGH": "PRIME LENS (85mm). Razor sharp eyelashes and iris texture. High Acutance. Zero chromatic aberration.",
+        "FORCE": "MASTER LENS SIMULATION (ZEISS/LEICA). DIFFRACTION-LIMITED SHARPNESS. MAXIMUM MTF CURVE PERFORMANCE. CRYSTALLINE CLARITY."
+      }
+    },
+    {
+      "id": "p4",
+      "pilar": "PHOTOSCALER",
+      "key_id": "chronos",
+      "ui_title": "Congelar Acción",
+      "ui_description": "Elimina trepidación y movimiento simulando velocidades de obturación altas.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "NATURAL DRAG. Preserve motion blur in moving objects to convey speed/action. Cinematic shutter (1/50s).",
+        "LOW": "STABILIZATION (IS). Remove handheld camera shake (trepidation). Keep motion blur only on very fast objects.",
+        "MED": "ACTION FREEZE. Sport mode shutter (1/500s). Freeze walking/talking subjects. Sharp edges on moving parts.",
+        "HIGH": "HIGH SPEED SYNC. Freeze splashes and hair movement. 1/2000s shutter simulation. Crisp frozen details.",
+        "FORCE": "1/8000s SHUTTER SPEED. FROZEN MOTION. ZERO TREPIDATION. STROBOSCOPIC CLARITY. PERFECTLY FROZEN PARTICLES."
+      }
+    },
+    {
+      "id": "p5",
+      "pilar": "PHOTOSCALER",
+      "key_id": "senal_raw",
+      "ui_title": "Rango Dinámico",
+      "ui_description": "Recupera información de luces y sombras (Revelado Digital).",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "ORIGINAL EXPOSURE. Keep crushed blacks (Zone 0) and blown highlights (Zone 10) as mood/style choice.",
+        "LOW": "HISTOGRAM SAFE. Stretch contrast to ensure data exists in shadows. Fix \"grey\" blacks. Normalized exposure.",
+        "MED": "SHADOW RECOVERY. Lift Zone 2-3 details. Soften highlight clipping. Balanced \"Commercial\" exposure.",
+        "HIGH": "HDR TONE MAP. Compress dynamic range for maximum visibility. Reveal details in dark corners and bright windows.",
+        "FORCE": "16-BIT TIFF DYNAMIC RANGE. FULL HISTOGRAM RECOVERY. ANSEL ADAMS ZONE SYSTEM OPTIMIZATION. NO CLIPPING."
+      }
+    },
+    {
+      "id": "p6",
+      "pilar": "PHOTOSCALER",
+      "key_id": "sintesis_adn",
+      "ui_title": "Textura Táctil",
+      "ui_description": "Recupera detalle de alta frecuencia (poros, hilos) realista.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "SOFT FOCUS. Maintain low-frequency details only. Smooth/plastic look is acceptable if source dictates.",
+        "LOW": "TEXTURE ENHANCE. Sharpen existing surface details (fabric, skin) without adding new information.",
+        "MED": "DETAIL RESTORE. Reconstruct lost texture in slightly blurry areas. Recover fabric weave definition.",
+        "HIGH": "HIGH-FREQ SYNTHESIS. Generate missing pores and fine lines based on context. 4K texture density.",
+        "FORCE": "MACRO-FIDELITY RESTORATION. ORGANIC HIGH-FREQUENCY DETAIL. TACTILE SURFACE REALISM. 100MP SENSOR DETAIL."
+      }
+    },
+    {
+      "id": "p7",
+      "pilar": "PHOTOSCALER",
+      "key_id": "grano_filmico",
+      "ui_title": "Emulsión Fílmica",
+      "ui_description": "Añade estructura de grano orgánico para realismo analógico.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "DIGITAL CLEAN. Modern sensor look. Zero grain. Clinical perfection.",
+        "LOW": "ISO 100 GRAIN. Very fine, almost invisible structure. Adds subtle cohesion to digital pixels.",
+        "MED": "KODAK PORTRA 400. Distinct organic grain structure. Pleasing texture. Warm analog feel.",
+        "HIGH": "ILFORD HP5 (1600). Heavy, gritty grain. Documentary aesthetic. High texture perceptibility.",
+        "FORCE": "CINEMA FILM STOCK EMULSION. ORGANIC GRAIN STRUCTURE. ANALOG AESTHETIC INTEGRATION. NO DIGITAL NOISE."
+      }
+    },
+    {
+      "id": "p8",
+      "pilar": "PHOTOSCALER",
+      "key_id": "apertura_bokeh",
+      "ui_title": "Profundidad de Campo",
+      "ui_description": "Controla el diafragma (f-stop) y el desenfoque del fondo.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "HYPERFOCAL (f/16). EVERYTHING IN FOCUS. From foreground to infinity. Maximum context visibility. Landscape standard.",
+        "LOW": "COMMERCIAL (f/8). DEEP DEPTH OF FIELD. Subject clearly sharp, background distinct but slightly softer. Group photo standard.",
+        "MED": "ENVIRONMENTAL (f/4). NATURAL SEPARATION. Subject pops, background is blurry but recognizable (Contextual).",
+        "HIGH": "PORTRAIT (f/1.8). CREAMY BOKEH. Background is washed out. Strong subject separation. Soft highlight circles.",
+        "FORCE": "NOCTILUX DREAM (f/0.95). EXTREME BOKEH. RAZOR-THIN FOCAL PLANE. BACKGROUND OBLITERATED INTO CREAMY AESTHETIC."
+      }
+    },
+    {
+      "id": "p9",
+      "pilar": "PHOTOSCALER",
+      "key_id": "resolucion",
+      "ui_title": "Densidad de Píxel",
+      "ui_description": "Aumenta la resolución simulando sensores de formato medio.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "NATIVE RES. Keep original pixel count. Upscale via simple bicubic if needed.",
+        "LOW": "SMART UPSCALE (2x). Maintain edge integrity. Smooth out jaggies/pixelation.",
+        "MED": "SUPER-RES (4x). AI-based detail refinement. Density suitable for 4K displays.",
+        "HIGH": "PRINT DENSITY. 300 DPI simulation. Fine detail robustness for large format printing.",
+        "FORCE": "PHASE ONE IQ4 QUALITY. 150MP SENSOR SIMULATION. PRINT-READY DENSITY. REMOVE PIXEL GRID."
+      }
+    },
+    {
+      "id": "s1",
+      "pilar": "STYLESCALER",
+      "key_id": "styling_piel",
+      "ui_title": "Grooming Pro",
+      "ui_description": "Retoque de piel tipo editorial (mantiene poros, quita manchas).",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "BIOMETRIC LOCK. Preserve all acne, scars, redness, and oil. Documentary skin reality.",
+        "LOW": "HEALTHY GLOW. Remove temporary redness/blotchiness. Even out skin tone. Keep moles/freckles.",
+        "MED": "STUDIO MATTE. Commercial retouch. Soften pores. Remove shine/oil. Brighten under-eyes.",
+        "HIGH": "HIGH-END EDITORIAL. Frequency Separation. Flawless texture. Defined features. Porcelain finish.",
+        "FORCE": "HIGH-END RETOUCHING. FLAWLESS COMPLEXION. RETAIN NATURAL PORES & VELLUS HAIR. EVEN SKIN TONE. VOGUE COVER STANDARD."
+      }
+    },
+    {
+      "id": "s2",
+      "pilar": "STYLESCALER",
+      "key_id": "styling_pelo",
+      "ui_title": "Estilismo Capilar",
+      "ui_description": "Define el cabello y volumen con acabado de salón.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "NATURAL MESS. Keep flyaways, frizz, and messy hairline. Authentic \"bed head\".",
+        "LOW": "FRIZZ CONTROL. Smooth out humidity frizz. Tame stray hairs. Healthy shine.",
+        "MED": "SALON BLOWOUT. Defined volume. Clean hairline. Product-styled finish.",
+        "HIGH": "LIQUID HAIR. High gloss. Perfect strand definition. Keratin treatment look.",
+        "FORCE": "SESSION STYLIST FINISH. HEALTHY CUTICLE SHINE. CONTROLLED VOLUME. DEFINED STRANDS. NO FLYAWAYS."
+      }
+    },
+    {
+      "id": "s3",
+      "pilar": "STYLESCALER",
+      "key_id": "styling_ropa",
+      "ui_title": "Sastrería Digital",
+      "ui_description": "Mejora la caída y calidad de los tejidos.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "FABRIC LOCK. Keep wrinkles, stains, lint, and wear. Authentic clothing state.",
+        "LOW": "STEAM IRON. Remove accidental fold lines and lint. Refresh fabric appearance.",
+        "MED": "TEXTURE POP. Sharpen weave pattern. Deepen blacks. Define stitching.",
+        "HIGH": "TAILOR FIT. Re-drape fabric to remove bunching. Fix collar alignment. Visual ironing.",
+        "FORCE": "SARTORIAL PERFECTION. IMMACULATE TEXTILE DEFINITION. HIGH-THREAD COUNT VISIBILITY. PERFECT DRAPE."
+      }
+    },
+    {
+      "id": "s4",
+      "pilar": "STYLESCALER",
+      "key_id": "maquillaje",
+      "ui_title": "MUA Profesional",
+      "ui_description": "Aplica maquillaje correctivo o editorial realista.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "BARE FACE. No makeup. Visible capillaries and natural pallor.",
+        "LOW": "NATURAL ENHANCE. \"No-makeup\" look. Subtle lip tint. Mascara definition.",
+        "MED": "RED CARPET. Full foundation. Contouring. Defined brows. Lipstick.",
+        "HIGH": "EDITORIAL GLAM. High-fashion application. Strobing (Highlight). Graphic liner.",
+        "FORCE": "PROFESSIONAL MUA APPLICATION. CONTOUR & HIGHLIGHT SCULPTING. PHOTOGENIC DEFINITION. FLAWLESS APPLICATION."
+      }
+    },
+    {
+      "id": "s5",
+      "pilar": "STYLESCALER",
+      "key_id": "limpieza_entorno",
+      "ui_title": "Set Design",
+      "ui_description": "Organiza y limpia el fondo como un director de arte.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "JOURNALISTIC. Do not touch anything. Keep trash, cables, and clutter.",
+        "LOW": "TIDY UP. Remove obvious trash (papers, cups) from floor/tables.",
+        "MED": "SET DRESSING. Organize the mess. Align chairs/curtains. Balanced composition.",
+        "HIGH": "MINIMALIST. Remove non-essential furniture/objects. Clean surfaces.",
+        "FORCE": "EDITORIAL SET DESIGN. DISTRACTION REMOVAL. CLEAN COMPOSITION. CURATED PROPS. ARCHITECTURAL DIGEST STYLE."
+      }
+    },
+    {
+      "id": "s6",
+      "pilar": "STYLESCALER",
+      "key_id": "reencuadre_ia",
+      "ui_title": "Composición Pro",
+      "ui_description": "Reencuadra basándose en reglas áureas y cinematográficas.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "ORIGINAL FRAME. Do not crop. Respect user's framing errors.",
+        "LOW": "RULE OF THIRDS. Subtle crop to align eyes/horizon to grid.",
+        "MED": "CINEMATIC CROP. 2.35:1 Aspect Ratio. Cut headroom/bottom to focus on action.",
+        "HIGH": "TIGHT FRAMING. Aggressive crop to face/subject. Eliminate background.",
+        "FORCE": "GOLDEN RATIO COMPOSITION. PROFESSIONAL CROPPING. BALANCED NEGATIVE SPACE. CINEMATOGRAPHER EYE."
+      }
+    },
+    {
+      "id": "s7",
+      "pilar": "STYLESCALER",
+      "key_id": "atmosfera",
+      "ui_title": "Profundidad Aérea",
+      "ui_description": "Añade densidad atmosférica real para separar planos.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "VACUUM CLARITY. Zero haze. Transparent air. Maximum distance visibility.",
+        "LOW": "DEPTH HINT. Subtle aerial perspective (blueish distance). Separate planes.",
+        "MED": "SOFT DIFFUSION. \"Pro-Mist\" filter effect. Bloom on highlights. Airy feel.",
+        "HIGH": "VOLUMETRIC FOG. Visible density. Light shafts (God Rays). Moody.",
+        "FORCE": "ATMOSPHERIC DEPTH. SPATIAL SEPARATION. CINEMATIC HAZE. VOLUMETRIC DENSITY. REALISTIC FOG."
+      }
+    },
+    {
+      "id": "s8",
+      "pilar": "STYLESCALER",
+      "key_id": "look_cine",
+      "ui_title": "Etalonaje (Color)",
+      "ui_description": "Aplica corrección de color de cine (sin filtros baratos).",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "REC.709 STD. Standard broadcast color. Neutral and accurate.",
+        "LOW": "WHITE BALANCE. Correct color casts (remove green/orange tints). Neutral greys.",
+        "MED": "ANALOG WARMTH. Subtle film simulation. Rich skin tones. Gold bias.",
+        "HIGH": "BLOCKBUSTER. Teal & Orange split toning. High color contrast.",
+        "FORCE": "MASTER COLOR GRADING. CINEMATIC COLOR HARMONY. PRECISE SKIN TONES. FILM PRINT EMULATION."
+      }
+    },
+    {
+      "id": "s9",
+      "pilar": "STYLESCALER",
+      "key_id": "materiales_pbr",
+      "ui_title": "Reflejos Físicos",
+      "ui_description": "Gestiona el brillo físico de materiales (PBR) realista.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "MATTE FINISH. Diffuse reflection. No specular highlights. Flat look.",
+        "LOW": "NATURAL SHINE. Standard gloss on plastic/metal. Accurate physics.",
+        "MED": "POLARIZED. Cut glare. Deepen color saturation on reflective surfaces.",
+        "HIGH": "WET LOOK. Enhance gloss map. Make surfaces look moist/polished.",
+        "FORCE": "PERFECT SPECULARITY. CONTROLLED REFLECTIONS. HIGH-GLOSS FINISH. SURFACE POLARIZATION."
+      }
+    },
+    {
+      "id": "L1",
+      "pilar": "LIGHTSCALER",
+      "key_id": "key_light",
+      "ui_title": "Luz Principal",
+      "ui_description": "Simula iluminación de estudio de alta gama (Profoto/Arri).",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "AMBIENT ONLY. Use available light. Flat or chaotic natural lighting.",
+        "LOW": "REFLECTOR FILL. Bounce light back to face. Reduce dark shadows under eyes.",
+        "MED": "SOFTBOX (OCTA). Commercial beauty light. Large source. Wrapping soft light.",
+        "HIGH": "FRESNEL (HARD). Hollywood spotlight. Defined shadows. High drama.",
+        "FORCE": "PROFOTO STUDIO STROBE. DIRECTIONAL MODIFIERS. SCULPTING LIGHT QUALITY. 3-POINT LIGHTING."
+      }
+    },
+    {
+      "id": "L2",
+      "pilar": "LIGHTSCALER",
+      "key_id": "fill_light",
+      "ui_title": "Luz de Relleno",
+      "ui_description": "Controla el contraste de iluminación (Ratio).",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "NATURAL RATIO. Keep original contrast between light and dark side.",
+        "LOW": "NEGATIVE FILL. Block light (Black Flag) to deepen shadow side.",
+        "MED": "COMMERCIAL FILL. 2:1 Ratio. Shadow side is visible but darker.",
+        "HIGH": "HIGH KEY. 1:1 Ratio. Shadows are fully illuminated. Bright & Airy.",
+        "FORCE": "COMMERCIAL LIGHTING RATIO. OPEN SHADOWS. BROAD SOURCE FILL. SOFT WRAP. BEAUTY DISH."
+      }
+    },
+    {
+      "id": "L3",
+      "pilar": "LIGHTSCALER",
+      "key_id": "rim_light",
+      "ui_title": "Luz de Recorte",
+      "ui_description": "Luz trasera para separar sujeto del fondo.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "NO BACKLIGHT. Subject blends into background. 2D look.",
+        "LOW": "SUBTLE KICKER. Edge light on hair/shoulders to separate form.",
+        "MED": "HAIR LIGHT. Dedicated top/back light. Halo effect on hair.",
+        "HIGH": "SILHOUETTE. Strong backlight. Rim defines the shape.",
+        "FORCE": "DISTINCT EDGE SEPARATION. HAIR LIGHT / KICKER. SUBJECT ISOLATION. RIM LIGHTING."
+      }
+    },
+    {
+      "id": "L4",
+      "pilar": "LIGHTSCALER",
+      "key_id": "volumetria",
+      "ui_title": "Haces de Luz",
+      "ui_description": "Simula efecto Tyndall natural.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "INVISIBLE AIR. Light travels invisibly. No scattering.",
+        "LOW": "SOFT BLOOM. Light sources glow slightly (Halation).",
+        "MED": "LIGHT SHAFTS. Visible God Rays coming from windows/sun.",
+        "HIGH": "DENSE PARTICLES. Dusty air catching light. Texture in the beams.",
+        "FORCE": "FOCUSED LIGHT BEAMS. ATMOSPHERIC SCATTERING. VISIBLE LIGHT PATH. TYNDALL EFFECT."
+      }
+    },
+    {
+      "id": "L5",
+      "pilar": "LIGHTSCALER",
+      "key_id": "temperatura",
+      "ui_title": "Balance de Blancos",
+      "ui_description": "Temperatura de color creativa (Kelvin).",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "NEUTRAL. 5500K Daylight. White is White.",
+        "LOW": "WARM / COOL. Subtle shift (+/- 500K) for mood.",
+        "MED": "GOLDEN / BLUE. Golden Hour (3200K) or Blue Hour (7000K).",
+        "HIGH": "COLOR GELS. Creative lighting (Red/Blue lights).",
+        "FORCE": "PRECISE KELVIN ADJUSTMENT. MIXED LIGHTING BALANCE. CTO/CTB GEL SIMULATION."
+      }
+    },
+    {
+      "id": "L6",
+      "pilar": "LIGHTSCALER",
+      "key_id": "contraste",
+      "ui_title": "Curva de Tonos",
+      "ui_description": "Curva de respuesta tonal fotográfica.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "LINEAR. Flat profile. Low contrast. Maximum data preservation.",
+        "LOW": "S-CURVE. Standard photography contrast. Correct blacks.",
+        "MED": "PUNCHY. Commercial pop. Vivid blacks and bright whites.",
+        "HIGH": "FILMIC. Deep shadows, soft highlight roll-off. Analog feel.",
+        "FORCE": "HIGH DYNAMIC CONTRAST. RICH TONALITY. DEEP BLACK POINT. PUNCHY HIGHLIGHTS."
+      }
+    },
+    {
+      "id": "L7",
+      "pilar": "LIGHTSCALER",
+      "key_id": "sombras",
+      "ui_title": "Densidad de Negros",
+      "ui_description": "Control del punto negro y \"cuerpo\" de la sombra.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "STANDARD. Black point at 0. Details visible in darks.",
+        "LOW": "MATTE BLACK. Lifted blacks (faded vintage look).",
+        "MED": "DENSE BLACK. Add weight to shadows. Rich darkness.",
+        "HIGH": "CRUSHED. Zone 0 clipping. No detail in shadows. Noir style.",
+        "FORCE": "NEGATIVE FILL. HIGH DENSITY BLACKS. LOW KEY MOOD. LIGHT ABSORPTION."
+      }
+    },
+    {
+      "id": "L8",
+      "pilar": "LIGHTSCALER",
+      "key_id": "estilo_autor",
+      "ui_title": "Esquema Dramático",
+      "ui_description": "Estilos de Dirección de Fotografía reconocidos.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "SNAPSHOT. Random, uncurated lighting. Reality.",
+        "LOW": "COMMERCIAL. Clean, even, safe lighting. Stock photo look.",
+        "MED": "CINEMATIC. Moody, intentional shadows. Roger Deakins style.",
+        "HIGH": "CHIAROSCURO. Heavy contrast. Caravaggio painting style.",
+        "FORCE": "PAINTERLY LIGHTING. DRAMATIC FALL-OFF. MASTER CINEMATOGRAPHY AESTHETIC."
+      }
+    },
+    {
+      "id": "L9",
+      "pilar": "LIGHTSCALER",
+      "key_id": "reflejos",
+      "ui_title": "Brillo de Piel",
+      "ui_description": "Especularidad e hidratación de la piel.",
+      "auto_vision": "(según criterio)",
+      "levels": {
+        "OFF": "MATTE / POWDER. Dry skin. No shine. Flat finish.",
+        "LOW": "HEALTHY SHEEN. Natural oil hydration. Subtle highlights on nose/forehead.",
+        "MED": "DEWY. Moist, hydrated skin care look. Glow.",
+        "HIGH": "WET / SWEAT. Gym look. High gloss on skin.",
+        "FORCE": "DEWY COMPLEXION. CONTROLLED SPECULAR HIGHLIGHTS. HYDRATED SKIN SHEEN."
+      }
+    }
+  ]
+}
