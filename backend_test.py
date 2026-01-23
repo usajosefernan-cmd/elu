@@ -10,7 +10,7 @@ import json
 from datetime import datetime
 
 class LuxScalerAPITester:
-    def __init__(self, base_url="https://image-enhancer-107.preview.emergentagent.com"):
+    def __init__(self, base_url="https://ai-retoucher.preview.emergentagent.com"):
         # Use external API base from frontend/.env (VITE_BACKEND_URL)
         self.base_url = base_url
         self.user_id = None
