@@ -106,7 +106,7 @@ const callEdgeFunction = async <T>(
 ): Promise<T> => {
   const canUseSupabaseFn = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
-  // Helper: FastAPI fallback
+  // Helper: FastAPI fallback (with proper timeout for image generation)
   const callFastApi = async (): Promise<T> => {
     if (!BACKEND_URL) {
       throw new Error('Missing VITE_BACKEND_URL (required for FastAPI fallback).');
@@ -122,13 +122,19 @@ const callEdgeFunction = async <T>(
             ? 'process/generate-image'
             : functionName;
 
+    // Longer timeout for image generation
+    const timeoutMs = functionName === 'generate-image' ? 180000 : 60000;
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
     const response = await fetch(`${BACKEND_URL}/api/${endpoint}`, {
       method: 'POST',
+      signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify(body),
-    });
+    }).finally(() => window.clearTimeout(timeoutId));
 
     if (!response.ok) {
       const errorText = await response.text();
@@ -137,6 +143,12 @@ const callEdgeFunction = async <T>(
 
     return response.json();
   };
+
+  // For image generation, go directly to FastAPI (Edge Function deployment pending)
+  if (functionName === 'generate-image') {
+    console.log('[EdgeFunctions] Using FastAPI directly for generate-image');
+    return callFastApi();
+  }
 
   if (canUseSupabaseFn) {
     try {
