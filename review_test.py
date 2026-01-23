@@ -7,7 +7,7 @@ import requests
 import sys
 
 class ReviewRequestTester:
-    def __init__(self, base_url="https://ai-retoucher.preview.emergentagent.com"):
+    def __init__(self, base_url="https://visionaire-3.preview.emergentagent.com"):
         self.base_url = base_url
         self.mongo_user_id = None
         self.supabase_user_id = "d86b1859-3e57-4ec1-9e50-1aae155dbdef"
