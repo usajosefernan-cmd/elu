@@ -272,7 +272,7 @@ POST /api/process/compile
 
 ## Changelog
 
-### v29.1 (2025-01-23) - SLIDER DEFINITIONS TABLE + UNIVERSAL PROMPT ASSEMBLER
+### v29.1 (2025-01-23) - SLIDER DEFINITIONS TABLE + UNIVERSAL PROMPT ASSEMBLER v37.0
 - ✅ **Tabla `slider_definitions_v29.json`:**
   - 27 sliders completos con descripciones para cada nivel
   - Niveles: OFF (0), LOW (1-3), MED (4-6), HIGH (7-9), FORCE (10)
@@ -293,6 +293,11 @@ POST /api/process/compile
   - `POST /api/prompt/preview` - Preview de instrucciones
   - `GET /api/prompt/mappings` - Mapeo slider→placeholder
   - `GET /api/prompt/template` - Plantilla Universal v37.0
+- ✅ **Integración con Generación de Imagen:**
+  - `/api/process/generate-image` ahora acepta `sliderConfig` directamente
+  - El frontend usa `generateImageWithSliders()` en lugar de compilar prompt primero
+  - Los valores de sliders (0-10) se inyectan automáticamente en la plantilla v37.0
+  - Ejemplo: `chronos=2` → `[P4] STABILIZATION (IS). Remove handheld camera shake...`
 
 ### v29.0 (2025-01-21) - VETO ENGINE v2 + CONFLICT RESOLUTION
 - ✅ **Nuevas Reglas de Veto:**
