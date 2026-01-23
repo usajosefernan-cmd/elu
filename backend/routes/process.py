@@ -137,6 +137,7 @@ async def generate_image_endpoint(body: dict = Body(...)):
     
     # Also support legacy format with compiledPrompt
     compiled_prompt = body.get('compiledPrompt')
+    debug_info = None  # Initialize debug_info
     
     if not image_url:
         return {"success": False, "error": "No image provided (imageUrl required)"}
