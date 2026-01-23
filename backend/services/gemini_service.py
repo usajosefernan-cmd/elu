@@ -46,16 +46,13 @@ class GeminiService:
     async def generate_content(self, model_name: str, master_prompt: str, user_input_text: str, image_input: str = None) -> dict:
         
         # 1. Model Selection (Image Generation focus)
-        # User: gemini-2.5-flash-image (Nano Banana)
-        # Pro/Prolux: gemini-3-pro-image-preview (Nano Banana Pro)
+        # IMPORTANT: Use gemini-2.0-flash-exp-image-generation for image output
+        # This is the only Gemini model that generates images
         
-        target_model = "gemini-2.5-flash-image" # Default
+        target_model = "gemini-2.0-flash-exp-image-generation" # Correct model for image generation
         
-        if "pro" in model_name or "gemini-3" in model_name:
-            target_model = "gemini-3-pro-image-preview"
-        
-        # Fallback
-        fallback_model = "gemini-2.5-flash-image" 
+        # Fallback to same model - there's no other image gen model available
+        fallback_model = "gemini-2.0-flash-exp-image-generation"
 
         print(f"GeminiService (ImgGen): Requesting {target_model}")
 
