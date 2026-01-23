@@ -480,6 +480,152 @@ export const processImageComplete = async (
   return generateResult;
 };
 
+
+// ============================================================
+// 🔥 BATCH PROCESSING - Procesar múltiples fotos con el mismo estilo
+// ============================================================
+export interface BatchImage {
+  url: string;
+  id: string;
+  file?: File;
+}
+
+export interface BatchResult {
+  id: string;
+  success: boolean;
+  image?: string;
+  seed?: number;
+  error?: string;
+}
+
+export interface BatchResponse {
+  success: boolean;
+  results: BatchResult[];
+  batch_info: {
+    total: number;
+    successful: number;
+    failed: number;
+    seed_used: number;
+    temperature_used: number;
+    mode: string;
+  };
+}
+
+export const batchGenerateImages = async (
+  images: BatchImage[],
+  sliderConfig: Record<string, Record<string, number>>,
+  options: {
+    mode?: 'AUTO' | 'FORENSIC' | 'SHOWMAN' | 'PRESET';
+    preset_data?: {
+      seed: number;
+      temperature: number;
+      style_lock_prompt?: string;
+    };
+    sequential?: boolean;
+    onProgress?: (completed: number, total: number, currentResult?: BatchResult) => void;
+  } = {}
+): Promise<BatchResponse> => {
+  const { mode = 'AUTO', preset_data, sequential = false, onProgress } = options;
+
+  if (!BACKEND_URL) {
+    throw new Error('Missing VITE_BACKEND_URL');
+  }
+
+  // Convert File objects to base64 URLs if needed
+  const processedImages: { url: string; id: string }[] = [];
+  
+  for (const img of images) {
+    if (img.file) {
+      // Convert file to base64
+      const base64 = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(reader.result as string);
+        reader.readAsDataURL(img.file!);
+      });
+      processedImages.push({ url: base64, id: img.id });
+    } else {
+      processedImages.push({ url: img.url, id: img.id });
+    }
+  }
+
+  // If sequential mode with progress callback, process one by one locally
+  if (sequential && onProgress) {
+    const results: BatchResult[] = [];
+    
+    for (let i = 0; i < processedImages.length; i++) {
+      const img = processedImages[i];
+      
+      try {
+        // Call single image batch endpoint
+        const response = await fetch(`${BACKEND_URL}/api/process/batch-generate`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            images: [img],
+            sliderConfig,
+            mode,
+            preset_data,
+            sequential: true
+          }),
+        });
+
+        const data = await response.json();
+        const result = data.results?.[0] || { id: img.id, success: false, error: 'No result' };
+        results.push(result);
+        onProgress(i + 1, processedImages.length, result);
+      } catch (error) {
+        const result = { id: img.id, success: false, error: String(error) };
+        results.push(result);
+        onProgress(i + 1, processedImages.length, result);
+      }
+    }
+
+    const successful = results.filter(r => r.success).length;
+    return {
+      success: true,
+      results,
+      batch_info: {
+        total: results.length,
+        successful,
+        failed: results.length - successful,
+        seed_used: preset_data?.seed || 0,
+        temperature_used: preset_data?.temperature || 0.75,
+        mode
+      }
+    };
+  }
+
+  // Full batch processing
+  const controller = new AbortController();
+  const timeoutMs = 300000; // 5 minutes for batch
+  const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    const response = await fetch(`${BACKEND_URL}/api/process/batch-generate`, {
+      method: 'POST',
+      signal: controller.signal,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        images: processedImages,
+        sliderConfig,
+        mode,
+        preset_data,
+        sequential
+      }),
+    });
+
+    window.clearTimeout(timeoutId);
+
+    if (!response.ok) {
+      throw new Error(`Batch API error: ${response.status}`);
+    }
+
+    return response.json();
+  } finally {
+    window.clearTimeout(timeoutId);
+  }
+};
+
 export default {
   analyzeImageWithVision,
   analyzeImageBase64WithVision,
@@ -487,4 +633,5 @@ export default {
   generateEnhancedImage,
   generateImageWithSliders,
   processImageComplete,
+  batchGenerateImages,
 };
