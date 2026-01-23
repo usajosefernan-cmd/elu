@@ -319,7 +319,7 @@ export const generateEnhancedImage = async (
 };
 
 // =====================================================
-// COMPLETE FLOW (Convenience function)
+// COMPLETE FLOW v37 (Uses Universal Prompt Assembler)
 // =====================================================
 export const processImageComplete = async (
   imageUrl: string,
@@ -330,16 +330,34 @@ export const processImageComplete = async (
     outputType?: 'preview_watermark' | 'preview_clean' | 'master_4k' | 'master_8k';
     onVisionComplete?: (result: VisionAnalysisResult) => void;
     onPromptCompiled?: (result: PromptCompilerResult) => void;
+    useDirectSliders?: boolean; // NEW: Use Universal Prompt Assembler directly
   } = {}
-): Promise<GenerateImageResult> => {
-  // Step 1: Vision Analysis
+): Promise<GenerateImageResult & { debug?: any }> => {
+  // Step 1: Vision Analysis (optional but recommended)
   const visionResult = await analyzeImageWithVision(imageUrl, options.userId);
   if (!visionResult.success) {
     throw new Error(visionResult.error || 'Vision analysis failed');
   }
   options.onVisionComplete?.(visionResult);
 
-  // Step 2: Compile Prompt
+  // Step 2 & 3: Generate Image
+  // NEW: If useDirectSliders=true, skip prompt compilation and send sliders directly
+  if (options.useDirectSliders !== false) {
+    // Use Universal Prompt Assembler v37.0 (recommended)
+    const generateResult = await generateImageWithSliders(
+      imageUrl,
+      config,
+      {
+        userMode: options.userMode,
+        userId: options.userId,
+        includeDebug: true, // Always include for Archives
+      }
+    );
+    
+    return generateResult;
+  }
+  
+  // Legacy path: Compile prompt first, then generate
   const promptResult = await compilePrompt(
     config,
     visionResult.analysis,
@@ -350,7 +368,6 @@ export const processImageComplete = async (
   }
   options.onPromptCompiled?.(promptResult);
 
-  // Step 3: Generate Image
   const generateResult = await generateEnhancedImage(
     imageUrl,
     promptResult.prompt!,
@@ -369,5 +386,6 @@ export default {
   analyzeImageBase64WithVision,
   compilePrompt,
   generateEnhancedImage,
+  generateImageWithSliders,
   processImageComplete,
 };
