@@ -948,21 +948,23 @@ const App: React.FC = () => {
                 const nowIso = new Date().toISOString();
                 const id = `edge-${Date.now()}`;
                 
-                // Guardar el prompt COMPLETO y toda la info de debug
+                // Guardar el prompt COMPLETO y toda la info de debug (v37.0)
                 const promptPayload = { 
                     prompt: generateResult.output?.text || '', 
-                    compiledPrompt: promptResult.prompt,
+                    compiledPrompt: generateResult.debug?.compiled_prompt || '', // From Universal Assembler
                     mode: config.mode || 'AUTO',
                     selectedPresetId: JSON.stringify(sliderConfig), // Guardar los 27 sliders exactos
                     mixer: config.mixer,
-                    // Guardar metadata del compilador
-                    metadata: promptResult.metadata,
-                    // Guardar info de debug (vetos, sanitization, etc.)
-                    debugInfo: promptResult.debug_info,
-                    // Tokens estimados
-                    tokensEstimate: promptResult.tokens_estimate,
-                    // DNA Anchor info
-                    dnaAnchor: promptResult.dna_anchor,
+                    // Guardar metadata del assembler v37.0
+                    metadata: {
+                        prompt_version: generateResult.metadata?.prompt_version || 'v37.0',
+                        model_used: generateResult.metadata?.model_used,
+                        active_sliders: Object.values(sliderConfig).reduce((acc, p) => acc + (p?.sliders?.length || 0), 0),
+                    },
+                    // Guardar info de debug (slider levels, etc.)
+                    debugInfo: generateResult.debug?.slider_debug || {},
+                    // Slider levels used
+                    levelsUsed: generateResult.debug?.slider_debug?.levels_used || {},
                 };
 
                 setPreviews([{
