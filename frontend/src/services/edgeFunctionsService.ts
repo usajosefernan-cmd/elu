@@ -280,7 +280,7 @@ const convertSliderConfigToFlat = (config: SliderConfig): Record<string, Record<
   return result;
 };
 
-// New v37: Generate with slider config directly (uses Universal Prompt Assembler)
+// New v40: Generate with slider config directly (uses Supabase Edge Functions)
 export const generateImageWithSliders = async (
   imageUrl: string,
   sliderConfig: SliderConfig,
@@ -292,13 +292,52 @@ export const generateImageWithSliders = async (
 ): Promise<GenerateImageResult & { debug?: any }> => {
   const flatConfig = convertSliderConfigToFlat(sliderConfig);
   
-  return await callEdgeFunction<GenerateImageResult & { debug?: any }>('generate-image', {
-    imageUrl,
+  // Step 1: Compile prompt using Supabase Edge Function prompt-compiler v40.0
+  console.log('[EdgeFunctions] Calling prompt-compiler v40.0...');
+  const promptResult = await callEdgeFunction<{
+    success: boolean;
+    prompt: string;
+    version: string;
+    metadata: {
+      template: string;
+      active_sliders: number;
+      levels_used: Record<string, string>;
+      identity_lock: boolean;
+    };
+    error?: string;
+  }>('prompt-compiler', {
     sliderConfig: flatConfig,
+  });
+
+  if (!promptResult.success || !promptResult.prompt) {
+    return {
+      success: false,
+      error: promptResult.error || 'Prompt compilation failed',
+    };
+  }
+
+  console.log(`[EdgeFunctions] Prompt compiled: v${promptResult.version}, ${promptResult.metadata?.active_sliders} active sliders`);
+
+  // Step 2: Generate image with compiled prompt
+  const generateResult = await callEdgeFunction<GenerateImageResult>('generate-image', {
+    imageUrl,
+    compiledPrompt: promptResult.prompt,
     userMode: options.userMode || 'auto',
     userId: options.userId,
-    includeDebug: options.includeDebug || false,
   });
+
+  // Merge debug info
+  return {
+    ...generateResult,
+    debug: options.includeDebug ? {
+      compiled_prompt: promptResult.prompt,
+      slider_debug: {
+        levels_used: promptResult.metadata?.levels_used || {},
+        active_sliders: promptResult.metadata?.active_sliders || 0,
+      },
+      prompt_version: promptResult.version,
+    } : undefined,
+  };
 };
 
 // Legacy: Generate with pre-compiled prompt
