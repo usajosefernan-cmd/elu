@@ -248,6 +248,56 @@ export const compilePrompt = async (
 // =====================================================
 // IMAGE GENERATION (Gemini 3 Pro)
 // =====================================================
+
+// Convert frontend slider format to backend format
+const convertSliderConfigToFlat = (config: SliderConfig): Record<string, Record<string, number>> => {
+  const result: Record<string, Record<string, number>> = {
+    photoscaler: {},
+    stylescaler: {},
+    lightscaler: {}
+  };
+  
+  if (config.photoscaler?.sliders) {
+    for (const slider of config.photoscaler.sliders) {
+      result.photoscaler[slider.name] = slider.value;
+    }
+  }
+  if (config.stylescaler?.sliders) {
+    for (const slider of config.stylescaler.sliders) {
+      result.stylescaler[slider.name] = slider.value;
+    }
+  }
+  if (config.lightscaler?.sliders) {
+    for (const slider of config.lightscaler.sliders) {
+      result.lightscaler[slider.name] = slider.value;
+    }
+  }
+  
+  return result;
+};
+
+// New v37: Generate with slider config directly (uses Universal Prompt Assembler)
+export const generateImageWithSliders = async (
+  imageUrl: string,
+  sliderConfig: SliderConfig,
+  options: {
+    userMode?: string;
+    userId?: string;
+    includeDebug?: boolean;
+  } = {}
+): Promise<GenerateImageResult & { debug?: any }> => {
+  const flatConfig = convertSliderConfigToFlat(sliderConfig);
+  
+  return await callEdgeFunction<GenerateImageResult & { debug?: any }>('generate-image', {
+    imageUrl,
+    sliderConfig: flatConfig,
+    userMode: options.userMode || 'auto',
+    userId: options.userId,
+    includeDebug: options.includeDebug || false,
+  });
+};
+
+// Legacy: Generate with pre-compiled prompt
 export const generateEnhancedImage = async (
   imageUrl: string,
   compiledPrompt: string,
