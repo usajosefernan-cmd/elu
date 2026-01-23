@@ -199,6 +199,11 @@ const App: React.FC = () => {
     // Pending Actions
     const [pendingFile, setPendingFile] = useState<File | null>(null);
 
+    // Batch Processing State
+    const [batchMode, setBatchMode] = useState(false);
+    const [batchFiles, setBatchFiles] = useState<File[]>([]);
+    const [batchProgress, setBatchProgress] = useState<{completed: number, total: number, results: any[]}>({completed: 0, total: 0, results: []});
+
     // Variations from Server
     const [previews, setPreviews] = useState<GridItem[]>([]);
 
@@ -206,6 +211,7 @@ const App: React.FC = () => {
     const [elapsedTime, setElapsedTime] = useState(0);
 
     const fileInputRef = useRef<HTMLInputElement>(null);
+    const batchFileInputRef = useRef<HTMLInputElement>(null);
     const generatedObjectUrlsRef = useRef<string[]>([]);
     const masterUploadPromiseRef = useRef<Promise<string> | null>(null);
 
