@@ -48,6 +48,9 @@ async def save_style_v40(body: dict = Body(...)):
     """
     Guarda un preset v40.1 con "The Dictator Prompt" para consistencia estilística.
     
+    NOTA: Usa la tabla smart_presets existente, guardando los datos v40
+    en el campo slider_values como JSONB extendido.
+    
     Request body:
     {
         "user_id": "uuid",
@@ -82,24 +85,42 @@ async def save_style_v40(body: dict = Body(...)):
         # Determine mode based on dominant sliders
         mode = get_preset_mode(sliders_config)
         
-        # Prepare data for Supabase
+        # Prepare extended slider_values (compatible with existing smart_presets table)
+        # This embeds v40 data inside the existing JSONB column
+        extended_slider_values = {
+            # Original slider values
+            **sliders_config,
+            # v40 extensions
+            "_v40_meta": {
+                "seed": seed,
+                "temperature": temperature,
+                "top_k": top_k,
+                "top_p": top_p,
+                "style_lock_prompt": style_lock_prompt,
+                "dominant_sliders": dominant_sliders,
+                "mode": mode,
+                "thumbnail_url": thumbnail_url,
+                "source_image_url": source_image_url,
+                "version": "v40.1"
+            }
+        }
+        
+        # Determine locked_pillars based on dominant sliders
+        locked_pillars = []
+        for ds in dominant_sliders:
+            pilar = ds.get('pilar', '').upper()
+            if pilar and pilar not in locked_pillars:
+                locked_pillars.append(pilar)
+        
+        # Insert into smart_presets table (existing structure)
         preset_data = {
             'user_id': user_id,
             'name': name,
-            'seed': seed,
-            'temperature': temperature,
-            'top_k': top_k,
-            'top_p': top_p,
-            'sliders_config': sliders_config,
-            'style_lock_prompt': style_lock_prompt,
-            'dominant_sliders': dominant_sliders if dominant_sliders else None,
-            'mode': mode,
-            'thumbnail_url': thumbnail_url,
-            'source_image_url': source_image_url
+            'slider_values': extended_slider_values,
+            'locked_pillars': locked_pillars
         }
         
-        # Insert into user_presets table
-        response = supabase_db.client.table("user_presets")\
+        response = supabase_db.client.table("smart_presets")\
             .insert(preset_data)\
             .execute()
         
@@ -112,7 +133,9 @@ async def save_style_v40(body: dict = Body(...)):
                 "dictator_info": {
                     "mode": mode,
                     "dominant_sliders": dominant_sliders,
-                    "has_style_lock": style_lock_prompt is not None
+                    "has_style_lock": style_lock_prompt is not None,
+                    "seed": seed,
+                    "temperature": temperature
                 }
             }
         
