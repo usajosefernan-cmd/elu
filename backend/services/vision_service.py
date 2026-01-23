@@ -10,9 +10,22 @@ import os
 from services.key_manager import key_manager
 from services.input_normalizer import input_normalizer
 
-# FAST Vision Prompt v40.1 - Optimizado para velocidad (< 5 segundos)
-FAST_VISION_PROMPT = """Analyze image. Return JSON:
-{"category":"SELFIE|PORTRAIT|GROUP|REAL_ESTATE|PRODUCT|FOOD|LANDSCAPE|EVENT|PET|OTHER","has_person":bool,"face_count":int,"auto_settings":{"photoscaler":{"limpieza_artefactos":1-10,"geometria":1-10,"optica":1-10,"enfoque":1-10,"resolucion":1-10},"stylescaler":{"styling_piel":1-10,"styling_pelo":1-10,"limpieza_entorno":1-10,"look_cine":1-10},"lightscaler":{"key_light":1-10,"contraste":1-10,"estilo_autor":1-10}}}"""
+# FAST Vision Prompt v40.1 - Optimizado para velocidad
+FAST_VISION_PROMPT = """You are analyzing an image for photo enhancement. Classify and configure sliders.
+
+CATEGORIES: SELFIE, PORTRAIT, GROUP, REAL_ESTATE, PRODUCT, FOOD, LANDSCAPE, EVENT, PET, OTHER
+
+Return JSON with slider values (1-10 scale, where 5=standard, 8+=aggressive):
+{
+  "category": "CATEGORY_NAME",
+  "has_person": true/false,
+  "face_count": 0,
+  "auto_settings": {
+    "photoscaler": {"limpieza_artefactos":5,"geometria":3,"optica":5,"enfoque":5,"resolucion":4},
+    "stylescaler": {"styling_piel":5,"styling_pelo":4,"limpieza_entorno":4,"look_cine":4},
+    "lightscaler": {"key_light":5,"contraste":5,"estilo_autor":4}
+  }
+}"""
 
 # Full Creative Director prompt (for detailed analysis if needed)
 CREATIVE_DIRECTOR_PROMPT = """
