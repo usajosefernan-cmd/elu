@@ -107,18 +107,77 @@ async def compile_prompt_endpoint(body: dict = Body(...)):
 @router.post("/generate-image")
 async def generate_image_endpoint(body: dict = Body(...)):
     """
-    FastAPI fallback endpoint matching the v28 Edge Function `generate-image` contract.
+    Generate image using Universal Prompt Assembler v37.0.
+    
+    Expected body:
+    {
+        "imageUrl": "https://..." or "data:image/...",
+        "sliderConfig": {
+            "photoscaler": {"limpieza_artefactos": 8, "geometria": 5, ...},
+            "stylescaler": {"styling_piel": 6, ...},
+            "lightscaler": {"key_light": 7, ...}
+        },
+        "userMode": "auto|user|pro|prolux",
+        "includeDebug": false
+    }
+    
+    The slider values (0-10) are mapped to levels:
+    - 0 = OFF
+    - 1-3 = LOW  
+    - 4-6 = MED
+    - 7-9 = HIGH
+    - 10 = FORCE
+    
+    Each slider injects its corresponding instruction from slider_definitions_v29.
     """
     image_url = body.get('imageUrl')
-    compiled_prompt = body.get('compiledPrompt', '')
+    slider_config = body.get('sliderConfig', {})
     user_mode = body.get('userMode', 'auto')
-    aspect_ratio = body.get('aspectRatio')  # Can be passed from frontend
+    include_debug = body.get('includeDebug', False)
+    
+    # Also support legacy format with compiledPrompt
+    compiled_prompt = body.get('compiledPrompt')
+    
+    if not image_url:
+        return {"success": False, "error": "No image provided (imageUrl required)"}
+    
+    # If sliderConfig provided, use Universal Prompt Assembler
+    if slider_config and not compiled_prompt:
+        # Normalize slider config structure
+        normalized_config = {
+            "photoscaler": slider_config.get('photoscaler', {}),
+            "stylescaler": slider_config.get('stylescaler', {}),
+            "lightscaler": slider_config.get('lightscaler', {})
+        }
+        
+        # Handle flat config format (backwards compatibility)
+        if not any(normalized_config.values()) and slider_config:
+            # Assume flat format, try to categorize sliders
+            from services.slider_definitions_service import get_slider_by_key
+            for key, value in slider_config.items():
+                if isinstance(value, (int, float)):
+                    slider_info = get_slider_by_key(key)
+                    if slider_info:
+                        pilar = slider_info.get('pilar', '').lower()
+                        if pilar in normalized_config:
+                            normalized_config[pilar][key] = int(value)
+        
+        # Assemble the Universal Prompt v37.0
+        assembly_result = assemble_prompt(normalized_config, include_debug=include_debug)
+        compiled_prompt = assembly_result.get('prompt', '')
+        
+        # Get debug info if requested
+        debug_info = assembly_result.get('debug') if include_debug else None
+    
+    if not compiled_prompt:
+        return {"success": False, "error": "No slider configuration or compiled prompt provided"}
 
-    # Model selection aligned with existing FastAPI generator
+    # Model selection based on user mode
     model_name = 'gemini-2.5-flash-image'
     if user_mode in ('pro', 'prolux'):
         model_name = 'gemini-3-pro-image-preview'
 
+    # Generate with Gemini
     result = await gemini_service.generate_content(
         model_name,
         compiled_prompt,
@@ -129,7 +188,7 @@ async def generate_image_endpoint(body: dict = Body(...)):
     if result.get('error'):
         return {"success": False, "error": result['error']}
 
-    return {
+    response = {
         "success": True,
         "output": {
             "text": result.get('text', ''),
@@ -138,11 +197,21 @@ async def generate_image_endpoint(body: dict = Body(...)):
         },
         "metadata": {
             "model_used": result.get('model', model_name),
+            "prompt_version": "v37.0",
             "tokens_consumed": 0,
             "tokens_charged": 0,
             "output_type": body.get('outputType', 'preview_watermark'),
         }
     }
+    
+    # Include compiled prompt and debug in response if requested
+    if include_debug:
+        response["debug"] = {
+            "compiled_prompt": compiled_prompt[:2000] + "..." if len(compiled_prompt) > 2000 else compiled_prompt,
+            "slider_debug": debug_info
+        }
+    
+    return response
 
 
 @router.post("/generate")
