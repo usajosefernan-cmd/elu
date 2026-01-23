@@ -207,8 +207,10 @@ async def generate_image_endpoint(body: dict = Body(...)):
     # Include compiled prompt and debug in response if requested
     if include_debug:
         response["debug"] = {
-            "compiled_prompt": compiled_prompt[:2000] + "..." if len(compiled_prompt) > 2000 else compiled_prompt,
-            "slider_debug": debug_info
+            "compiled_prompt": compiled_prompt,  # Full prompt, no truncation
+            "slider_debug": debug_info,
+            "prompt_length": len(compiled_prompt),
+            "estimated_tokens": len(compiled_prompt) // 4
         }
     
     return response
