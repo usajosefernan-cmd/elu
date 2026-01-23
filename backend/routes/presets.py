@@ -150,7 +150,7 @@ async def save_style_v40(body: dict = Body(...)):
 async def get_user_presets_v40(user_id: str):
     """Obtiene los presets v40 de un usuario con info del Dictator Prompt."""
     try:
-        response = supabase_db.client.table("user_presets")\
+        response = supabase_db.client.table("smart_presets")\
             .select("*")\
             .eq("user_id", user_id)\
             .order("created_at", desc=True)\
@@ -158,15 +158,28 @@ async def get_user_presets_v40(user_id: str):
         
         presets = response.data or []
         
-        # Add dictator info to each preset
+        # Extract v40 data from slider_values and add dictator info
+        processed_presets = []
         for preset in presets:
-            preset['dictator_info'] = {
-                'has_style_lock': preset.get('style_lock_prompt') is not None,
-                'dominant_count': len(preset.get('dominant_sliders', []) or []),
-                'mode': preset.get('mode', 'SHOWMAN')
+            slider_values = preset.get('slider_values', {})
+            v40_meta = slider_values.get('_v40_meta', {})
+            
+            processed_preset = {
+                **preset,
+                'seed': v40_meta.get('seed'),
+                'temperature': v40_meta.get('temperature'),
+                'style_lock_prompt': v40_meta.get('style_lock_prompt'),
+                'mode': v40_meta.get('mode', 'SHOWMAN'),
+                'dictator_info': {
+                    'has_style_lock': v40_meta.get('style_lock_prompt') is not None,
+                    'dominant_count': len(v40_meta.get('dominant_sliders', []) or []),
+                    'mode': v40_meta.get('mode', 'SHOWMAN'),
+                    'version': v40_meta.get('version', 'legacy')
+                }
             }
+            processed_presets.append(processed_preset)
         
-        return {"success": True, "presets": presets}
+        return {"success": True, "presets": processed_presets}
         
     except Exception as e:
         print(f"[GetPresets v40] Error: {e}")
