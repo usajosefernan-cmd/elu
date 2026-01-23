@@ -103,12 +103,16 @@ class GeminiService:
                 final_prompt = f"{master_prompt}\n\n{user_input_text}\n\nBased on the input image and all instructions above, generate an ENHANCED version of this image. OUTPUT THE MODIFIED IMAGE."
                 contents_parts.append(types.Part.from_text(text=final_prompt))
 
-                # 3. Call API - gemini-2.0-flash-exp with response_modalities for native image generation
+                # 3. Call API - gemini-3-pro-image-preview with 4K resolution
                 response = client.models.generate_content(
                     model=current_model_name,
                     contents=[types.Content(role="user", parts=contents_parts)],
                     config=types.GenerateContentConfig(
-                        response_modalities=['Text', 'Image'], # Case-sensitive per docs
+                        response_modalities=['Text', 'Image'],
+                        image_config=types.ImageConfig(
+                            image_size="4K",  # 4096x4096 resolution
+                            aspect_ratio=detected_aspect_ratio  # Preserve original aspect ratio
+                        ),
                         safety_settings=[
                             types.SafetySetting(category="HARM_CATEGORY_HARASSMENT", threshold="BLOCK_NONE"),
                             types.SafetySetting(category="HARM_CATEGORY_HATE_SPEECH", threshold="BLOCK_NONE"),
@@ -117,6 +121,8 @@ class GeminiService:
                         ]
                     )
                 )
+                
+                print(f"GeminiService: Generated 4K image with aspect ratio {detected_aspect_ratio}")
                 
                 # 4. Parse Response
                 result = {"text": "", "image_base64": None, "model": current_model_name}
