@@ -46,13 +46,13 @@ class GeminiService:
     async def generate_content(self, model_name: str, master_prompt: str, user_input_text: str, image_input: str = None) -> dict:
         
         # 1. Model Selection (Image Generation focus)
-        # IMPORTANT: Use gemini-2.0-flash-exp-image-generation for image output
-        # This is the only Gemini model that generates images
+        # IMPORTANT: Use gemini-2.0-flash-exp for native image generation
+        # Must set response_modalities=["Text", "Image"] in config
         
-        target_model = "gemini-2.0-flash-exp-image-generation" # Correct model for image generation
+        target_model = "gemini-2.0-flash-exp" # Correct model for native image generation
         
-        # Fallback to same model - there's no other image gen model available
-        fallback_model = "gemini-2.0-flash-exp-image-generation"
+        # Fallback to same model
+        fallback_model = "gemini-2.0-flash-exp"
 
         print(f"GeminiService (ImgGen): Requesting {target_model}")
 
