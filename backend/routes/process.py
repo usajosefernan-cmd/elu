@@ -5,9 +5,12 @@ from services.vision_service import vision_service
 from services.prompt_compiler_service import prompt_compiler
 from services.input_normalizer import input_normalizer
 from services.universal_prompt_assembler import assemble_prompt, get_prompt_preview
+from services.dictator_prompt_builder import build_dictator_prompt, get_preset_mode
 from data.macro_mappings import apply_user_macro, apply_pro_macro
 from data.snippets import SNIPPET_DICTIONARY, map_value_to_level
 import datetime
+import asyncio
+import random
 
 router = APIRouter(prefix="/process", tags=["process"])
 
