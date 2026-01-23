@@ -356,6 +356,167 @@ async def generate_image_endpoint(body: dict = Body(...)):
     return response
 
 
+# ============================================================
+# 🔥 BATCH PROCESSING - Procesar múltiples fotos con el mismo estilo
+# ============================================================
+@router.post("/batch-generate")
+async def batch_generate_endpoint(body: dict = Body(...)):
+    """
+    Procesa múltiples imágenes con la misma configuración de estilo.
+    Aplica el mismo preset/sliders a todas las fotos para consistencia.
+    
+    Request body:
+    {
+        "images": [
+            {"url": "https://...", "id": "img1"},
+            {"url": "data:image/...", "id": "img2"}
+        ],
+        "sliderConfig": {
+            "photoscaler": {...},
+            "stylescaler": {...},
+            "lightscaler": {...}
+        },
+        "mode": "AUTO|FORENSIC|SHOWMAN|PRESET",
+        "preset_data": {  // Optional, for PRESET mode
+            "seed": 847291023,
+            "temperature": 0.75,
+            "style_lock_prompt": "..."
+        },
+        "sequential": false  // true = one by one, false = parallel (faster but more API load)
+    }
+    
+    Returns:
+    {
+        "success": true,
+        "results": [
+            {"id": "img1", "success": true, "image": "base64...", "seed": 123},
+            {"id": "img2", "success": true, "image": "base64...", "seed": 123}
+        ],
+        "batch_info": {
+            "total": 5,
+            "successful": 4,
+            "failed": 1,
+            "seed_used": 847291023,
+            "mode": "PRESET"
+        }
+    }
+    """
+    images = body.get('images', [])
+    slider_config = body.get('sliderConfig', {})
+    mode = body.get('mode', 'AUTO')
+    preset_data = body.get('preset_data')
+    sequential = body.get('sequential', False)
+    
+    if not images:
+        return {"success": False, "error": "No images provided"}
+    
+    if len(images) > 10:
+        return {"success": False, "error": "Maximum 10 images per batch"}
+    
+    # Normalize slider config
+    normalized_config = {
+        "photoscaler": slider_config.get('photoscaler', {}),
+        "stylescaler": slider_config.get('stylescaler', {}),
+        "lightscaler": slider_config.get('lightscaler', {})
+    }
+    
+    # Compile prompt ONCE for all images (same style)
+    assembly_result = assemble_prompt(normalized_config, include_debug=True)
+    compiled_prompt = assembly_result.get('prompt', '')
+    
+    if not compiled_prompt:
+        return {"success": False, "error": "Failed to compile prompt"}
+    
+    # Determine generation config based on mode
+    if mode == 'PRESET' and preset_data:
+        # Use saved preset config (THE DICTATOR PROMPT)
+        seed = preset_data.get('seed', random.randint(100000000, 999999999))
+        temperature = preset_data.get('temperature', 0.75)
+        style_lock = preset_data.get('style_lock_prompt')
+        
+        if style_lock:
+            compiled_prompt += f"\n\n{style_lock}"
+            print(f"[BatchGenerate] Injected DICTATOR PROMPT for PRESET mode")
+    else:
+        # Use Smart Mode Switch
+        style_lock_prompt, dominant_sliders = build_dictator_prompt(normalized_config, threshold=8)
+        preset_mode = get_preset_mode(normalized_config)
+        
+        if preset_mode == 'FORENSIC':
+            seed = 42  # Fixed seed for consistency
+            temperature = 0.1
+        else:
+            # Generate ONE seed for all images (same style)
+            seed = random.randint(100000000, 999999999)
+            temperature = 0.75
+        
+        if style_lock_prompt:
+            compiled_prompt += f"\n\n{style_lock_prompt}"
+    
+    print(f"[BatchGenerate] Processing {len(images)} images with seed={seed}, temp={temperature}, mode={mode}")
+    
+    # Process images
+    async def process_single_image(img_data):
+        img_url = img_data.get('url')
+        img_id = img_data.get('id', f"img_{random.randint(1000,9999)}")
+        
+        try:
+            result = await gemini_service.generate_content(
+                'gemini-3-pro-image-preview',
+                compiled_prompt,
+                f"Process this image with the exact same style. Seed: {seed}",
+                img_url
+            )
+            
+            if result.get('success') and result.get('image'):
+                return {
+                    "id": img_id,
+                    "success": True,
+                    "image": result['image'],
+                    "seed": seed,
+                    "text": result.get('text', '')
+                }
+            else:
+                return {
+                    "id": img_id,
+                    "success": False,
+                    "error": result.get('error', 'No image generated')
+                }
+        except Exception as e:
+            return {
+                "id": img_id,
+                "success": False,
+                "error": str(e)
+            }
+    
+    # Execute batch
+    results = []
+    if sequential:
+        # One by one (slower but gentler on API)
+        for img in images:
+            result = await process_single_image(img)
+            results.append(result)
+    else:
+        # Parallel processing (faster)
+        tasks = [process_single_image(img) for img in images]
+        results = await asyncio.gather(*tasks)
+    
+    successful = sum(1 for r in results if r.get('success'))
+    
+    return {
+        "success": True,
+        "results": results,
+        "batch_info": {
+            "total": len(images),
+            "successful": successful,
+            "failed": len(images) - successful,
+            "seed_used": seed,
+            "temperature_used": temperature,
+            "mode": mode
+        }
+    }
+
+
 @router.post("/generate")
 async def generate(body: dict = Body(...)):
     """
