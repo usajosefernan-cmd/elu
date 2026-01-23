@@ -996,8 +996,8 @@ const App: React.FC = () => {
             // Persist to ARCHIVE (Supabase DB + Storage URLs)
             await persistToArchive(imageUrl, visionAnalysis, archiveImageUrl, promptPayload);
             
-            // AHORA navegamos a /result porque ya tenemos imagen
-            navigate('/result');
+            // Navegar a Archives para ver la imagen generada (no a /result que bloquea)
+            navigate('/archives');
 
             setShowProcessingOverlay(false);
             setIsMicroscopeOpen(false); // Ensure inspector is closed
@@ -1009,13 +1009,20 @@ const App: React.FC = () => {
             setToastState({
                 isOpen: true,
                 title: '¡Generación completada!',
-                message: 'Tu imagen ha sido procesada exitosamente.',
+                message: 'Tu imagen está en Archives. ¡Sube otra foto cuando quieras!',
                 type: 'success'
             });
             
             setStatus(AgentStatus.COMPLETED);
             setAgentMsg({ text: "¡Procesamiento completado!", type: 'success' });
             addSystemLog(`Tokens utilizados: ${generateResult.metadata?.tokens_charged ?? 0}`);
+            
+            // Reset para permitir nueva generación inmediata
+            setStagedImageUrl(null);
+            setStagedMasterImageUrl(null);
+            masterUploadPromiseRef.current = null;
+            setInputImageUrl(null);
+            setVisionAnalysis(null);
 
         } catch (error: any) {
             console.error("Brain pipeline processing error:", error);
