@@ -9,87 +9,91 @@ const corsHeaders = {
 };
 
 // ============================================================
-// UNIVERSAL CINEMATIC PRODUCTION PROTOCOL v40.0
+// UNIVERSAL CINEMATIC PRODUCTION PROTOCOL v40.1 - GOLD MASTER
+// "THE CINEMATIC TIME-TRAVELER"
 // ============================================================
-const UNIVERSAL_TEMPLATE_V40 = `[SYSTEM OVERRIDE: UNIVERSAL CINEMATIC PRODUCTION PROTOCOL v40.0]
+const UNIVERSAL_TEMPLATE_V40 = `[SYSTEM OVERRIDE: UNIVERSAL CINEMATIC PRODUCTION PROTOCOL v40.1]
+[TARGET MODEL: GEMINI 1.5 PRO (ALIAS: NANOBANANPRO)]
 [TASK: HIGH-BUDGET "VIRTUAL RESHOOT" // HYPER-REALISTIC PRODUCTION]
-[MODE: {{MODE}}]
 
-=== 🎬 THE NEW DIRECTIVE: "THE TALENT vs. THE PRODUCTION" ===
-You are no longer just restoring a photo. You are the Director of Photography (DOP) and Production Designer for a $100M blockbuster movie scene based on the input image.
-
+=== 🎬 CORE DIRECTIVE: "THE TALENT vs. THE PRODUCTION" ===
+You are the Director of Photography (DOP) and Production Designer for a $100M feature film scene based on the input image [INPUT_IMAGE].
 Your goal is a **TOTAL PRODUCTION OVERHAUL** while maintaining a **STRICT BIOMETRIC LOCK** on the subject.
 
 **THE MENTAL MODEL:**
-Imagine the person(s) in the [INPUT_IMAGE] are A-List actors booked for a high-end shoot.
-* **THE TALENT (Read-Only):** Their face, unique features, bone structure, and specific facial expression (gaze, smirk, emotion) are SACRED contracts. You cannot replace the actor.
-* **THE PRODUCTION (Write-Access):** Everything else around them—their hair, clothing, location, time of day, and the camera lens—is "Set Dressing" and can be completely reimagined based on the injection parameters below.
+Imagine the person in the input image is an A-List actor.
+1.  **THE TALENT (Read-Only):** Their face, identity, ethnicity, and micro-expression are SACRED contractual obligations. You CANNOT replace the actor.
+2.  **THE PRODUCTION (Write-Access):** Everything else (Lighting, Lens, Wardrobe, Location) is "Set Dressing" and implies an UNLIMITED BUDGET.
 
 ---
 
-=== 🔒 SECTION 1: THE SACRED BIOMETRIC LOCK (READ-ONLY) ===
-*You must preserve these elements exactly as they are in the source:*
-
-1.  **IDENTITY CORE:** The fundamental cranial structure, eye shape, nose, and unique identifiers (moles, scars) must remain identical. Do not generate a generic "perfect" face.
-2.  **EXPRESSION & GAZE:** The exact micro-expression and direction of the eyes MUST remain fixed. If they are looking off-camera slightly, do not make them look at the lens. The "acting performance" is locked.
+=== 🔒 SECTION 1: THE BIOMETRIC LOCK (READ-ONLY) ===
+*You must preserve these elements EXACTLY as they are in the source:*
+1.  **IDENTITY CORE:** The fundamental cranial structure, eye shape, nose shape, and **ETHNICITY** must remain identical. Do not "Westernize", "Beautify", or genericize the face. Keep moles, scars, and gaps unless [S1] explicitly asks to remove them.
+2.  **EXPRESSION & GAZE:** The exact direction of the eyes and the micro-emotion (e.g., smirk, boredom, surprise) MUST remain fixed. If they are looking off-camera, DO NOT make them look at the lens.
 
 ---
 
-{{PERMISSIVE_ZONES}}
+=== 🔓 SECTION 2: PERMISSIVE ZONES (WRITE-ACCESS) ===
+*You have AUTHORIZATION to completely delete and replace these pixels IF the injected parameters demand it:*
+1.  **WARDROBE (via [S3]):** If the [S3] parameter is HIGH or FORCE, the original clothes are irrelevant. DELETE the original outfit. GENERATE new high-end fabrics that collide realistically with the locked neck/skin.
+2.  **ENVIRONMENT (via [S5]):** If the [S5] parameter is HIGH or FORCE, the original location is irrelevant. TELEPORT the subject to the new set.
+3.  **HAIR VOLUME (via [S2]):** You may alter the volume, shine, and styling of the hair, provided the hairline root remains consistent with the identity.
+
+---
 
 === 🎛️ THE PRODUCTION PARAMETERS (INJECTION BLOCK) ===
 *Apply these specific high-budget physics and styling rules:*
 
 **PHASE 1: THE CAMERA RIG (PHOTOSCALER)**
-- [P1] SIGNAL/SENSOR QUALITY: {{p1}}
-- [P2] LENS GEOMETRY/PROJECTION: {{p2}}
-- [P3] OPTICAL GLASS QUALITY: {{p3}}
-- [P4] SHUTTER SPEED/MOTION: {{p4}}
-- [P5] DYNAMIC RANGE (RAW): {{p5}}
-- [P6] TEXTURE RESOLUTION (MTF): {{p6}}
-- [P7] FILM STOCK EMULSION: {{p7}}
-- [P8] APERTURE & BOKEH: {{p8}}
-- [P9] PIXEL DENSITY: {{p9}}
+- [P1] SENSOR FIDELITY: {{p1}}
+- [P2] LENS GEOMETRY: {{p2}}
+- [P3] OPTICAL GLASS: {{p3}}
+- [P4] SHUTTER/MOTION: {{p4}}
+- [P5] DYNAMIC RANGE: {{p5}}
+- [P6] TEXTURE/DNA: {{p6}}
+- [P7] FILM GRAIN: {{p7}}
+- [P8] APERTURE/BOKEH: {{p8}}
+- [P9] RESOLUTION: {{p9}}
 
-**PHASE 2: ART DIRECTION & STYLING (STYLESCALER)**
+**PHASE 2: ART DIRECTION (STYLESCALER)**
 - [S1] SKIN GROOMING: {{s1}}
 - [S2] HAIR STYLING: {{s2}}
 - [S3] WARDROBE DEPT: {{s3}}
 - [S4] MAKEUP DEPT: {{s4}}
-- [S5] SET DRESSING/LOCATION: {{s5}}
-- [S6] CINEMATIC FRAMING: {{s6}}
-- [S7] ATMOSPHERE/SMOKE: {{s7}}
-- [S8] COLOR GRADING SUITE: {{s8}}
-- [S9] SURFACE REFLECTIONS: {{s9}}
+- [S5] SET LOCATION: {{s5}}
+- [S6] FRAMING/CROP: {{s6}}
+- [S7] ATMOSPHERE: {{s7}}
+- [S8] COLOR GRADING: {{s8}}
+- [S9] REFLECTIONS: {{s9}}
 
-**PHASE 3: THE GAFFER & LIGHTING (LIGHTSCALER)**
-- [L1] KEY LIGHT SOURCE: {{L1}}
-- [L2] FILL LIGHT RATIO: {{L2}}
-- [L3] RIM/KICKER LIGHT: {{L3}}
-- [L4] VOLUMETRIC RAYS: {{L4}}
-- [L5] COLOR TEMPERATURE (TIME): {{L5}}
-- [L6] CONTRAST CURVE: {{L6}}
+**PHASE 3: LIGHTING (LIGHTSCALER)**
+- [L1] KEY LIGHT: {{L1}}
+- [L2] FILL RATIO: {{L2}}
+- [L3] RIM LIGHT: {{L3}}
+- [L4] VOLUMETRICS: {{L4}}
+- [L5] COLOR TEMP: {{L5}}
+- [L6] TONE CURVE: {{L6}}
 - [L7] SHADOW DENSITY: {{L7}}
-- [L8] DRAMATIC LIGHTING SCHEME: {{L8}}
+- [L8] LIGHTING STYLE: {{L8}}
 - [L9] SKIN SPECULARITY: {{L9}}
 
 ---
 
-=== 🚫 NEGATIVE PROMPT (PRODUCTION FAILURES) ===
-*Reject any output that looks like:*
-1.  **IDENTITY SWAP:** Changing the fundamental facial structure or ethnicity of the subject.
-2.  **EXPRESSION DRIFT:** Changing the gaze direction or emotion (e.g., forcing a smile).
-3.  **LOW BUDGET:** Cheap digital noise, bad lighting, flat colors, smartphone camera look.
-4.  **PHYSICS FAILURES:** Plastic skin, waxy hair, impossible lighting, "Uncanny Valley" AI artifacts.
-5.  **STYLE VIOLATIONS:** Neon, Cyberpunk, Fantasy, 3D Render look, Cartoon, Illustration.
+=== 🚫 NEGATIVE PROMPT (REJECTION CRITERIA) ===
+*Reject any generation that contains:*
+1.  **IDENTITY SHIFT:** Changing the person's race, age, or fundamental facial geometry. Swapping the face for a generic AI model.
+2.  **EXPRESSION DRIFT:** Changing gaze direction (e.g., looking at camera when original looked away) or forcing a smile.
+3.  **LOW BUDGET:** Digital noise, jpeg artifacts, over-sharpening halos, plastic/waxy skin, blurred ears, floating limbs, extra fingers.
+4.  **STYLE VIOLATIONS:** Cartoon, 3D Render, Illustration, Oil Painting, Watermarks, Text, Borders, Neon/Cyberpunk elements (unless requested in lighting).
 
-=== 🧠 PRODUCTION NOTES FOR NANOBANANPRO ===
-* **IF [S3] (Wardrobe) is FORCE:** It means "Replace the outfit entirely with a luxury tailor-made version of a similar style", NOT "Just iron the existing shirt".
-* **IF [S5] (Set) is FORCE:** It means "Rebuild the location as a pristine movie set", removing all ugliness and clutter.
-* **IF [L5] (Temp) changes time:** Ensure the background sky and practical lights match the new time (e.g., sunset light requires a sunset sky).
+=== 🧠 LOGIC RESOLUTION ===
+* **IF [S3] is FORCE:** It means "Replace the outfit with luxury tailoring", NOT "Iron the existing shirt".
+* **IF [P2] is RECTILINEAR:** It means "Fix the lens distortion (flatten face)", NOT "Change the face shape".
+* **IF [L8] is CHIAROSCURO:** It means "Darken the environment", NOT "Change the subject's skin tone".
 
 **FINAL ACTION:**
-Execute the "Virtual Reshoot" with maximum production value. Make it look like a magazine cover or a movie still, but ensure the subject's mother would still recognize them instantly.`;
+Execute the "Virtual Reshoot". The output must be indistinguishable from a RAW photo taken by a Phase One camera. **PRIORITY: BELIEVABILITY > PERFECTION.**`;
 
 // Permissive zones block for CREATIVE mode
 const PERMISSIVE_ZONES_BLOCK = `=== 🔓 SECTION 2: AUTHORIZED PRODUCTION CHANGES (WRITE-ACCESS) ===
