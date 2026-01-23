@@ -622,28 +622,54 @@ export const ArchivesDashboard: React.FC<ArchivesDashboardProps> = ({ onBack, us
                                 </div>
                             )}
 
-                            {/* Prompt compilado COMPLETO */}
+                            {/* Prompt compilado COMPLETO v37.0 */}
                             {selectedVariation.prompt_payload?.compiledPrompt && (
                                 <div className="pt-2 border-t border-white/5">
                                     <div className="flex items-center justify-between mb-1">
-                                        <p className="text-[9px] text-purple-400 uppercase font-bold">📝 Prompt Completo</p>
+                                        <p className="text-[9px] text-purple-400 uppercase font-bold">📝 Prompt Universal v37.0</p>
                                         <button
                                             onClick={() => {
                                                 navigator.clipboard.writeText(selectedVariation.prompt_payload?.compiledPrompt || '');
                                             }}
-                                            className="text-[8px] text-gray-500 hover:text-white px-1.5 py-0.5 bg-white/5 rounded"
+                                            className="text-[8px] text-gray-500 hover:text-white px-1.5 py-0.5 bg-white/5 rounded flex items-center gap-1"
                                         >
-                                            Copiar
+                                            <Copy className="w-2.5 h-2.5" /> Copiar
                                         </button>
                                     </div>
-                                    <div className="bg-black/60 rounded p-2 max-h-[400px] overflow-y-auto border border-white/5">
-                                        <pre className="text-[8px] text-gray-300 whitespace-pre-wrap font-mono leading-relaxed">
+                                    <div className="bg-black/80 rounded p-3 max-h-[500px] overflow-y-auto border border-purple-500/20 shadow-lg">
+                                        <pre className="text-[9px] text-gray-200 whitespace-pre-wrap font-mono leading-relaxed">
                                             {selectedVariation.prompt_payload.compiledPrompt}
                                         </pre>
                                     </div>
-                                    <div className="flex justify-between mt-1 text-[8px] text-gray-600">
-                                        <span>{selectedVariation.prompt_payload.compiledPrompt.length} chars</span>
-                                        <span>~{Math.ceil(selectedVariation.prompt_payload.compiledPrompt.length / 4)} tokens</span>
+                                    <div className="flex justify-between mt-1 text-[8px] text-gray-500">
+                                        <span>{selectedVariation.prompt_payload.compiledPrompt.length.toLocaleString()} caracteres</span>
+                                        <span>~{Math.ceil(selectedVariation.prompt_payload.compiledPrompt.length / 4).toLocaleString()} tokens</span>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Niveles de Sliders v37.0 */}
+                            {selectedVariation.prompt_payload?.levelsUsed && Object.keys(selectedVariation.prompt_payload.levelsUsed).length > 0 && (
+                                <div className="pt-2 border-t border-white/5">
+                                    <p className="text-[9px] text-cyan-400 uppercase font-bold mb-2">🎛️ Niveles Inyectados v37.0</p>
+                                    <div className="grid grid-cols-3 gap-1 text-[8px]">
+                                        {Object.entries(selectedVariation.prompt_payload.levelsUsed as Record<string, string>)
+                                            .sort(([a], [b]) => a.localeCompare(b))
+                                            .map(([slot, level]) => {
+                                                const levelColors: Record<string, string> = {
+                                                    'OFF': 'text-gray-500',
+                                                    'LOW': 'text-blue-400',
+                                                    'MED': 'text-green-400',
+                                                    'HIGH': 'text-orange-400',
+                                                    'FORCE': 'text-red-400 font-bold'
+                                                };
+                                                return (
+                                                    <div key={slot} className="flex items-center justify-between bg-white/5 rounded px-1.5 py-0.5">
+                                                        <span className="text-gray-400 font-mono">{slot}</span>
+                                                        <span className={levelColors[level] || 'text-white'}>{level}</span>
+                                                    </div>
+                                                );
+                                            })}
                                     </div>
                                 </div>
                             )}
