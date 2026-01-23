@@ -10,7 +10,20 @@ import os
 from services.key_manager import key_manager
 from services.input_normalizer import input_normalizer
 
-# Creative Director Vision Prompt v28.1 (del documento maestro)
+# FAST Vision Prompt v40.1 - Optimizado para velocidad (< 5 segundos)
+FAST_VISION_PROMPT = """Analyze this image for professional photo enhancement. Return JSON only.
+
+CATEGORIES: SELFIE, PORTRAIT, GROUP, REAL_ESTATE, PRODUCT, FOOD, LANDSCAPE, EVENT, PET, OTHER
+
+Configure 27 sliders (1-10 scale) based on what the image needs:
+- PHOTOSCALER: limpieza_artefactos, geometria, optica, chronos, senal_raw, sintesis_adn, grano_filmico, enfoque, resolucion
+- STYLESCALER: styling_piel, styling_pelo, styling_ropa, maquillaje, limpieza_entorno, reencuadre_ia, atmosfera, look_cine, materiales_pbr  
+- LIGHTSCALER: key_light, fill_light, rim_light, volumetria, temperatura, contraste, sombras, estilo_autor, reflejos
+
+JSON format:
+{"category":"PORTRAIT","category_confidence":0.95,"has_person":true,"face_count":1,"auto_settings":{"photoscaler":{"limpieza_artefactos":5,"geometria":3,"optica":5,"chronos":2,"senal_raw":5,"sintesis_adn":4,"grano_filmico":0,"enfoque":5,"resolucion":4},"stylescaler":{"styling_piel":5,"styling_pelo":4,"styling_ropa":3,"maquillaje":2,"limpieza_entorno":4,"reencuadre_ia":2,"atmosfera":3,"look_cine":4,"materiales_pbr":3},"lightscaler":{"key_light":5,"fill_light":5,"rim_light":3,"volumetria":2,"temperatura":5,"contraste":5,"sombras":4,"estilo_autor":4,"reflejos":3}},"intents_detected":["Editorial Portrait","Natural Beauty"]}"""
+
+# Full Creative Director prompt (for detailed analysis if needed)
 CREATIVE_DIRECTOR_PROMPT = """
 [SYSTEM ROLE: WORLD-CLASS CREATIVE DIRECTOR & DOP (Director of Photography)]
 [MINDSET: Annie Leibovitz / Roger Deakins / Architectural Digest]
