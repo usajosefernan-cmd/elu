@@ -135,8 +135,8 @@ async def generate_image_endpoint(body: dict = Body(...)):
     user_mode = body.get('userMode', 'auto')
     include_debug = body.get('includeDebug', False)
     
-    # Also support legacy format with compiledPrompt
-    compiled_prompt = body.get('compiledPrompt')
+    # Also support legacy format with compiledPrompt or prompt_text (from Edge Functions)
+    compiled_prompt = body.get('compiledPrompt') or body.get('prompt_text')
     debug_info = None  # Initialize debug_info
     
     if not image_url:
