@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { Hexagon, User, Menu, FileText, X, LayoutGrid, LogOut, ShieldAlert, ChevronDown, Sparkles, PlusCircle, Download, Key, LogIn } from 'lucide-react';
+import { Hexagon, User, Menu, FileText, X, LayoutGrid, LogOut, ShieldAlert, ChevronDown, Sparkles, PlusCircle, Download, Key, LogIn, Layers } from 'lucide-react';
 import { UserProfile } from '../types';
 import { PurchaseModal } from './PurchaseModal';
 import { getBalance } from '../services/paymentService';
@@ -11,6 +11,7 @@ interface NavigationProps {
   onNavigateToArchive?: () => void;
   onNavigateToStudio?: () => void;
   onUploadProject?: () => void;
+  onBatchUpload?: () => void;  // NEW: Batch upload
   onLogin?: () => void;
   onSignOut?: () => void;
   onAdminDashboard?: () => void;
@@ -29,6 +30,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   onNavigateToArchive,
   onNavigateToStudio,
   onUploadProject,
+  onBatchUpload,
   onLogin,
   onSignOut,
   onAdminDashboard,
