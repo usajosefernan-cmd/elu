@@ -144,9 +144,9 @@ const callEdgeFunction = async <T>(
     return response.json();
   };
 
-  // For image generation, go directly to FastAPI (Edge Function deployment pending)
-  if (functionName === 'generate-image') {
-    console.log('[EdgeFunctions] Using FastAPI directly for generate-image');
+  // For image generation and prompt-compiler, go directly to FastAPI (Edge Function deployment pending)
+  if (functionName === 'generate-image' || functionName === 'prompt-compiler') {
+    console.log(`[EdgeFunctions] Using FastAPI directly for ${functionName}`);
     return callFastApi();
   }
 
