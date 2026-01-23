@@ -1,5 +1,5 @@
-// LuxScaler v40.0 - Generate Image Edge Function
-// Uses Gemini API to generate enhanced images
+// LuxScaler v40.0 - Generate Image with Seed + Temperature support
+// Supabase Edge Function
 
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { GoogleGenerativeAI } from "https://esm.sh/@google/generative-ai@0.21.0";
@@ -9,18 +9,25 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Get API key from environment
 const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY") || Deno.env.get("GOOGLE_API_KEY");
 
 serve(async (req) => {
-  // Handle CORS preflight
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
     const body = await req.json();
-    const { imageUrl, compiledPrompt, userMode = "auto" } = body;
+    const { 
+      imageUrl, 
+      compiledPrompt, 
+      prompt_text,  // New: from prompt-compiler
+      config,       // New: generation config from prompt-compiler
+      userMode = "auto" 
+    } = body;
+
+    // Use prompt_text if provided (new flow), otherwise compiledPrompt (legacy)
+    const finalPrompt = prompt_text || compiledPrompt;
 
     if (!imageUrl) {
       return new Response(
@@ -29,9 +36,9 @@ serve(async (req) => {
       );
     }
 
-    if (!compiledPrompt) {
+    if (!finalPrompt) {
       return new Response(
-        JSON.stringify({ success: false, error: "No compiled prompt provided" }),
+        JSON.stringify({ success: false, error: "No prompt provided" }),
         { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
@@ -43,6 +50,20 @@ serve(async (req) => {
       );
     }
 
+    // ============================================================
+    // GENERATION CONFIG (from prompt-compiler or defaults)
+    // ============================================================
+    const generationConfig = {
+      temperature: config?.temperature ?? 0.1,
+      topP: config?.topP ?? 0.95,
+      topK: config?.topK ?? 40,
+      maxOutputTokens: config?.maxOutputTokens ?? 8192,
+      // Seed for reproducibility
+      ...(config?.seed && { seed: config.seed })
+    };
+
+    const usedSeed = config?.seed ?? Math.floor(Math.random() * 1000000000);
+
     // Initialize Gemini
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     
@@ -53,12 +74,7 @@ serve(async (req) => {
 
     const model = genAI.getGenerativeModel({
       model: modelName,
-      generationConfig: {
-        temperature: 1,
-        topP: 0.95,
-        topK: 40,
-        maxOutputTokens: 8192,
-      },
+      generationConfig: generationConfig,
     });
 
     // Fetch image and convert to base64
@@ -66,7 +82,6 @@ serve(async (req) => {
     let mimeType: string = "image/jpeg";
 
     if (imageUrl.startsWith("data:")) {
-      // Already base64
       const matches = imageUrl.match(/^data:([^;]+);base64,(.+)$/);
       if (matches) {
         mimeType = matches[1];
@@ -75,7 +90,6 @@ serve(async (req) => {
         throw new Error("Invalid data URL format");
       }
     } else {
-      // Fetch from URL
       const imageResponse = await fetch(imageUrl);
       if (!imageResponse.ok) {
         throw new Error(`Failed to fetch image: ${imageResponse.status}`);
@@ -83,14 +97,12 @@ serve(async (req) => {
       const imageBuffer = await imageResponse.arrayBuffer();
       imageBase64 = btoa(String.fromCharCode(...new Uint8Array(imageBuffer)));
       
-      // Detect mime type from content-type header
       const contentType = imageResponse.headers.get("content-type");
       if (contentType) {
         mimeType = contentType.split(";")[0].trim();
       }
     }
 
-    // Build the prompt with image
     const imagePart = {
       inlineData: {
         data: imageBase64,
@@ -99,11 +111,11 @@ serve(async (req) => {
     };
 
     const textPart = {
-      text: compiledPrompt + "\n\nGenerate an enhanced version of this image following all the instructions above. Output ONLY the enhanced image.",
+      text: finalPrompt + "\n\nGenerate an enhanced version of this image following all the instructions above. Output ONLY the enhanced image.",
     };
 
     // Generate content
-    console.log(`[generate-image] Calling Gemini ${modelName}...`);
+    console.log(`[generate-image] Calling Gemini ${modelName} with temp=${generationConfig.temperature}, seed=${usedSeed}...`);
     const result = await model.generateContent([textPart, imagePart]);
     const response = await result.response;
     
@@ -132,6 +144,13 @@ serve(async (req) => {
           text: outputText,
           image: outputImage,
           hasWatermark: false,
+        },
+        // IMPORTANT: Return used seed and temperature for preset saving
+        meta: {
+          used_seed: usedSeed,
+          used_temp: generationConfig.temperature,
+          used_topK: generationConfig.topK,
+          used_topP: generationConfig.topP,
         },
         metadata: {
           model_used: modelName,
