@@ -140,9 +140,9 @@ const callEdgeFunction = async <T>(
 
   if (canUseSupabaseFn) {
     try {
-      // Use Supabase Edge Functions (with short timeout → fallback rápido si BOOT_ERROR)
+      // Use Supabase Edge Functions (increased timeout for proper connection)
       const controller = new AbortController();
-      const timeoutMs = 800;
+      const timeoutMs = 30000; // 30 seconds for Gemini operations
       const timeoutId = window.setTimeout(() => controller.abort(), timeoutMs);
 
       const response = await fetch(`${SUPABASE_URL}/functions/v1/${functionName}`, {
@@ -150,8 +150,6 @@ const callEdgeFunction = async <T>(
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
-          // NOTE: anon key works for functions if they're not enforcing auth.
-          // If function requires user JWT, we will switch to session access_token later.
           'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
         },
         body: JSON.stringify(body),
@@ -159,10 +157,16 @@ const callEdgeFunction = async <T>(
 
       if (!response.ok) {
         const errorText = await response.text();
+        // Only fallback if it's a BOOT_ERROR, not other errors
+        if (errorText.includes('BOOT_ERROR')) {
+          throw new Error(`Edge Function BOOT_ERROR: ${errorText}`);
+        }
         throw new Error(`Edge Function Error: ${errorText}`);
       }
 
-      return response.json();
+      const result = await response.json();
+      console.log(`[EdgeFunctions] ${functionName} responded from Supabase`);
+      return result;
     } catch (e) {
       console.warn('[EdgeFunctions] Failed, falling back to FastAPI:', e);
       return callFastApi();
