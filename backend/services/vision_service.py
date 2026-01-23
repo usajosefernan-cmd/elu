@@ -270,7 +270,7 @@ class VisionService:
             # Step 2: Create image part
             image_part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
             
-            # Step 3: Call Gemini with Creative Director prompt
+            # Step 3: Call Gemini with FAST Vision prompt (optimized for speed)
             # Note: Using correct SDK syntax for google.genai
             response = client.models.generate_content(
                 model=self.model_name,
@@ -278,13 +278,13 @@ class VisionService:
                     types.Content(
                         role="user",
                         parts=[
-                            types.Part(text=CREATIVE_DIRECTOR_PROMPT),
+                            types.Part(text=FAST_VISION_PROMPT),
                             image_part
                         ]
                     )
                 ],
                 config=types.GenerateContentConfig(
-                    temperature=0.4,
+                    temperature=0.2,  # Lower temp for faster, more deterministic response
                     response_mime_type="application/json"
                 )
             )
