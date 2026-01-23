@@ -914,79 +914,90 @@ const App: React.FC = () => {
 
             // Normalize response into our ArchivedVariation shape
             const outputImage = generateResult.output?.image;
-            if (outputImage) {
-                // If backend returns base64 (common), make it a data URL
-                let normalizedImage = outputImage.startsWith('data:image')
-                    ? outputImage
-                    : outputImage.length > 500
-                        ? `data:image/png;base64,${outputImage}`
-                        : outputImage;
-
-                // If it's a data URI, convert to object URL to reduce huge-string UI freezes
-                // and upload to Storage for ARCHIVE persistence.
-                let archiveImageUrl = normalizedImage;
-                if (normalizedImage.startsWith('data:image')) {
-                    try {
-                        const blob = await (await fetch(normalizedImage)).blob();
-                        const objUrl = URL.createObjectURL(blob);
-                        generatedObjectUrlsRef.current.push(objUrl);
-                        normalizedImage = objUrl;
-
-                        // Persistable URL (Supabase Storage)
-                        const uploaderId = userProfile?.id || 'user';
-                        try {
-                            archiveImageUrl = await uploadImageToStorage(blob, `${uploaderId}/variations`);
-                        } catch (e) {
-                            console.warn('Archive image upload failed:', e);
-                            archiveImageUrl = normalizedImage;
-                        }
-                    } catch (e) {
-                        console.warn('Could not convert data URI to blob URL:', e);
-                    }
-                }
-
-                const nowIso = new Date().toISOString();
-                const id = `edge-${Date.now()}`;
-                
-                // Guardar el prompt COMPLETO y toda la info de debug (v37.0)
-                const promptPayload = { 
-                    prompt: generateResult.output?.text || '', 
-                    compiledPrompt: generateResult.debug?.compiled_prompt || '', // From Universal Assembler
-                    mode: config.mode || 'AUTO',
-                    selectedPresetId: JSON.stringify(sliderConfig), // Guardar los 27 sliders exactos
-                    mixer: config.mixer,
-                    // Guardar metadata del assembler v37.0
-                    metadata: {
-                        prompt_version: generateResult.metadata?.prompt_version || 'v37.0',
-                        model_used: generateResult.metadata?.model_used,
-                        active_sliders: Object.values(sliderConfig).reduce((acc, p) => acc + (p?.sliders?.length || 0), 0),
-                    },
-                    // Guardar info de debug (slider levels, etc.)
-                    debugInfo: generateResult.debug?.slider_debug || {},
-                    // Slider levels used
-                    levelsUsed: generateResult.debug?.slider_debug?.levels_used || {},
-                };
-
-                setPreviews([{
-                    id,
-                    generation_id: id,
-                    type: 'preview_watermark',
-                    style_id: 'edge_generated',
-                    image_path: normalizedImage,
-                    prompt_payload: promptPayload,
-                    seed: 0,
-                    rating: 0,
-                    is_selected: true,
-                    created_at: nowIso,
-                }]);
-                setProcessedImageUrl(normalizedImage);
-
-                // Persist to ARCHIVE (Supabase DB + Storage URLs)
-                await persistToArchive(imageUrl, visionAnalysis, archiveImageUrl, promptPayload);
-                
-                // AHORA navegamos a /result porque ya tenemos imagen
-                navigate('/result');
+            
+            // CRITICAL FIX: Handle case where no image is returned
+            if (!outputImage) {
+                console.error('[LuxScaler] No image in response:', generateResult);
+                setShowProcessingOverlay(false);
+                setAgentMsg({ 
+                    text: generateResult.output?.text || 'El modelo no generó imagen. Intenta de nuevo.', 
+                    type: 'error' 
+                });
+                setStatus(AgentStatus.ERROR);
+                return;
             }
+            
+            // If backend returns base64 (common), make it a data URL
+            let normalizedImage = outputImage.startsWith('data:image')
+                ? outputImage
+                : outputImage.length > 500
+                    ? `data:image/png;base64,${outputImage}`
+                    : outputImage;
+
+            // If it's a data URI, convert to object URL to reduce huge-string UI freezes
+            // and upload to Storage for ARCHIVE persistence.
+            let archiveImageUrl = normalizedImage;
+            if (normalizedImage.startsWith('data:image')) {
+                try {
+                    const blob = await (await fetch(normalizedImage)).blob();
+                    const objUrl = URL.createObjectURL(blob);
+                    generatedObjectUrlsRef.current.push(objUrl);
+                    normalizedImage = objUrl;
+
+                    // Persistable URL (Supabase Storage)
+                    const uploaderId = userProfile?.id || 'user';
+                    try {
+                        archiveImageUrl = await uploadImageToStorage(blob, `${uploaderId}/variations`);
+                    } catch (e) {
+                        console.warn('Archive image upload failed:', e);
+                        archiveImageUrl = normalizedImage;
+                    }
+                } catch (e) {
+                    console.warn('Could not convert data URI to blob URL:', e);
+                }
+            }
+
+            const nowIso = new Date().toISOString();
+            const id = `edge-${Date.now()}`;
+            
+            // Guardar el prompt COMPLETO y toda la info de debug (v37.0)
+            const promptPayload = { 
+                prompt: generateResult.output?.text || '', 
+                compiledPrompt: generateResult.debug?.compiled_prompt || '', // From Universal Assembler
+                mode: config.mode || 'AUTO',
+                selectedPresetId: JSON.stringify(sliderConfig), // Guardar los 27 sliders exactos
+                mixer: config.mixer,
+                // Guardar metadata del assembler v37.0
+                metadata: {
+                    prompt_version: generateResult.metadata?.prompt_version || 'v37.0',
+                    model_used: generateResult.metadata?.model_used,
+                    active_sliders: Object.values(sliderConfig).reduce((acc, p) => acc + (p?.sliders?.length || 0), 0),
+                },
+                // Guardar info de debug (slider levels, etc.)
+                debugInfo: generateResult.debug?.slider_debug || {},
+                // Slider levels used
+                levelsUsed: generateResult.debug?.slider_debug?.levels_used || {},
+            };
+
+            setPreviews([{
+                id,
+                generation_id: id,
+                type: 'preview_watermark',
+                style_id: 'edge_generated',
+                image_path: normalizedImage,
+                prompt_payload: promptPayload,
+                seed: 0,
+                rating: 0,
+                is_selected: true,
+                created_at: nowIso,
+            }]);
+            setProcessedImageUrl(normalizedImage);
+
+            // Persist to ARCHIVE (Supabase DB + Storage URLs)
+            await persistToArchive(imageUrl, visionAnalysis, archiveImageUrl, promptPayload);
+            
+            // AHORA navegamos a /result porque ya tenemos imagen
+            navigate('/result');
 
             setShowProcessingOverlay(false);
             setIsMicroscopeOpen(false); // Ensure inspector is closed
