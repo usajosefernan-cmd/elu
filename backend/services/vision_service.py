@@ -253,13 +253,14 @@ class VisionService:
             image_part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
             
             # Step 3: Call Gemini with Creative Director prompt
+            # Note: Using correct SDK syntax for google.genai
             response = client.models.generate_content(
                 model=self.model_name,
                 contents=[
                     types.Content(
                         role="user",
                         parts=[
-                            types.Part.from_text(CREATIVE_DIRECTOR_PROMPT),
+                            types.Part(text=CREATIVE_DIRECTOR_PROMPT),
                             image_part
                         ]
                     )
