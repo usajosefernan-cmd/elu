@@ -1,4 +1,4 @@
-# LuxScaler v28.1 - Product Requirements Document
+# LuxScaler v29 - Product Requirements Document
 
 ## Descripción General
 LuxScaler es una aplicación de procesamiento de imágenes con IA que utiliza Google Gemini para transformar fotos en producciones de alta calidad con aspecto profesional.
