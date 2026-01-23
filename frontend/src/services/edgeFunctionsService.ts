@@ -280,7 +280,7 @@ const convertSliderConfigToFlat = (config: SliderConfig): Record<string, Record<
   return result;
 };
 
-// New v40: Generate with slider config directly (uses Supabase Edge Functions)
+// New v40: Generate with slider config (FORENSIC/CREATIVE/PRESET modes)
 export const generateImageWithSliders = async (
   imageUrl: string,
   sliderConfig: SliderConfig,
@@ -288,18 +288,28 @@ export const generateImageWithSliders = async (
     userMode?: string;
     userId?: string;
     includeDebug?: boolean;
+    mode?: 'FORENSIC' | 'CREATIVE' | 'PRESET' | 'AUTO';
+    savedConfig?: { seed: number; temperature: number };
   } = {}
-): Promise<GenerateImageResult & { debug?: any }> => {
+): Promise<GenerateImageResult & { debug?: any; meta?: { used_seed: number; used_temp: number } }> => {
   const flatConfig = convertSliderConfigToFlat(sliderConfig);
   
   // Step 1: Compile prompt using Supabase Edge Function prompt-compiler v40.0
-  console.log('[EdgeFunctions] Calling prompt-compiler v40.0...');
+  console.log(`[EdgeFunctions] Calling prompt-compiler v40.0 (mode: ${options.mode || 'AUTO'})...`);
   const promptResult = await callEdgeFunction<{
     success: boolean;
-    prompt: string;
+    prompt_text: string;
+    config: {
+      temperature: number;
+      topK: number;
+      topP: number;
+      maxOutputTokens: number;
+      seed: number;
+    };
     version: string;
     metadata: {
       template: string;
+      mode: string;
       active_sliders: number;
       levels_used: Record<string, string>;
       identity_lock: boolean;
@@ -307,35 +317,44 @@ export const generateImageWithSliders = async (
     error?: string;
   }>('prompt-compiler', {
     sliderConfig: flatConfig,
+    mode: options.mode || 'AUTO',
+    saved_config: options.savedConfig,
   });
 
-  if (!promptResult.success || !promptResult.prompt) {
+  if (!promptResult.success || !promptResult.prompt_text) {
     return {
       success: false,
       error: promptResult.error || 'Prompt compilation failed',
     };
   }
 
-  console.log(`[EdgeFunctions] Prompt compiled: v${promptResult.version}, ${promptResult.metadata?.active_sliders} active sliders`);
+  console.log(`[EdgeFunctions] Prompt compiled: v${promptResult.version}, mode=${promptResult.metadata?.mode}, temp=${promptResult.config?.temperature}, seed=${promptResult.config?.seed}`);
 
-  // Step 2: Generate image with compiled prompt
-  const generateResult = await callEdgeFunction<GenerateImageResult>('generate-image', {
+  // Step 2: Generate image with compiled prompt + config (seed + temperature)
+  const generateResult = await callEdgeFunction<GenerateImageResult & { meta?: any }>('generate-image', {
     imageUrl,
-    compiledPrompt: promptResult.prompt,
+    prompt_text: promptResult.prompt_text,
+    config: promptResult.config,  // Pass seed + temperature config
     userMode: options.userMode || 'auto',
     userId: options.userId,
   });
 
-  // Merge debug info
+  // Merge debug info and meta
   return {
     ...generateResult,
+    meta: generateResult.meta || {
+      used_seed: promptResult.config?.seed,
+      used_temp: promptResult.config?.temperature,
+    },
     debug: options.includeDebug ? {
-      compiled_prompt: promptResult.prompt,
+      compiled_prompt: promptResult.prompt_text,
       slider_debug: {
         levels_used: promptResult.metadata?.levels_used || {},
         active_sliders: promptResult.metadata?.active_sliders || 0,
+        mode: promptResult.metadata?.mode,
       },
       prompt_version: promptResult.version,
+      generation_config: promptResult.config,
     } : undefined,
   };
 };
