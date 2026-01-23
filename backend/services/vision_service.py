@@ -212,7 +212,7 @@ class VisionService:
     
     def __init__(self):
         self.model_name = "gemini-2.5-flash"
-        self.proxy_dimension = 512  # Reduced for faster analysis (512px is enough for classification)
+        self.proxy_dimension = 1024  # Proxy Vision uses 1024px thumbnails
     
     async def analyze_image(self, image_input: str, use_proxy: bool = True) -> dict:
         """
