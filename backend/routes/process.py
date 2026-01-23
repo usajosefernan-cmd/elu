@@ -71,9 +71,8 @@ async def normalize_image(body: dict = Body(...)):
 @router.post("/compile")
 async def compile_prompt_endpoint(body: dict = Body(...)):
     """
-    FastAPI endpoint for prompt compilation v28.0/v40.0.
-    Supports both legacy format (config) and new format (sliderConfig).
-    Includes full debug info with vetos, blocks, and sanitization.
+    FastAPI endpoint for prompt compilation v40.1 con Smart Mode Switch.
+    Detecta automáticamente si el usuario quiere RESTAURACIÓN o CREATIVIDAD.
     """
     # Support both formats: sliderConfig (v40) and config (legacy)
     slider_config = body.get('sliderConfig') or body.get('config') or {}
@@ -86,6 +85,7 @@ async def compile_prompt_endpoint(body: dict = Body(...)):
     # If sliderConfig is provided in v40 format, use Universal Prompt Assembler
     if slider_config and any(slider_config.values()):
         from services.universal_prompt_assembler import assemble_prompt
+        import random
         
         # Normalize slider config structure
         normalized_config = {
@@ -94,7 +94,86 @@ async def compile_prompt_endpoint(body: dict = Body(...)):
             "lightscaler": slider_config.get('lightscaler', {})
         }
         
-        # Assemble the Universal Prompt v37.0
+        # ============================================================
+        # 🧠 SMART MODE SWITCH - Detector de Aburrimiento vs. Diversión
+        # ============================================================
+        def determine_generation_config(sliders: dict, saved_seed: int = None):
+            """
+            Detecta automáticamente si el usuario quiere:
+            - FORENSIC: Restauración (solo limpieza, nitidez)
+            - SHOWMAN: Creatividad (ropa, fondo, iluminación dramática)
+            """
+            style = sliders.get('stylescaler', {})
+            light = sliders.get('lightscaler', {})
+            
+            # Lista de sliders "creativos" - Si tocan esto, quieren MAGIA
+            creative_triggers = [
+                style.get('styling_ropa', 0),       # s3 - Ropa
+                style.get('limpieza_entorno', 0),   # s5 - Fondo/Entorno
+                style.get('styling_pelo', 0),       # s2 - Pelo
+                style.get('look_cine', 0),          # s8 - Color Grading
+                light.get('key_light', 0),          # L1 - Luz Principal
+                light.get('estilo_autor', 0),       # L8 - Estilo Autor
+                style.get('atmosfera', 0),          # s7 - Atmósfera
+                style.get('reencuadre_ia', 0),      # s6 - Reencuadre
+            ]
+            
+            # ¿Ha tocado algo creativo por encima del nivel 3?
+            is_creative_mode = any(val > 3 for val in creative_triggers if val)
+            
+            if is_creative_mode:
+                # 🔥 MODO "SHOWMAN" (Resultados Chulos)
+                # Alta temperatura para texturas increíbles, luces dramáticas
+                return {
+                    "mode": "SHOWMAN",
+                    "temperature": 0.75,      # Libertad creativa
+                    "topP": 0.9,              # Vocabulario rico
+                    "topK": 40,               # Variedad de opciones
+                    "seed": saved_seed if saved_seed else random.randint(100000000, 999999999)
+                }
+            else:
+                # 🛡️ MODO "FORENSE" (Restauración)
+                # Baja temperatura para arreglar sin cambiar la cara
+                return {
+                    "mode": "FORENSIC",
+                    "temperature": 0.1,       # Seguridad máxima
+                    "topP": 0.1,              # Camino lógico
+                    "topK": 1,                # Cero invención
+                    "seed": 42                # Siempre igual (estabilidad)
+                }
+        
+        # Determinar configuración automáticamente o usar saved_config
+        if saved_config and saved_config.get('seed'):
+            # Usuario aplicando un preset guardado - usar su config exacta
+            gen_config = {
+                "mode": "PRESET",
+                "temperature": saved_config.get('temperature', 0.75),
+                "topP": saved_config.get('topP', 0.9),
+                "topK": saved_config.get('topK', 40),
+                "seed": saved_config.get('seed')
+            }
+            print(f"[SmartSwitch] PRESET MODE - Seed: {gen_config['seed']}, Temp: {gen_config['temperature']}")
+        elif mode == 'FORENSIC':
+            # Usuario forzó modo forense
+            gen_config = determine_generation_config({}, None)
+            gen_config["mode"] = "FORENSIC"
+            print(f"[SmartSwitch] FORCED FORENSIC - Temp: {gen_config['temperature']}")
+        elif mode == 'CREATIVE' or mode == 'SHOWMAN':
+            # Usuario forzó modo creativo
+            gen_config = {
+                "mode": "SHOWMAN",
+                "temperature": 0.75,
+                "topP": 0.9,
+                "topK": 40,
+                "seed": random.randint(100000000, 999999999)
+            }
+            print(f"[SmartSwitch] FORCED SHOWMAN - Seed: {gen_config['seed']}")
+        else:
+            # AUTO - Detectar automáticamente basado en sliders
+            gen_config = determine_generation_config(normalized_config, None)
+            print(f"[SmartSwitch] AUTO -> {gen_config['mode']} - Temp: {gen_config['temperature']}, Seed: {gen_config['seed']}")
+        
+        # Assemble the Universal Prompt v40.1
         assembly_result = assemble_prompt(normalized_config, include_debug=True)
         compiled_prompt = assembly_result.get('prompt', '')
         debug_info = assembly_result.get('debug', {})
@@ -102,28 +181,25 @@ async def compile_prompt_endpoint(body: dict = Body(...)):
         if not compiled_prompt:
             return {"success": False, "error": "Prompt assembly failed"}
         
-        # Generate seed and temperature based on mode
-        import random
-        seed = saved_config.get('seed') if saved_config else random.randint(100000000, 999999999)
-        temperature = saved_config.get('temperature') if saved_config else (0.1 if mode == 'FORENSIC' else 0.7)
-        
         return {
             "success": True,
             "prompt_text": compiled_prompt,
             "config": {
-                "temperature": temperature,
-                "topK": 40,
-                "topP": 0.95,
+                "temperature": gen_config["temperature"],
+                "topK": gen_config["topK"],
+                "topP": gen_config["topP"],
                 "maxOutputTokens": 8192,
-                "seed": seed
+                "seed": gen_config["seed"]
             },
             "version": "v40.1",
             "metadata": {
-                "template": "universal_v37",
-                "mode": mode if mode != 'AUTO' else 'FORENSIC',
+                "template": "universal_v40_smart",
+                "mode": gen_config["mode"],
+                "auto_detected": mode == 'AUTO',
                 "active_sliders": debug_info.get('active_sliders', 0),
                 "levels_used": debug_info.get('levels_used', {}),
-                "identity_lock": True
+                "identity_lock": True,
+                "creative_triggers_detected": gen_config["mode"] == "SHOWMAN"
             }
         }
 
