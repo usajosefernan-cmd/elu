@@ -215,8 +215,8 @@ def assemble_prompt(slider_values: Dict[str, Dict[str, int]], include_debug: boo
     
     result = {
         "prompt": prompt,
-        "version": "v37.0",
-        "template": "UNIVERSAL FORENSIC RE-SHOOT & OPTICAL SYNTHESIS PROTOCOL"
+        "version": "v40.0",
+        "template": "UNIVERSAL CINEMATIC PRODUCTION PROTOCOL"
     }
     
     if include_debug:
