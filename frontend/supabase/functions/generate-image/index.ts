@@ -67,10 +67,8 @@ serve(async (req) => {
     // Initialize Gemini
     const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
     
-    // Select model based on user mode
-    const modelName = userMode === "prolux" || userMode === "pro" 
-      ? "gemini-2.0-flash-exp" 
-      : "gemini-2.0-flash-exp";
+    // Use the image generation model - CRITICAL: Only this model outputs images
+    const modelName = "gemini-2.0-flash-exp-image-generation";
 
     const model = genAI.getGenerativeModel({
       model: modelName,
