@@ -41,11 +41,11 @@ import { UpscalePage } from './pages/UpscalePage';
 import { CookieBanner } from './components/CookieBanner';
 import { AgentStatus, AgentMessage, LuxConfig, UserProfile, ArchivedVariation, SemanticAnalysis } from './types';
 import { compressAndResizeImage, uploadImageToStorage, generatePreviewGrid, analyzeImage, generateMaster } from './services/geminiService';
-import { analyzeImageWithVision, analyzeImageBase64WithVision, compilePrompt, generateEnhancedImage, generateImageWithSliders } from './services/edgeFunctionsService';
+import { analyzeImageWithVision, analyzeImageBase64WithVision, compilePrompt, generateEnhancedImage, generateImageWithSliders, batchGenerateImages } from './services/edgeFunctionsService';
 import { getCurrentUserProfile, signOutUser } from './services/authService';
 import { spendLumens, getBalance } from './services/paymentService';
 import { getDisplayUrl, getMasterUrl, getThumbnailUrl } from './utils/imageUtils';
-import { Upload, ArrowLeft, Terminal, Check, SlidersHorizontal, BrainCircuit, Contrast, Hexagon, ScanFace, Crown, ExternalLink, Zap, Settings2, Sparkles, Lock, ArrowRight, Wallet, Download, Camera, Image as ImageIcon, Loader2, Hourglass, AlertTriangle, Search, X, ZoomIn, ZoomOut, Activity, Wifi, WifiOff, RefreshCw, Grid, FileText, ScanLine, Palette, Sun, Maximize, Smartphone, Bookmark, Save, Sliders } from 'lucide-react';
+import { Upload, ArrowLeft, Terminal, Check, SlidersHorizontal, BrainCircuit, Contrast, Hexagon, ScanFace, Crown, ExternalLink, Zap, Settings2, Sparkles, Lock, ArrowRight, Wallet, Download, Camera, Image as ImageIcon, Loader2, Hourglass, AlertTriangle, Search, X, ZoomIn, ZoomOut, Activity, Wifi, WifiOff, RefreshCw, Grid, FileText, ScanLine, Palette, Sun, Maximize, Smartphone, Bookmark, Save, Sliders, Images, Layers } from 'lucide-react';
 import { saveUserPreset } from './services/presetService';
 
 import { ProcessingOverlay } from './components/mobile/ProcessingOverlay';
