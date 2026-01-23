@@ -181,6 +181,16 @@ async def compile_prompt_endpoint(body: dict = Body(...)):
         if not compiled_prompt:
             return {"success": False, "error": "Prompt assembly failed"}
         
+        # ============================================================
+        # 🔥 THE DICTATOR PROMPT - Inyección para consistencia de estilo
+        # ============================================================
+        style_lock_injected = False
+        if saved_config and saved_config.get('style_lock_prompt'):
+            # PRESET MODE con Dictator Prompt - Inyectar AL FINAL para máximo peso (Recency Bias)
+            compiled_prompt += f"\n\n{saved_config['style_lock_prompt']}"
+            style_lock_injected = True
+            print(f"[DictatorPrompt] Style Lock injected for PRESET mode")
+        
         return {
             "success": True,
             "prompt_text": compiled_prompt,
@@ -199,7 +209,8 @@ async def compile_prompt_endpoint(body: dict = Body(...)):
                 "active_sliders": debug_info.get('active_sliders', 0),
                 "levels_used": debug_info.get('levels_used', {}),
                 "identity_lock": True,
-                "creative_triggers_detected": gen_config["mode"] == "SHOWMAN"
+                "creative_triggers_detected": gen_config["mode"] == "SHOWMAN",
+                "style_lock_injected": style_lock_injected
             }
         }
 
