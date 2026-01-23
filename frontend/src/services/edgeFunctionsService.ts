@@ -381,7 +381,32 @@ export const generateEnhancedImage = async (
 };
 
 // =====================================================
-// COMPLETE FLOW v37 (Uses Universal Prompt Assembler)
+// SAVE PRESET (with Seed + Temperature)
+// =====================================================
+export const savePreset = async (
+  name: string,
+  seed: number,
+  temperature: number,
+  sliders: Record<string, Record<string, number>>,
+  options: {
+    userId?: string;
+    mode?: string;
+    thumbnailUrl?: string;
+  } = {}
+): Promise<{ success: boolean; preset?: any; error?: string }> => {
+  return await callEdgeFunction<{ success: boolean; preset?: any; error?: string }>('save-preset', {
+    name,
+    seed,
+    temperature,
+    sliders_config: sliders,
+    user_id: options.userId,
+    mode: options.mode || 'CREATIVE',
+    thumbnail_url: options.thumbnailUrl,
+  });
+};
+
+// =====================================================
+// COMPLETE FLOW v40 (Uses Supabase Edge Functions)
 // =====================================================
 export const processImageComplete = async (
   imageUrl: string,
