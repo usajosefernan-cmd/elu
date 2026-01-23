@@ -233,15 +233,27 @@ export const Navigation: React.FC<NavigationProps> = ({
             <span className="text-[9px] font-black uppercase tracking-tighter">Inicio</span>
           </button>
 
-          {/* CENTRAL UPLOAD BUTTON */}
-          <div className="relative -mt-10 group">
-            <div className="absolute -inset-4 bg-lumen-gold/20 rounded-full blur-2xl group-active:blur-3xl transition-all" />
+          {/* CENTRAL UPLOAD BUTTONS */}
+          <div className="relative -mt-10 flex items-end gap-2">
+            {/* Batch Button (smaller, left) */}
             <button
-              onClick={() => onUploadProject?.()}
-              className="w-16 h-16 rounded-full bg-gradient-to-br from-lumen-gold via-[#b3912e] to-black flex items-center justify-center text-black shadow-[0_10px_30px_rgba(212,175,55,0.4)] relative z-10 active:scale-90 transition-transform"
+              onClick={() => onBatchUpload?.()}
+              className="w-10 h-10 rounded-full bg-gradient-to-br from-purple-500 via-purple-600 to-black flex items-center justify-center text-white shadow-lg hover:scale-110 active:scale-90 transition-transform"
+              title="Procesar lote (múltiples fotos)"
             >
-              <PlusCircle className="w-8 h-8" />
+              <Layers className="w-5 h-5" />
             </button>
+            
+            {/* Main Upload Button */}
+            <div className="relative group">
+              <div className="absolute -inset-4 bg-lumen-gold/20 rounded-full blur-2xl group-active:blur-3xl transition-all" />
+              <button
+                onClick={() => onUploadProject?.()}
+                className="w-16 h-16 rounded-full bg-gradient-to-br from-lumen-gold via-[#b3912e] to-black flex items-center justify-center text-black shadow-[0_10px_30px_rgba(212,175,55,0.4)] relative z-10 active:scale-90 transition-transform"
+              >
+                <PlusCircle className="w-8 h-8" />
+              </button>
+            </div>
           </div>
 
           <button
