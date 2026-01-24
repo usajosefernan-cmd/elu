@@ -10,7 +10,24 @@ export interface SmartPreset {
     photoscaler: Record<string, number>;
     stylescaler: Record<string, number>;
     lightscaler: Record<string, number>;
+    _v40_meta?: {
+      locked_sliders?: string[];
+      thumbnail_base64?: string;
+    };
   };
+  // V40 fields (new schema)
+  sliders_config?: {
+    photoscaler: Record<string, number>;
+    stylescaler: Record<string, number>;
+    lightscaler: Record<string, number>;
+  };
+  locked_sliders?: string[];
+  thumbnail_base64?: string;
+  thumbnail_url?: string;
+  style_lock_prompt?: string;
+  seed?: number;
+  temperature?: number;
+  // Legacy fields
   locked_pillars: string[];
   narrative_anchor?: string;
   smart_locks?: Record<string, string>;
