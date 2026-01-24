@@ -1,80 +1,87 @@
 """
-Ejecutar SQL en Supabase usando diferentes métodos
+Ejecutar SQL en Supabase usando conexión PostgreSQL directa
 """
 import json
-import sys
-sys.path.insert(0, '/app/backend')
-
-from services.supabase_service import supabase_db
+import psycopg2
 
 
-async def execute_migrations():
-    """Ejecuta las migraciones usando el cliente de Supabase."""
-    
-    print("🚀 Ejecutando migraciones v41 en Supabase...")
+def main():
+    print("=" * 70)
+    print("LUXSCALER v41.0 - SUPABASE DIRECT SQL EXECUTOR")
+    print("=" * 70)
     
     # Leer credenciales
     with open('/app/BBLA/CREDENTIALS.json', 'r') as f:
         creds = json.load(f)
     
-    # Leer SQL files
-    with open('/app/backend/migrations/v41_prompt_tables_supabase.sql', 'r') as f:
-        ddl_sql = f.read()
+    conn_string = creds['SUPABASE_CREDENTIALS']['db_connection_string']
     
-    with open('/app/backend/migrations/v41_prompt_tables_data.sql', 'r') as f:
-        dml_sql = f.read()
+    print(f"\n📡 Conectando a PostgreSQL...")
+    print(f"🔑 Connection: {conn_string[:50]}...")
     
     try:
-        # Método: Ejecutar statements uno por uno usando insert/upsert
-        print("\n📋 Creando tablas usando SQL directo...")
+        # Conectar
+        conn = psycopg2.connect(conn_string)
+        conn.autocommit = True
+        cur = conn.cursor()
         
-        # Dividir SQL en statements individuales
-        all_statements = (ddl_sql + "\n\n" + dml_sql).split(';')
+        print(f"✅ Conexión establecida!")
         
-        success_count = 0
-        error_count = 0
+        # Leer archivos SQL
+        print(f"\n📂 Ejecutando DDL (crear tablas)...")
         
-        for i, statement in enumerate(all_statements):
-            statement = statement.strip()
-            if not statement or statement.startswith('--') or len(statement) < 10:
-                continue
-            
-            try:
-                # Intentar ejecutar el statement
-                print(f"\n[{i+1}] Ejecutando: {statement[:60]}...")
-                
-                # Usar SQL directo si está disponible
-                result = supabase_db.client.rpc('exec', {'sql': statement}).execute()
-                
-                print(f"✅ Ejecutado")
-                success_count += 1
-                
-            except Exception as e:
-                error_msg = str(e)
-                if 'does not exist' in error_msg or 'already exists' in error_msg:
-                    print(f"⚠️ {error_msg[:100]}")
-                else:
-                    print(f"❌ Error: {error_msg[:150]}")
-                error_count += 1
+        with open('/app/backend/migrations/v41_prompt_tables_supabase.sql', 'r') as f:
+            ddl_sql = f.read()
+        
+        # Ejecutar DDL
+        cur.execute(ddl_sql)
+        print(f"✅ Tablas creadas (photoscaler_prompt_rules, lightscaler_prompt_rules, stylescaler_prompt_rules)")
+        
+        # Ejecutar DML
+        print(f"\n📂 Ejecutando DML (insertar datos)...")
+        
+        with open('/app/backend/migrations/v41_prompt_tables_data.sql', 'r') as f:
+            dml_sql = f.read()
+        
+        cur.execute(dml_sql)
+        print(f"✅ Datos insertados")
+        
+        # Verificar
+        print(f"\n🔍 Verificando tablas...")
+        
+        cur.execute("SELECT COUNT(*) FROM photoscaler_prompt_rules")
+        photo_count = cur.fetchone()[0]
+        print(f"   photoscaler_prompt_rules: {photo_count} filas")
+        
+        cur.execute("SELECT COUNT(*) FROM lightscaler_prompt_rules")
+        light_count = cur.fetchone()[0]
+        print(f"   lightscaler_prompt_rules: {light_count} filas")
+        
+        cur.execute("SELECT COUNT(*) FROM stylescaler_prompt_rules")
+        style_count = cur.fetchone()[0]
+        print(f"   stylescaler_prompt_rules: {style_count} filas")
         
         print(f"\n{'='*70}")
-        print(f"✅ Completado: {success_count} statements exitosos, {error_count} errores")
+        print(f"🎉 ¡MIGRACIÓN v41 COMPLETADA EXITOSAMENTE!")
         print(f"{'='*70}")
+        print(f"\n✅ Sistema de prompts modulares activo")
+        print(f"✅ {photo_count + light_count + style_count} reglas cargadas en Supabase")
         
-        if error_count > 0:
-            print("\n⚠️ Hubo errores. Necesitas ejecutar manualmente en Supabase SQL Editor:")
-            print("   1. Ve a: https://uxqtxkuldjdvpnojgdsh.supabase.co")
-            print("   2. SQL Editor → New Query")
-            print("   3. Ejecuta: /app/backend/migrations/v41_prompt_tables_supabase.sql")
-            print("   4. Ejecuta: /app/backend/migrations/v41_prompt_tables_data.sql")
-        else:
-            print("\n🎉 ¡Migraciones ejecutadas exitosamente!")
-            
+        cur.close()
+        conn.close()
+        
     except Exception as e:
-        print(f"\n❌ Error general: {e}")
-        print("\n📋 Por favor ejecuta manualmente en Supabase SQL Editor")
+        print(f"\n❌ Error: {e}")
+        import traceback
+        traceback.print_exc()
+        
+        print(f"\n📋 SOLUCIÓN MANUAL:")
+        print(f"   Si la conexión falla, ejecuta en Supabase SQL Editor:")
+        print(f"   1. https://uxqtxkuldjdvpnojgdsh.supabase.co")
+        print(f"   2. SQL Editor → New Query")
+        print(f"   3. Pega y ejecuta: /app/backend/migrations/v41_prompt_tables_supabase.sql")
+        print(f"   4. Pega y ejecuta: /app/backend/migrations/v41_prompt_tables_data.sql")
 
 
 if __name__ == "__main__":
-    import asyncio
-    asyncio.run(execute_migrations())
+    main()
