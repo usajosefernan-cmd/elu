@@ -2,6 +2,7 @@ from fastapi import APIRouter, Body
 from services.smart_presets_service import smart_presets_service
 from services.dictator_prompt_builder import build_dictator_prompt, get_preset_mode
 from services.supabase_service import supabase_db
+from services.thumbnail_service import thumbnail_service
 import random
 
 router = APIRouter(prefix="/presets", tags=["presets"])
