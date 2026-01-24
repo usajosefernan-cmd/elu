@@ -896,6 +896,41 @@ export const HeroGallery: React.FC<HeroGalleryProps> = ({ onCtaClick, onBatchCli
                 {/* NEW 5-SLIDE CAROUSEL HERO */}
                 <FeatureCarousel onCtaClick={onCtaClick} />
 
+                {/* 🔥 UPLOAD BUTTONS - Clear and Visible */}
+                <div className="bg-gradient-to-b from-black via-zinc-900/50 to-black py-12 md:py-16">
+                    <div className="max-w-4xl mx-auto px-4">
+                        <div className="text-center mb-8">
+                            <h3 className="text-2xl md:text-3xl font-bold text-white mb-2">{t('landing.upload.title', 'Empieza Ahora')}</h3>
+                            <p className="text-gray-400">{t('landing.upload.subtitle', 'Sube una foto o varias para aplicar el mismo estilo')}</p>
+                        </div>
+                        
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
+                            {/* Single Photo Button */}
+                            <button
+                                onClick={onCtaClick}
+                                className="group relative flex items-center gap-3 bg-gradient-to-r from-[#D4AF37] to-[#b3912e] text-black px-8 py-4 text-lg font-bold rounded-2xl hover:scale-105 transition-all shadow-[0_0_30px_rgba(212,175,55,0.3)] min-w-[240px]"
+                            >
+                                <Upload className="w-6 h-6" />
+                                <span>{t('landing.upload.single', 'SUBIR FOTO')}</span>
+                            </button>
+                            
+                            {/* Batch Photos Button */}
+                            <button
+                                onClick={onBatchClick}
+                                className="group relative flex items-center gap-3 bg-gradient-to-r from-purple-600 to-purple-800 text-white px-8 py-4 text-lg font-bold rounded-2xl hover:scale-105 transition-all shadow-[0_0_30px_rgba(147,51,234,0.3)] min-w-[240px] border border-purple-500/30"
+                            >
+                                <Layers className="w-6 h-6" />
+                                <span>{t('landing.upload.batch', 'SUBIR VARIAS')}</span>
+                                <span className="absolute -top-2 -right-2 bg-[#D4AF37] text-black text-[10px] font-bold px-2 py-0.5 rounded-full">LOTE</span>
+                            </button>
+                        </div>
+                        
+                        <p className="text-center text-gray-500 text-sm mt-4">
+                            {t('landing.upload.hint', 'El modo lote aplica el mismo estilo a todas las fotos')}
+                        </p>
+                    </div>
+                </div>
+
                 {/* SCROLL INDICATOR */}
                 <div className="text-center py-6 md:py-8 bg-black">
                     <div className="text-[10px] text-gray-600 uppercase tracking-[0.3em] mb-2">Scroll to explore engines</div>
