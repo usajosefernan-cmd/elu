@@ -103,32 +103,6 @@ export const getGenerations = async (): Promise<GenerationSession[]> => {
     }
 };
 
-    // Map DB types to Frontend types
-    return data.map((gen: any) => ({
-        id: gen.id,
-        user_id: gen.user_id,
-        status: gen.status,
-        original_image_path: gen.original_image_path,
-        original_image_thumbnail: gen.original_image_thumbnail || gen.original_image_path,
-        created_at: gen.created_at,
-        semantic_analysis: gen.semantic_analysis,
-        variations: (gen.variations || []).map((v: any) => ({
-            id: v.id,
-            generation_id: v.generation_id,
-            type: v.type,
-            style_id: v.style_id,
-            image_path: v.image_path,
-            prompt_payload: v.prompt_payload,
-            seed: v.seed,
-            rating: v.rating,
-            is_selected: v.is_selected,
-            feedback: v.feedback, 
-            created_at: v.created_at,
-            engineering_report: v.engineering_report
-        })).sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-    }));
-};
-
 export const deleteGeneration = async (id: string) => {
     console.log(`[Delete Protocol] Initiating purge for session: ${id}`);
 
