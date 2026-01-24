@@ -41,6 +41,9 @@ interface UnifiedConfigModalProps {
   onCancel: () => void;
   tokensRequired: number;
   userTokens: number;
+  // Batch mode props
+  batchMode?: boolean;
+  batchFiles?: File[];
 }
 
 // ===========================================
