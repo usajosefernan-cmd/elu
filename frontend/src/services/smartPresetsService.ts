@@ -87,6 +87,7 @@ export const getUserPresets = async (userId: string): Promise<SmartPreset[]> => 
       return data.presets.map((p: any) => ({
         id: p.id,
         name: p.name,
+        description: p.description || '',
         created_at: p.created_at,
         user_id: p.user_id,
         slider_values: p.sliders_config,
