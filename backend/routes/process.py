@@ -468,11 +468,14 @@ async def batch_generate_endpoint(body: dict = Body(...)):
                 img_url
             )
             
-            if result.get('success') and result.get('image'):
+            # Check for image in result (gemini_service returns image_base64)
+            image_data = result.get('image_base64') or result.get('image')
+            
+            if image_data and not result.get('error'):
                 return {
                     "id": img_id,
                     "success": True,
-                    "image": result['image'],
+                    "image": image_data,
                     "seed": seed,
                     "text": result.get('text', '')
                 }
