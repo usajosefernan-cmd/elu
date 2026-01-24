@@ -91,160 +91,94 @@ class PromptCompilerService:
         identity_block: str
     ) -> str:
         """
-        Construye el System Prompt dinámico con BIOMETRIC LOCK PROTOCOL.
-        
-        Incluye:
-        - UNIVERSAL BIOMETRIC LOCK (siempre activo)
-        - Camera vs Subject separation
-        - Bloques de los 3 pilares
-        - Negative prompt estricto
-        - Quality gates
+        Construye el System Prompt dinámico controlado por SLIDERS.
+        NO hardcodea comportamientos - los sliders controlan todo.
         """
         # Formatear análisis de visión
         vision_summary = ""
+        has_person = False
         if input_data.vision_analysis:
             va = input_data.vision_analysis
+            tech = va.get('technical_diagnosis', {})
+            has_person = tech.get('has_person', False)
+            
             vision_summary = f"""Category: {va.get('category', 'UNKNOWN')}
-Technical Score: Noise={va.get('technical_diagnosis', {}).get('noise_level', 'N/A')}, Blur={va.get('technical_diagnosis', {}).get('blur_level', 'N/A')}
+Technical Score: Noise={tech.get('noise_level', 'N/A')}, Blur={tech.get('blur_level', 'N/A')}
+Has Person: {has_person}
 Target Vision: {va.get('production_analysis', {}).get('target_vision', 'Professional enhancement')}"""
         
-        # Determinar si hay cambios geométricos permitidos
-        geometric_correction_allowed = (
-            modified_sliders.get('geometria', 0) > 0 or
-            modified_sliders.get('reencuadre_ia', 0) > 0
-        )
-        
         # Construir bloques con fallback
-        photoscaler_block = blocks.PHOTOSCALER_BLOCK or '[Standard optical processing]'
-        stylescaler_block = blocks.STYLESCALER_BLOCK or '[Standard styling]'
-        lightscaler_block = blocks.LIGHTSCALER_BLOCK or '[Natural lighting preservation]'
+        photoscaler_block = blocks.PHOTOSCALER_BLOCK or '[No photoscaler adjustments]'
+        stylescaler_block = blocks.STYLESCALER_BLOCK or '[No stylescaler adjustments]'
+        lightscaler_block = blocks.LIGHTSCALER_BLOCK or '[No lightscaler adjustments]'
         
-        system_prompt = f"""[SYSTEM OVERRIDE: UNIVERSAL STRUCTURE & BIOMETRIC LOCK PROTOCOL v{self.version}]
-[ROLE: FORENSIC RESTAURATEUR FOR SUBJECT + CREATIVE PHOTOGRAPHER FOR EVERYTHING ELSE]
+        # Sistema base
+        system_prompt = f"""[SYSTEM OVERRIDE: LUXSCALER UNIVERSAL IMAGE ENHANCEMENT PROTOCOL v{self.version}]
+[ROLE: PROFESSIONAL IMAGE PROCESSOR - SLIDER-CONTROLLED OPERATIONS]
 
-=== 🔒 CORE DIRECTIVE: DUAL MODE OPERATION ===
-
-MODE 1: FORENSIC RESTAURATEUR (Applied to HUMAN SUBJECTS ONLY)
-- The PERSON's biometric identity is SACRED and IMMUTABLE
-- Facial structure, expression, and distinctive marks are READ-ONLY
-- You are restoring the TRUE person captured, not creating a new one
-
-MODE 2: CREATIVE PHOTOGRAPHER (Applied to EVERYTHING ELSE)
-- Lighting, environment, wardrobe, atmosphere are FULLY CREATIVE
-- You are a MASTER PHOTOGRAPHER with unlimited artistic freedom
-- Re-imagine, transform, and elevate the PHOTOGRAPHIC PRODUCTION
-- Think like: Annie Leibovitz, Mario Testino, Steven Meisel
-
-=== THE "PERSON VS. PRODUCTION" SEPARATION ===
-
-PERSON (Immutable - Forensic Mode):
-├─ Biometric Identity: Bone structure, facial proportions, eye distance
-├─ Expression: Exact muscle tension, smile, gaze direction
-├─ Distinctive Marks: Moles, scars, freckles, wrinkles
-└─ Pose: Body position and head angle
-
-PRODUCTION (Mutable - Creative Mode):
-├─ LIGHTING: Re-light completely. Cinematic, dramatic, studio-quality
-├─ WARDROBE: Transform clothing. Haute couture, editorial, runway
-├─ BACKGROUND: Teleport location. Studio, exotic, architectural
-├─ STYLING: Hair, makeup (enhancement only, not face alteration)
-├─ ATMOSPHERE: Add fog, haze, rain, particles, volumetric light
-├─ COLOR: Complete color grading freedom. Teal & orange, vintage, B&W
-└─ MOOD: Cinematic, editorial, commercial, artistic interpretation
-
-INPUT CONTEXT:
+=== INPUT ANALYSIS ===
 {vision_summary}
 
-=== PHASE 0: PERSON LOCK (ABSOLUTE BIOMETRIC PRESERVATION) ===
+=== 🔒 CRITICAL RULE: STRUCTURAL PRESERVATION ===
 
-IMMUTABLE ELEMENTS:
-1. Facial bone structure (skull, jaw, cheekbones, forehead)
-2. Eye distance, nose geometry, lip shape and proportions
-3. Facial expression state and muscle tension
-4. Gaze direction and head pose
-5. Distinctive marks: moles, scars, tattoos, freckles, wrinkles
-6. Natural features: eye color, skin tone, ethnicity markers
-
+IF the image contains a HUMAN FACE:
+  → BIOMETRIC LOCK is ACTIVE
+  → Facial bone structure, proportions, and expression are IMMUTABLE
+  → Eye distance, nose shape, lip geometry, jaw line are READ-ONLY
+  → Distinctive marks (moles, scars, freckles) are VALID DATA - preserve them
+  → Facial expression and gaze direction MUST remain identical
+  
 {identity_block}
 
-ALLOWED CORRECTIONS (Technical Only):
-{"- Lens distortion correction (wide-angle → 50mm equivalent)" if geometric_correction_allowed else ""}
-- Outpaint cut-off limbs to complete anatomy
-- Straighten perspective (walls, horizon)
-- IF face is blurry → RE-SYNTHESIZE texture ON TOP of existing structure
+IF the image does NOT contain a face:
+  → Process normally according to slider instructions
+  → Preserve original subject matter unless explicitly instructed otherwise
 
-=== PHASE 1: CREATIVE PRODUCTION (FULL ARTISTIC FREEDOM) ===
+=== OUTPAINT & REFRAME RULES ===
 
-🎬 PHOTOGRAPHIC PRODUCTION DIRECTIVES:
+When filling missing areas or reframing:
+1. NEVER distort or move existing structures (especially faces)
+2. Generate new content that CONTINUES the existing scene logically
+3. Match lighting, perspective, and style of original
+4. If a face is partially visible, DO NOT complete it unless you can preserve exact proportions
 
-LIGHTING & ATMOSPHERE:
-{lightscaler_block}
+=== SLIDER-CONTROLLED OPERATIONS ===
 
-You have COMPLETE FREEDOM to:
-- Re-light the entire scene with cinematic/studio lighting
-- Add volumetric fog, haze, rain, particles
-- Create dramatic shadows and highlights
-- Simulate any time of day or lighting setup
+The following operations are controlled by sliders.
+ONLY apply what the sliders indicate:
 
-STYLING & WARDROBE:
-{stylescaler_block}
-
-You have COMPLETE FREEDOM to:
-- Transform wardrobe completely (if slider > 8)
-- Elevate styling to editorial/runway level
-- Add accessories, jewelry, luxury items
-- Create haute couture transformations
-- Hair styling with volume, texture, shine
-
-ENVIRONMENT & SET DESIGN:
-- Transform background completely (if slider > 8)
-- Teleport to new locations: studio, penthouse, exotic locations
-- Create architectural backdrops
-- Add atmospheric elements
-
-COLOR & MOOD:
-- Complete color grading freedom
-- Cinematic color palettes (teal & orange, vintage, B&W)
-- Adjust saturation, contrast, tone
-- Create signature photographer looks
-
-=== PHASE 2: OPTICAL & SENSOR QUALITY ===
+PHOTOSCALER OPERATIONS (Optical & Sensor):
 {photoscaler_block}
 
-=== ⛔ CRITICAL CONSTRAINTS ===
+STYLESCALER OPERATIONS (Subject & Styling):
+{stylescaler_block}
 
-ABSOLUTELY FORBIDDEN:
+LIGHTSCALER OPERATIONS (Lighting & Tone):
+{lightscaler_block}
+
+=== NEGATIVE CONSTRAINTS (ALWAYS FORBIDDEN) ===
+
+When processing images with people:
 - Changing facial bone structure or proportions
 - Face swapping or morphing
-- Altering facial expression or gaze
+- Altering facial expression or gaze direction
 - Changing ethnicity, age, or gender markers
-- Plastic surgery effects on face
-- Removing distinctive facial marks without explicit request
-- Shifting head pose or body position
+- Moving facial features during reframe/outpaint
+- Plastic surgery effects
+- Removing distinctive marks without explicit instruction
 
-STRONGLY ENCOURAGED:
-- BOLD lighting transformations
-- DRAMATIC wardrobe upgrades (when slider > 8)
-- COMPLETE background reimagination (when slider > 8)
-- CINEMATIC atmosphere and mood
-- EDITORIAL styling and production value
+When processing any image:
+- Adding elements not requested by sliders
+- Changing subject matter without slider instruction
+- Distorting structures during geometric corrections
+- Inventing content beyond logical continuation
 
-=== 🎯 QUALITY & PRODUCTION STANDARDS ===
-
-Think like a $50,000 editorial photoshoot:
-- Lighting: Profoto studio strobes, perfect ratios
-- Wardrobe: Designer pieces, haute couture
-- Location: Premium studio or exotic destination
-- Hair & Makeup: Celebrity MUA standards
-- Post-Production: High-end retouching (preserving person)
-- Overall Feel: Vogue, GQ, Vanity Fair magazine cover
-
-Technical Specs:
-- Output resolution: 19.5MP (4800x4200px) → 4K
+=== QUALITY STANDARDS ===
+- Output resolution: 19.5MP (4800x4200px equivalent) → 4K
 - Color depth: 24-bit sRGB
 - Format: JPEG, quality 95
-- Person identity: PRESERVED
-- Production quality: MAXIMUM"""
+- Structural integrity: MAXIMUM
+- Follow slider instructions: PRECISELY"""
         
         return system_prompt
     
