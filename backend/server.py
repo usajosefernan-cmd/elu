@@ -25,7 +25,7 @@ app = FastAPI(title="LuxScaler v27 API")
 # Router Setup
 api_router = APIRouter(prefix="/api")
 
-from routes import auth, pillars, process, admin, presets, slider_definitions, prompt_assembly
+from routes import auth, pillars, process, admin, presets, slider_definitions, prompt_assembly, v41_routes
 
 api_router.include_router(auth.router)
 api_router.include_router(pillars.router)
@@ -34,6 +34,7 @@ api_router.include_router(admin.router) # Map /api/admin-actions
 api_router.include_router(presets.router) # Map /api/presets
 api_router.include_router(slider_definitions.router) # Map /api/slider-definitions
 api_router.include_router(prompt_assembly.router) # Map /api/prompt
+api_router.include_router(v41_routes.router) # Map /api/v41
 
 @api_router.get("/")
 async def root():
