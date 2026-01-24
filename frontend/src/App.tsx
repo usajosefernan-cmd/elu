@@ -1606,16 +1606,17 @@ const App: React.FC = () => {
                 />
             )}
 
-            {/* GLOBAL UPLOAD INPUT - Always Mounted */}
+            {/* GLOBAL UPLOAD INPUT - Supports multiple files */}
             <input
                 type="file"
                 ref={fileInputRef}
                 onChange={handleGuestUpload}
                 accept="image/*"
+                multiple
                 className="hidden"
             />
 
-            {/* BATCH UPLOAD INPUT - Multiple files */}
+            {/* BATCH UPLOAD INPUT - Multiple files (legacy, redirects to main) */}
             <input
                 type="file"
                 ref={batchFileInputRef}
