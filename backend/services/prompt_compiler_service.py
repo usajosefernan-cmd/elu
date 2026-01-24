@@ -1,14 +1,12 @@
-# LuxScaler v28.0 - PROMPT COMPILER SERVICE (Rewrite Completo)
-# FASE 4: EL CEREBRO - Orquesta Veto Engine, Block Injector, Sanitizer
-# FASE 5: EL ALMA - Identity Lock + Multimodal DNA Anchor
-# Según documento maestro del usuario
+# LuxScaler v41.0 - PROMPT COMPILER SERVICE
+# Usa SQL Prompt Builder para consultar tablas de Supabase
 
 from typing import Dict, List, Any, Optional
 from dataclasses import dataclass
 
-# Importar servicios
+# Importar SQL Prompt Builder
+from services.sql_prompt_builder import sql_prompt_builder
 from services.conflict_veto_engine import conflict_veto_engine
-from services.block_injector import block_injector, CompilerBlockOutput
 from services.semantic_sanitizer import semantic_sanitizer
 from services.identity_lock import identity_lock_service, IdentityLockContext
 from services.dna_anchor_generator import dna_anchor_generator, DNAAnchor
