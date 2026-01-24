@@ -73,10 +73,11 @@ export const getSystemPresets = async (): Promise<SmartPreset[]> => {
   }
 };
 
-// Get user presets
+// Get user presets V40 (with thumbnails and locked sliders)
 export const getUserPresets = async (userId: string): Promise<SmartPreset[]> => {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/presets/user/${userId}`);
+    // Try v40 endpoint first
+    const response = await fetch(`${BACKEND_URL}/api/presets/v40/user/${userId}`);
     const data = await response.json();
     
     if (data.success) {
@@ -85,7 +86,14 @@ export const getUserPresets = async (userId: string): Promise<SmartPreset[]> => 
     return [];
   } catch (error) {
     console.error('Error fetching user presets:', error);
-    return [];
+    // Fallback to old endpoint
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/presets/user/${userId}`);
+      const data = await response.json();
+      return data.success ? data.presets : [];
+    } catch (e) {
+      return [];
+    }
   }
 };
 
