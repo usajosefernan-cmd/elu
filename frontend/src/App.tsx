@@ -1659,10 +1659,12 @@ const App: React.FC = () => {
                 analysis={visionAnalysis}
                 onConfirm={handleUnifiedConfirm}
                 onCancel={handleUnifiedCancel}
-                tokensRequired={10}
+                tokensRequired={batchMode ? 10 * batchFiles.length : 10}
                 userTokens={userTokenBalance}
                 userProfile={(userProfile?.profile_type as 'auto' | 'user' | 'pro' | 'prolux') || 'auto'}
                 userId={userProfile?.id}
+                batchMode={batchMode}
+                batchFiles={batchFiles}
             />
 
             {/* Legacy MobileConfigWizard disabled for v28 flow */}
