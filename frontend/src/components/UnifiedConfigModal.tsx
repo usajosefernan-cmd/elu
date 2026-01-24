@@ -604,61 +604,80 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
                       Mis Estilos ({userPresets.length})
                     </p>
                     <div className="grid grid-cols-3 gap-2">
-                      {userPresets.map(preset => {
+                      {userPresets.map((preset, index) => {
                         const thumbnail = preset.thumbnail_base64 || preset.slider_values?._v40_meta?.thumbnail_base64;
                         const thumbnailUrl = thumbnail ? `data:image/webp;base64,${thumbnail}` : null;
                         
                         return (
                           <div key={preset.id} className="relative group">
                             {/* Preset Card con miniatura */}
-                            <button
-                              onClick={() => loadPreset(preset)}
-                              className={`w-full aspect-square rounded-lg overflow-hidden transition-all relative ${
-                                selectedPresetId === preset.id 
-                                  ? 'ring-2 ring-blue-500 scale-[1.02]' 
-                                  : 'ring-1 ring-neutral-700 hover:ring-blue-500/50'
-                              }`}
-                            >
-                              {thumbnailUrl ? (
-                                <img 
-                                  src={thumbnailUrl} 
-                                  alt={preset.name}
-                                  className="w-full h-full object-cover"
-                                />
-                              ) : (
-                                <div className="w-full h-full bg-gradient-to-br from-blue-900/30 to-purple-900/30 flex items-center justify-center">
-                                  <span className="text-2xl opacity-30">📸</span>
+                            <div className="relative">
+                              <button
+                                onClick={() => {
+                                  setViewingPreset(preset);
+                                  setViewingPresetIndex(index);
+                                }}
+                                className={`w-full aspect-square rounded-lg overflow-hidden transition-all relative ${
+                                  selectedPresetId === preset.id 
+                                    ? 'ring-2 ring-blue-500 scale-[1.02]' 
+                                    : 'ring-1 ring-neutral-700 hover:ring-blue-500/50'
+                                }`}
+                              >
+                                {thumbnailUrl ? (
+                                  <img 
+                                    src={thumbnailUrl} 
+                                    alt={preset.name}
+                                    className="w-full h-full object-cover"
+                                  />
+                                ) : (
+                                  <div className="w-full h-full bg-gradient-to-br from-blue-900/30 to-purple-900/30 flex items-center justify-center">
+                                    <span className="text-2xl opacity-30">📸</span>
+                                  </div>
+                                )}
+                                
+                                {/* Overlay con nombre */}
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2">
+                                  <span className="text-[9px] font-medium text-white truncate w-full">
+                                    {preset.name}
+                                  </span>
                                 </div>
-                              )}
+                                
+                                {/* Badge de selección */}
+                                {selectedPresetId === preset.id && (
+                                  <div className="absolute top-1 right-1 bg-blue-500 rounded-full p-1">
+                                    <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </div>
+                                )}
+                              </button>
                               
-                              {/* Overlay con nombre */}
-                              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent flex items-end p-2">
-                                <span className="text-[9px] font-medium text-white truncate w-full">
-                                  {preset.name}
-                                </span>
-                              </div>
-                              
-                              {/* Badge de selección */}
-                              {selectedPresetId === preset.id && (
-                                <div className="absolute top-1 right-1 bg-blue-500 rounded-full p-1">
-                                  <svg className="w-2 h-2 text-white" fill="currentColor" viewBox="0 0 20 20">
-                                    <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                              {/* Botones de acción */}
+                              <div className="absolute -bottom-1 -right-1 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    loadPreset(preset);
+                                  }}
+                                  className="bg-blue-500/90 hover:bg-blue-500 rounded-full p-1.5 z-10"
+                                  title="Cargar preset"
+                                >
+                                  <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
                                   </svg>
-                                </div>
-                              )}
-                            </button>
-                            
-                            {/* Delete button */}
-                            <button
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                handleDeletePreset(preset.id);
-                              }}
-                              className="absolute -top-1 -right-1 bg-red-500/90 hover:bg-red-500 rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
-                              title="Eliminar"
-                            >
-                              <Trash2 size={10} className="text-white" />
-                            </button>
+                                </button>
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDeletePreset(preset.id);
+                                  }}
+                                  className="bg-red-500/90 hover:bg-red-500 rounded-full p-1.5 z-10"
+                                  title="Eliminar"
+                                >
+                                  <Trash2 size={10} className="text-white" />
+                                </button>
+                              </div>
+                            </div>
                           </div>
                         );
                       })}
