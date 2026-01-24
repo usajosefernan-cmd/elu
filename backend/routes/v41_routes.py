@@ -299,7 +299,8 @@ async def save_preset_v41(body: dict = Body(...)):
     except Exception as e:
         print(f"[SavePreset v41] Error: {e}")
         import traceback
-
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
 
 
 @router.get("/macro-definitions/{profile_tier}")
