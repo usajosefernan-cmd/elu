@@ -539,8 +539,26 @@ const App: React.FC = () => {
     };
 
     const handleGuestUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-        if (e.target.files && e.target.files[0]) {
-            const file = e.target.files[0];
+        if (e.target.files && e.target.files.length > 0) {
+            const files = Array.from(e.target.files);
+            
+            // Si hay múltiples archivos, activar batch mode
+            if (files.length > 1) {
+                console.log(`[LuxScaler] Batch mode activated: ${files.length} files`);
+                setBatchFiles(files.slice(0, 10)); // Max 10
+                setBatchMode(true);
+                setBatchProgress({ completed: 0, total: files.length, results: [] });
+                
+                // Abrir modal de configuración para batch
+                setShowVisionConfirm(true);
+                
+                // Reset file input
+                if (fileInputRef.current) fileInputRef.current.value = '';
+                return;
+            }
+            
+            // Single file - normal flow
+            const file = files[0];
             setPendingFile(file);
             processFileForAnalysis(file);
         }
