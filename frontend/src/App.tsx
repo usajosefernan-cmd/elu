@@ -1344,6 +1344,7 @@ const App: React.FC = () => {
                 <div className="flex-1 overflow-y-auto bg-black">
                     <HeroGallery
                         onCtaClick={handleStartClick}
+                        onBatchClick={handleBatchClick}
                         onMotorClick={(id) => {
                             // Map motor IDs to routes if needed
                             if (id === 'photo') navigate('/forensic');
