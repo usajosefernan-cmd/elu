@@ -667,6 +667,16 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
                 </div>
               )}
 
+              {/* Preset Locked Sliders Info Banner */}
+              {lockedSliders.length > 0 && selectedPresetId && (
+                <div className="px-4 py-2 bg-yellow-500/10 border-b border-yellow-500/20 flex items-center gap-2">
+                  <Lock size={12} className="text-yellow-500 flex-shrink-0" />
+                  <p className="text-[10px] text-yellow-400">
+                    Este preset tiene <span className="font-bold">{lockedSliders.length} slider{lockedSliders.length > 1 ? 's' : ''} bloqueado{lockedSliders.length > 1 ? 's' : ''}</span> para mantener el estilo
+                  </p>
+                </div>
+              )}
+
               {/* Pillar tabs */}
               {showSliders && (
                 <div className="px-4 py-2 border-b border-neutral-800/50">
