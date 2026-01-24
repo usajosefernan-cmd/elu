@@ -1,17 +1,31 @@
 # ================================================================
-# LUXSCALER v40.2 - DOCUMENTACIÓN COMPLETA DEL SISTEMA DE PROMPTS
+# LUXSCALER v40.3 - DOCUMENTACIÓN COMPLETA DEL SISTEMA
 # ================================================================
 # Fecha: 24 de Enero 2025
-# Versión: v40 Cinematic + Dictator Prompt
+# Versión: v40.3 - Biometric Lock Protocol + Cinematic Prompts + Dictator Prompt
+
+## 🔒 NUEVO: BIOMETRIC LOCK PROTOCOL (v40.3)
+
+**CAMBIO CRÍTICO:** LuxScaler ahora funciona como **"Forensic Restaurateur"** en vez de "Creative Artist".
+
+### Filosofía "Camera vs Subject":
+- **SUBJECT (Sujeto) = INMUTABLE**: Identidad facial, estructura ósea, expresión, marcas distintivas
+- **CAPTURE (Captura) = CORREGIBLE**: Distorsión de lente, ruido, desenfoque, encuadre
+
+**Ver documento completo:** `/app/LUXSCALER_v40.3_BIOMETRIC_LOCK_PROTOCOL.md`
+
+---
 
 ## 🎯 RESUMEN EJECUTIVO
 
 LuxScaler utiliza un sistema de compilación de prompts sofisticado que convierte 27 sliders 
 numéricos en instrucciones precisas para Gemini 3 Pro Image Preview (NANOBANANPRO).
 
+**NUEVO EN v40.3:** SIEMPRE preserva identidad biométrica del sujeto mientras mejora calidad de captura.
+
 ### Arquitectura del Sistema:
 ```
-27 Sliders → Veto Engine → Block Injector → Sanitizer → Identity Lock → DNA Anchor → Gemini
+27 Sliders → Veto Engine → Block Injector → BIOMETRIC LOCK → Identity Lock → DNA Anchor → Gemini
 ```
 
 ---
