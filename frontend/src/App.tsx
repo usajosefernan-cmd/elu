@@ -1630,7 +1630,7 @@ const App: React.FC = () => {
                 ref={fileInputRef}
                 onChange={handleGuestUpload}
                 accept="image/*"
-                multiple
+                multiple={true}
                 className="hidden"
             />
 
@@ -1640,7 +1640,7 @@ const App: React.FC = () => {
                 ref={batchFileInputRef}
                 onChange={handleBatchUpload}
                 accept="image/*"
-                multiple
+                multiple={true}
                 className="hidden"
             />
 
