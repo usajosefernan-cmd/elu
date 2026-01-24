@@ -299,6 +299,43 @@ async def save_preset_v41(body: dict = Body(...)):
     except Exception as e:
         print(f"[SavePreset v41] Error: {e}")
         import traceback
+
+
+
+@router.get("/macro-definitions/{profile_tier}")
+async def get_macro_definitions(profile_tier: str):
+    """
+    Obtiene las definiciones de macros para un perfil específico.
+    
+    Response:
+    {
+        "success": true,
+        "macros": [
+            {
+                "macro_key": "restauracion",
+                "ui_title": "Restauración",
+                "ui_icon": "🛠️",
+                "slave_sliders": ["p1", "p2", "p8", "p9"]
+            },
+            ...
+        ]
+    }
+    """
+    try:
+        response = supabase_db.client.table('macro_definitions')\
+            .select('*')\
+            .eq('profile_tier', profile_tier.upper())\
+            .execute()
+        
+        return {
+            "success": True,
+            "macros": response.data or []
+        }
+        
+    except Exception as e:
+        print(f"[GetMacroDefinitions] Error: {e}")
+        return {"success": False, "error": str(e)}
+
         traceback.print_exc()
         return {"success": False, "error": str(e)}
 
