@@ -44,6 +44,8 @@ interface UnifiedConfigModalProps {
   // Batch mode props
   batchMode?: boolean;
   batchFiles?: File[];
+  // Original image base64 for preset thumbnail
+  imageBase64?: string;
 }
 
 // ===========================================
@@ -191,6 +193,7 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
   userTokens,
   batchMode = false,
   batchFiles = [],
+  imageBase64,
 }) => {
   // State
   const [activeProfile, setActiveProfile] = useState<'auto' | 'user' | 'pro' | 'prolux'>(userProfile);
@@ -213,7 +216,12 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
   const [userPresets, setUserPresets] = useState<SmartPreset[]>([]);
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [newPresetName, setNewPresetName] = useState('');
+  const [newPresetDescription, setNewPresetDescription] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+  
+  // 🖼️ Preset viewer state
+  const [viewingPreset, setViewingPreset] = useState<SmartPreset | null>(null);
+  const [viewingPresetIndex, setViewingPresetIndex] = useState<number>(-1);
 
   // Load presets
   useEffect(() => {
@@ -318,20 +326,52 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
         newPresetName.trim(),
         sliderValues as SmartPreset['slider_values'],
         [],
-        undefined,
-        imageUrl  // Pass the original image for thumbnail generation
+        newPresetDescription.trim() || undefined,
+        imageBase64 || imageUrl  // Use base64 first, fallback to URL
       );
       
       if (result) {
         setUserPresets(prev => [...prev, result]);
         setShowSaveDialog(false);
         setNewPresetName('');
+        setNewPresetDescription('');
       }
     } catch (e) {
       console.error('Error saving preset:', e);
     }
     setIsSaving(false);
   };
+  
+  // Navigate presets in viewer
+  const navigatePreset = (direction: 'prev' | 'next') => {
+    if (!viewingPreset || userPresets.length === 0) return;
+    
+    const currentIndex = userPresets.findIndex(p => p.id === viewingPreset.id);
+    let newIndex = currentIndex;
+    
+    if (direction === 'prev') {
+      newIndex = currentIndex > 0 ? currentIndex - 1 : userPresets.length - 1;
+    } else {
+      newIndex = currentIndex < userPresets.length - 1 ? currentIndex + 1 : 0;
+    }
+    
+    setViewingPreset(userPresets[newIndex]);
+    setViewingPresetIndex(newIndex);
+  };
+  
+  // Keyboard navigation for preset viewer
+  useEffect(() => {
+    if (!viewingPreset) return;
+    
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft') navigatePreset('prev');
+      if (e.key === 'ArrowRight') navigatePreset('next');
+      if (e.key === 'Escape') setViewingPreset(null);
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [viewingPreset, userPresets]);
 
   // Delete user preset
   const handleDeletePreset = async (presetId: string) => {
