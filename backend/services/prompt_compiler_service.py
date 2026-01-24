@@ -185,22 +185,16 @@ When processing any image:
         input_data: CompilerInput
     ) -> CompilerOutput:
         """
-        Compilador completo con todas las fases.
+        Compilador v41.0 que usa SQL Prompt Builder para consultar Supabase.
         
         Flujo:
         1. Aplica vetos (conflictos lógicos)
-        2. Traduce sliders a instrucciones
-        3. Inyecta bloques semánticos
+        2. Consulta reglas desde Supabase (SQL Prompt Builder)
+        3. Ensambla bloques desde DB
         4. Construye system prompt con Identity Lock
         5. Genera DNA Anchor si hay imagen
         6. Sanitiza y optimiza
         7. Maneja Context Cache
-        
-        Args:
-            input_data: CompilerInput con toda la configuración
-        
-        Returns:
-            CompilerOutput con prompt compilado y metadata
         """
         # ============================================
         # PASO 1: Aplica reglas de veto
@@ -209,75 +203,90 @@ When processing any image:
         modified_sliders = veto_result['modified_sliders']
         vetos_applied = veto_result['vetos_applied']
         
-        print(f"PromptCompiler: Applied {len(vetos_applied)} vetos")
+        print(f"PromptCompiler v41: Applied {len(vetos_applied)} vetos")
         
         # ============================================
-        # PASO 2: Traduce sliders a instrucciones
+        # PASO 2: Consultar Supabase para obtener bloques
         # ============================================
-        translations = await block_injector.translate_sliders_to_instructions(modified_sliders)
-        active_info = await block_injector.get_active_instructions(modified_sliders)
+        # Detectar si hay persona en la imagen
+        has_person = False
+        if input_data.vision_analysis:
+            tech = input_data.vision_analysis.get('technical_diagnosis', {})
+            has_person = tech.get('has_person', False)
         
-        print(f"PromptCompiler: {active_info['total_active']} active sliders")
+        # Preparar config para SQL Builder
+        slider_config = {
+            'photoscaler': {},
+            'stylescaler': {},
+            'lightscaler': {}
+        }
+        
+        # Organizar sliders por pilar
+        for slider_name, value in modified_sliders.items():
+            # Determinar pilar según nombre del slider
+            if any(s in slider_name for s in ['limpieza', 'geometria', 'optica', 'chronos', 'senal', 'sintesis', 'grano', 'apertura', 'resolucion', 'enfoque']):
+                slider_config['photoscaler'][slider_name] = value
+            elif any(s in slider_name for s in ['styling', 'maquillaje', 'limpieza_entorno', 'reencuadre', 'atmosfera', 'look_cine', 'materiales']):
+                slider_config['stylescaler'][slider_name] = value
+            elif any(s in slider_name for s in ['key_light', 'fill_light', 'rim_light', 'volumetria', 'temperatura', 'contraste', 'sombras', 'estilo_autor', 'reflejos']):
+                slider_config['lightscaler'][slider_name] = value
+        
+        # Consultar Supabase y ensamblar bloques
+        sql_blocks = await sql_prompt_builder.build_prompt_from_sliders(
+            slider_config,
+            has_person=has_person,
+            lighting_style=None  # Puede ser 'rembrandt_v32', 'neon_noir_v32', etc.
+        )
+        
+        print(f"PromptCompiler v41: Loaded {sql_blocks['metadata']['photoscaler_rules_count']} + {sql_blocks['metadata']['lightscaler_rules_count']} + {sql_blocks['metadata']['stylescaler_rules_count']} rules from Supabase")
         
         # ============================================
-        # PASO 3: Inyecta bloques semánticos
+        # PASO 3: Genera Identity Lock
         # ============================================
-        blocks = await block_injector.inject_semantic_blocks(modified_sliders, translations)
-        
-        # ============================================
-        # PASO 4: Genera Identity Lock
-        # ============================================
-        has_face = True  # Default
         facial_marks = []
         
         if input_data.vision_analysis:
             tech = input_data.vision_analysis.get('technical_diagnosis', {})
-            has_face = tech.get('has_person', True)
             facial_marks = tech.get('facial_marks', [])
+        
+        geometric_changes_enabled = modified_sliders.get('geometria', 0) > 0 or modified_sliders.get('reencuadre_ia', 0) > 0
         
         identity_block = identity_lock_service.generate_from_sliders(
             modified_sliders,
-            has_face=has_face,
+            has_face=has_person,
             facial_marks=facial_marks
         )
         
         # ============================================
-        # PASO 5: Genera DNA Anchor (si hay imagen)
+        # PASO 4: Genera DNA Anchor (si hay imagen)
         # ============================================
         dna_anchor = None
-        if input_data.image_input and has_face:
+        if input_data.image_input and has_person:
             dna_anchor = await dna_anchor_generator.generate_dna_anchor(
                 input_data.image_input,
                 job_id=input_data.user_id
             )
             
-            if dna_anchor.face_detected:
-                print(f"PromptCompiler: DNA Anchor generated with strength={dna_anchor.anchor_strength}")
-                
-                # Añadir referencia al identity block
-                identity_block += f"""
-
-[DNA ANCHOR ACTIVE - Strength: {dna_anchor.anchor_strength.upper()}]
-A biometric face crop is provided as secondary reference.
-Use it as ABSOLUTE GROUND TRUTH for facial structure."""
+            if dna_anchor and dna_anchor.face_detected:
+                print(f"PromptCompiler v41: DNA Anchor generated with strength={dna_anchor.anchor_strength}")
         
         # ============================================
-        # PASO 6: Construye System Prompt
+        # PASO 5: Construye System Prompt usando bloques de SQL
         # ============================================
-        system_prompt = self._build_dynamic_system_prompt(
+        system_prompt = self._build_dynamic_system_prompt_v41(
             input_data,
-            blocks,
+            sql_blocks,
             modified_sliders,
             identity_block
         )
         
         # ============================================
-        # PASO 7: Sanitiza el prompt
+        # PASO 6: Sanitiza el prompt
         # ============================================
         blocks_dict = {
-            'PHOTOSCALER_BLOCK': blocks.PHOTOSCALER_BLOCK,
-            'STYLESCALER_BLOCK': blocks.STYLESCALER_BLOCK,
-            'LIGHTSCALER_BLOCK': blocks.LIGHTSCALER_BLOCK
+            'PHOTOSCALER_BLOCK': sql_blocks['photoscaler_block'],
+            'STYLESCALER_BLOCK': sql_blocks['stylescaler_block'],
+            'LIGHTSCALER_BLOCK': sql_blocks['lightscaler_block']
         }
         
         sanitization_result = await semantic_sanitizer.sanitize_semantic_prompt(
@@ -288,22 +297,17 @@ Use it as ABSOLUTE GROUND TRUTH for facial structure."""
         
         final_prompt = sanitization_result.prompt
         
-        # Validar prompt
-        validation = semantic_sanitizer.validate_prompt(final_prompt)
-        
         # ============================================
-        # PASO 8: Context Caching (si está disponible)
+        # PASO 7: Context Caching (si está disponible)
         # ============================================
         tokens_from_cache = 0
         cache_used = False
         
         if input_data.user_id and context_cache_manager.vertex_available:
-            # Verificar si hay cache válido
             if context_cache_manager.is_cache_valid(input_data.user_id):
                 tokens_from_cache = context_cache_manager.get_tokens_saved_estimate(input_data.user_id)
                 cache_used = True
             else:
-                # Inicializar nuevo cache
                 await context_cache_manager.initialize_context_cache(
                     input_data.user_id,
                     system_prompt
@@ -312,8 +316,6 @@ Use it as ABSOLUTE GROUND TRUTH for facial structure."""
         # ============================================
         # Construir output final
         # ============================================
-        
-        # Preparar partes multimodales si hay DNA Anchor
         multimodal_parts = None
         if dna_anchor and dna_anchor.face_crop_base64 and input_data.image_input:
             mc = await multimodal_prompt_injector.build_multimodal_prompt_with_dna_anchor(
@@ -339,17 +341,19 @@ Use it as ABSOLUTE GROUND TRUTH for facial structure."""
             debug_info={
                 'vetos_applied': vetos_applied,
                 'conflicts_detected': len(vetos_applied),
-                'active_sliders': active_info,
+                'active_sliders': sql_blocks['metadata'],
+                'guidance_scale': sql_blocks['guidance_scale'],
+                'hallucination_density': sql_blocks['hallucination_density'],
                 'sanitization': {
                     'redundancies_removed': sanitization_result.redundancies_removed,
                     'empty_sections_removed': sanitization_result.empty_sections_removed,
                     'lines_before': sanitization_result.lines_before,
                     'lines_after': sanitization_result.lines_after
                 },
-                'validation': validation,
                 'cache_used': cache_used,
-                'identity_lock_level': identity_lock_service.get_constraint_level(modified_sliders),
-                'version': self.version
+                'identity_lock_level': 'ACTIVE' if has_person else 'DISABLED',
+                'version': self.version,
+                'sql_builder_version': '41.0'
             },
             dna_anchor=dna_anchor,
             multimodal_parts=multimodal_parts
