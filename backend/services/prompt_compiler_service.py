@@ -91,13 +91,13 @@ class PromptCompilerService:
         identity_block: str
     ) -> str:
         """
-        Construye el System Prompt dinámico según documento maestro v29.
+        Construye el System Prompt dinámico con BIOMETRIC LOCK PROTOCOL.
         
         Incluye:
-        - CRITICAL: Resolución de conflictos lógicos
-        - Identity Lock dinámico
+        - UNIVERSAL BIOMETRIC LOCK (siempre activo)
+        - Camera vs Subject separation
         - Bloques de los 3 pilares
-        - Negative prompt
+        - Negative prompt estricto
         - Quality gates
         """
         # Formatear análisis de visión
@@ -108,9 +108,8 @@ class PromptCompilerService:
 Technical Score: Noise={va.get('technical_diagnosis', {}).get('noise_level', 'N/A')}, Blur={va.get('technical_diagnosis', {}).get('blur_level', 'N/A')}
 Target Vision: {va.get('production_analysis', {}).get('target_vision', 'Professional enhancement')}"""
         
-        # Determinar si hay cambios geométricos
-        geometric_change = (
-            modified_sliders.get('geometria_distorsion', 0) > 0 or
+        # Determinar si hay cambios geométricos permitidos
+        geometric_correction_allowed = (
             modified_sliders.get('geometria', 0) > 0 or
             modified_sliders.get('reencuadre_ia', 0) > 0
         )
@@ -120,46 +119,59 @@ Target Vision: {va.get('production_analysis', {}).get('target_vision', 'Professi
         stylescaler_block = blocks.STYLESCALER_BLOCK or '[Standard styling]'
         lightscaler_block = blocks.LIGHTSCALER_BLOCK or '[Natural lighting preservation]'
         
-        system_prompt = f"""[SYSTEM OVERRIDE: UNIVERSAL FORENSIC RE-SHOOT & OPTICAL SYNTHESIS PROTOCOL v{self.version}]
-[ROLE: REALITY RECONSTRUCTION ENGINE]
-[USER_PROFILE: {input_data.profile_type}]
+        system_prompt = f"""[SYSTEM OVERRIDE: UNIVERSAL STRUCTURE & BIOMETRIC LOCK PROTOCOL v{self.version}]
+[ROLE: FORENSIC RESTAURATEUR - NOT A CREATIVE ARTIST]
 
-=== CRITICAL INSTRUCTION: LOGICAL CONFLICT RESOLUTION ===
-If the instructions below contain contradictory elements (e.g., "Fog" AND "Sharpness", or "Light" AND "Dark"), 
-YOU MUST PRIORITIZE THE LAST INSTRUCTION IN THE LIST and ignore the conflicting previous one.
-DO NOT attempt to merge contradictory styles. Pick one distinct path.
-When in doubt, choose COHERENCE over literal interpretation.
+=== 🔒 CORE DIRECTIVE: THE "CAMERA VS. SUBJECT" SEPARATION ===
+You must distinguish between the SUBJECT (Immutable Truth) and the CAPTURE (Correctable Error).
 
 INPUT CONTEXT:
 {vision_summary}
 
-=== PHASE 0: STRUCTURAL INTEGRITY (IDENTITY LOCK) ===
+=== PHASE 0: SUBJECT CONSTANTS (READ-ONLY - DO NOT TOUCH) ===
+
+1. BIOMETRIC IDENTITY (SACRED):
+   - Bone structure, eye distance, nose shape, and jawline are IMMUTABLE
+   - Expression micro-geometry: exact tension of lips, squint of eyes, muscle state of face must be preserved 100%
+   - Distinctive marks: Moles, scars, tattoos, dental irregularities are VALID DATA. Do not "clean" them unless explicitly told
+   - Pose & Gaze: Direction of eyes and tilt of head must remain EXACTLY as input
+
+2. IDENTITY LOCK:
 {identity_block}
 
-=== PHASE 1: CORE DIAGNOSIS & RE-SYNTHESIS STRATEGY ===
-IF INPUT IS BLURRY/NOISY/DAMAGED -> ACTIVATE "COMPLETE RE-SYNTHESIS".
-IGNORE source artifacts. HALLUCINATE high-frequency details from surrounding context.
-VIRTUAL RE-SHOOT: Simulate 1/8000s shutter speed (zero motion blur).
+=== PHASE 1: CAPTURE VARIABLES (WRITE-ACCESS - YOU MAY CORRECT) ===
 
-=== PHASE 2: SUBJECT & ANATOMY ===
-[INSTRUCTION: Restore faces with Portrait-Level fidelity. Preserve scars, marks, and character.]
-{stylescaler_block}
+Lens Distortion Correction: {"ENABLED" if geometric_correction_allowed else "DISABLED"}
+{"- If input has 'Selfie Arm' or 'Fish-Eye' distortion (big nose, receding ears), project face onto flat 50mm-85mm focal plane" if geometric_correction_allowed else "- Preserve original lens perspective"}
+{"- This changes PIXELS to restore TRUE face shape, NOT the identity" if geometric_correction_allowed else ""}
 
-=== PHASE 3: OPTICS, PHYSICS & LIGHTING ===
-GEOMETRY & RESTORATION:
+Framing & Composition:
+- If a limb (arm, shoulder, top of head) is cut off by frame edge, you have permission to OUTPAINT/HALLUCINATE the missing anatomy to complete the figure naturally
+- You may straighten vertical lines (walls) and horizon lines without tilting the subject unnaturally
+
+[LOGIC GATE FOR RE-IMAGINATION]
+- IF limb is cut off → GENERATE the rest of the limb logically
+{"- IF nose is distorted by wide lens → COMPRESS geometry to restore natural proportions (50mm)" if geometric_correction_allowed else ""}
+- IF face is blurry → RE-SYNTHESIZE texture ON TOP of existing topography. DO NOT invent a new face
+
+=== PHASE 2: OPTICAL & SENSOR CORRECTIONS ===
 {photoscaler_block}
 
-LIGHTING & TONE:
+=== PHASE 3: STYLING & GROOMING (PRESERVING IDENTITY) ===
+{stylescaler_block}
+
+=== PHASE 4: LIGHTING & TONE ===
 {lightscaler_block}
 
-=== NEGATIVE PROMPT ===
-damaged, blurry, noisy, distorted faces, bad anatomy, text, watermarks, jpeg artifacts, shifting eyes, changing facial features, morphing bone structure, different pose, AI hallucinations.
+=== ⛔ NEGATIVE CONSTRAINT (STRICTLY FORBIDDEN) ===
+changing face, face swap, changing expression, changing ethnicity, plastic surgery effect, changing age, shifting gaze, makeup alteration (unless requested), removing glasses, morphing bone structure, different pose, AI hallucinations, shifting eyes, changing facial features.
 
 === QUALITY GATES ===
-- Output resolution: 19.5MP (4800x4200px equivalent)
+- Output resolution: 19.5MP (4800x4200px equivalent) → 4K
 - Color depth: 24-bit sRGB
 - Format: JPEG, quality 95
-- Compression: Minimal (preserve fine details)"""
+- Compression: Minimal (preserve fine details)
+- Identity preservation: MAXIMUM"""
         
         return system_prompt
     
