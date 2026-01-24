@@ -715,28 +715,37 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
               {showSaveDialog && (
                 <div className="px-4 py-3 bg-green-500/5 border-b border-green-500/20">
                   <p className="text-[10px] text-green-400 uppercase mb-2">Guardar configuración actual</p>
-                  <div className="flex gap-2">
+                  <div className="space-y-2">
                     <input
                       type="text"
                       value={newPresetName}
                       onChange={(e) => setNewPresetName(e.target.value)}
                       placeholder="Nombre del preset..."
-                      className="flex-1 px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-green-500"
+                      className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-green-500"
                       autoFocus
                     />
-                    <button
-                      onClick={handleSavePreset}
-                      disabled={!newPresetName.trim() || isSaving}
-                      className="px-4 py-2 bg-green-500 text-black rounded-lg text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-400 transition-all"
-                    >
-                      {isSaving ? '...' : 'Guardar'}
-                    </button>
-                    <button
-                      onClick={() => { setShowSaveDialog(false); setNewPresetName(''); }}
-                      className="px-3 py-2 bg-neutral-800 text-neutral-400 rounded-lg text-sm hover:bg-neutral-700 transition-all"
-                    >
-                      Cancelar
-                    </button>
+                    <textarea
+                      value={newPresetDescription}
+                      onChange={(e) => setNewPresetDescription(e.target.value)}
+                      placeholder="Descripción (opcional)..."
+                      className="w-full px-3 py-2 bg-neutral-900 border border-neutral-700 rounded-lg text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-green-500 resize-none"
+                      rows={2}
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={handleSavePreset}
+                        disabled={!newPresetName.trim() || isSaving}
+                        className="flex-1 px-4 py-2 bg-green-500 text-black rounded-lg text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed hover:bg-green-400 transition-all"
+                      >
+                        {isSaving ? '...' : 'Guardar'}
+                      </button>
+                      <button
+                        onClick={() => { setShowSaveDialog(false); setNewPresetName(''); setNewPresetDescription(''); }}
+                        className="px-3 py-2 bg-neutral-800 text-neutral-400 rounded-lg text-sm hover:bg-neutral-700 transition-all"
+                      >
+                        Cancelar
+                      </button>
+                    </div>
                   </div>
                 </div>
               )}
