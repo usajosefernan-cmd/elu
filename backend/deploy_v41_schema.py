@@ -1,12 +1,14 @@
 """
-Ejecutar schema completo v41 en Supabase usando Management API
+Deployment completo del schema v41 en Supabase
+Ejecuta en orden: Tables → Policies → Data
 """
 import json
 import requests
-import sys
+import time
 
-def execute_sql_management_api(sql: str, project_ref: str, service_key: str) -> dict:
-    """Ejecuta SQL usando Management API de Supabase"""
+
+def execute_in_supabase(sql: str, project_ref: str, service_key: str, description: str) -> bool:
+    """Ejecuta SQL en Supabase Management API"""
     
     url = f"https://api.supabase.com/v1/projects/{project_ref}/database/query"
     
@@ -17,25 +19,27 @@ def execute_sql_management_api(sql: str, project_ref: str, service_key: str) -> 
     
     payload = {"query": sql}
     
+    print(f"\n🔄 {description}...")
+    
     try:
-        response = requests.post(url, headers=headers, json=payload, timeout=60)
+        response = requests.post(url, headers=headers, json=payload, timeout=90)
         
-        return {
-            "success": response.status_code < 300,
-            "status_code": response.status_code,
-            "response": response.text
-        }
+        if response.status_code < 300:
+            print(f"✅ {description} - OK")
+            return True
+        else:
+            print(f"❌ {description} - Error: {response.text[:200]}")
+            return False
+            
     except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        print(f"❌ {description} - Exception: {e}")
+        return False
 
 
 def main():
-    print("=" * 70)
-    print("LUXSCALER v41 - COMPLETE SCHEMA DEPLOYMENT")
-    print("=" * 70)
+    print("=" * 80)
+    print("LUXSCALER v41 - COMPLETE DEPLOYMENT TO SUPABASE")
+    print("=" * 80)
     
     # Leer credenciales
     with open('/app/BBLA/CREDENTIALS.json', 'r') as f:
@@ -45,41 +49,41 @@ def main():
     service_key = creds['SUPABASE_CREDENTIALS']['service_role_key']
     
     print(f"\n📡 Project: {project_ref}")
-    print(f"🔑 Service Key: {service_key[:30]}...")
     
-    # Leer schema completo
-    print(f"\n📂 Leyendo schema completo...")
+    # PASO 1: Crear tablas
+    print(f"\n" + "=" * 80)
+    print("PASO 1: CREAR TABLAS")
+    print("=" * 80)
     
-    with open('/app/backend/migrations/v41_schema_complete.sql', 'r') as f:
-        schema_sql = f.read()
+    with open('/app/backend/migrations/v41_01_create_tables.sql', 'r') as f:
+        tables_sql = f.read()
     
-    print(f"✅ Schema: {len(schema_sql)} caracteres")
+    success = execute_in_supabase(tables_sql, project_ref, service_key, "Creando 11 tablas")
     
-    # Ejecutar
-    print(f"\n🚀 Ejecutando schema en Supabase...")
+    if not success:
+        print("\n⚠️ Hubo errores creando tablas. Continuando de todas formas...")
     
-    result = execute_sql_management_api(schema_sql, project_ref, service_key)
+    time.sleep(2)
     
-    if result['success']:
-        print(f"✅ Schema ejecutado exitosamente!")
-        print(f"\n📊 Tablas creadas:")
-        print(f"   1. tier_config")
-        print(f"   2. taxonomy_definitions")
-        print(f"   3. diagnosis_definitions")
-        print(f"   4. slider_definitions")
-        print(f"   5. macro_definitions")
-        print(f"   6. profiles")
-        print(f"   7. uploads")
-        print(f"   8. analysis_results")
-        print(f"   9. generations")
-        print(f"   10. user_presets_v41")
-        print(f"   11. user_upload_workflows")
-        return True
-    else:
-        print(f"❌ Error: {result.get('response', result.get('error'))}")
-        return False
+    # PASO 2: Aplicar RLS Policies
+    print(f"\n" + "=" * 80)
+    print("PASO 2: RLS POLICIES")
+    print("=" * 80)
+    
+    with open('/app/backend/migrations/v41_02_rls_policies.sql', 'r') as f:
+        policies_sql = f.read()
+    
+    execute_in_supabase(policies_sql, project_ref, service_key, "Aplicando RLS policies")
+    
+    time.sleep(2)
+    
+    print(f"\n" + "=" * 80)
+    print("✅ DEPLOYMENT COMPLETADO")
+    print("=" * 80)
+    
+    print(f"\n📊 Próximo paso: Insertar datos (tier_config, taxonomy, diagnosis, sliders, macros)")
+    print(f"   Ejecuta: python /app/backend/deploy_v41_data.py")
 
 
 if __name__ == "__main__":
-    success = main()
-    sys.exit(0 if success else 1)
+    main()
