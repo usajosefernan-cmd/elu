@@ -5,7 +5,7 @@ import { ComparisonSlider } from './ComparisonSlider';
 import {
     ArrowRight, Fingerprint, Palette, Sun, Scan, Zap,
     Camera, Code, Layers, Smartphone, Monitor, Settings,
-    Aperture
+    Aperture, Upload
 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
