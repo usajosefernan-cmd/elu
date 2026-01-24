@@ -722,7 +722,26 @@ const App: React.FC = () => {
         console.log('[LuxScaler] Mode:', confirmConfig.mode);
         console.log('[LuxScaler] Preset:', confirmConfig.preset || 'none');
         console.log('[LuxScaler] Settings:', JSON.stringify(sliderConfig).slice(0, 500));
+        console.log('[LuxScaler] Batch mode:', batchMode, 'Files:', batchFiles.length);
         
+        // ============================================================
+        // 🔥 BATCH MODE - Procesar múltiples fotos con el mismo estilo
+        // ============================================================
+        if (batchMode && batchFiles.length > 0) {
+            // Get preset data if using a saved preset
+            let presetData = undefined;
+            if (confirmConfig.preset) {
+                // TODO: Load preset data from presets service
+                // For now, use current config as preset
+            }
+            
+            await processBatchGeneration(sliderConfig, presetData);
+            return;
+        }
+        
+        // ============================================================
+        // SINGLE IMAGE MODE (Normal flow)
+        // ============================================================
         const config: LuxConfig = {
             userPrompt: '',
             mode: confirmConfig.mode as any,
