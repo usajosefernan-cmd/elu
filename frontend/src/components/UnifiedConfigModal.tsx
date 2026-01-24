@@ -872,6 +872,133 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
           )}
         </div>
       </div>
+      
+      {/* 🖼️ Preset Viewer Modal - Galería con navegación */}
+      {viewingPreset && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4 bg-black/95" onClick={() => setViewingPreset(null)}>
+          <div className="relative max-w-4xl w-full" onClick={(e) => e.stopPropagation()}>
+            {/* Close button */}
+            <button
+              onClick={() => setViewingPreset(null)}
+              className="absolute -top-12 right-0 p-2 text-white/70 hover:text-white transition-colors"
+            >
+              <X size={24} />
+            </button>
+            
+            {/* Navigation arrows */}
+            {userPresets.length > 1 && (
+              <>
+                <button
+                  onClick={() => navigatePreset('prev')}
+                  className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-16 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all"
+                >
+                  <ChevronLeft size={24} className="text-white" />
+                </button>
+                <button
+                  onClick={() => navigatePreset('next')}
+                  className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-16 p-3 bg-white/10 hover:bg-white/20 rounded-full transition-all"
+                >
+                  <ChevronRight size={24} className="text-white" />
+                </button>
+              </>
+            )}
+            
+            {/* Content */}
+            <div className="bg-neutral-900 rounded-xl overflow-hidden shadow-2xl">
+              {/* Image */}
+              <div className="relative aspect-video bg-neutral-950">
+                {(() => {
+                  const thumbnail = viewingPreset.thumbnail_base64 || viewingPreset.slider_values?._v40_meta?.thumbnail_base64;
+                  const thumbnailUrl = thumbnail ? `data:image/webp;base64,${thumbnail}` : null;
+                  
+                  return thumbnailUrl ? (
+                    <img 
+                      src={thumbnailUrl} 
+                      alt={viewingPreset.name}
+                      className="w-full h-full object-contain"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <span className="text-6xl opacity-20">📸</span>
+                    </div>
+                  );
+                })()}
+                
+                {/* Counter */}
+                <div className="absolute top-4 right-4 bg-black/60 backdrop-blur-sm px-3 py-1 rounded-full text-xs text-white">
+                  {viewingPresetIndex + 1} / {userPresets.length}
+                </div>
+              </div>
+              
+              {/* Info */}
+              <div className="p-6 space-y-4">
+                {/* Title */}
+                <div>
+                  <h3 className="text-2xl font-bold text-white mb-1">{viewingPreset.name}</h3>
+                  {viewingPreset.description && (
+                    <p className="text-sm text-neutral-400">{viewingPreset.description}</p>
+                  )}
+                </div>
+                
+                {/* Stats */}
+                <div className="flex gap-4 text-xs">
+                  {viewingPreset.locked_sliders && viewingPreset.locked_sliders.length > 0 && (
+                    <div className="flex items-center gap-1.5 text-yellow-400">
+                      <Lock size={12} />
+                      <span>{viewingPreset.locked_sliders.length} bloqueados</span>
+                    </div>
+                  )}
+                  <div className="flex items-center gap-1.5 text-neutral-400">
+                    <Sparkles size={12} />
+                    <span>{viewingPreset.temperature ? `Temp: ${viewingPreset.temperature}` : 'Auto'}</span>
+                  </div>
+                  {viewingPreset.created_at && (
+                    <div className="text-neutral-500">
+                      {new Date(viewingPreset.created_at).toLocaleDateString('es-ES', { 
+                        day: 'numeric', 
+                        month: 'short', 
+                        year: 'numeric' 
+                      })}
+                    </div>
+                  )}
+                </div>
+                
+                {/* Actions */}
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => {
+                      loadPreset(viewingPreset);
+                      setViewingPreset(null);
+                    }}
+                    className="flex-1 py-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg font-semibold transition-colors flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                    </svg>
+                    Usar este estilo
+                  </button>
+                  <button
+                    onClick={() => {
+                      if (confirm('¿Eliminar este preset?')) {
+                        handleDeletePreset(viewingPreset.id);
+                        setViewingPreset(null);
+                      }
+                    }}
+                    className="px-4 py-3 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded-lg transition-colors"
+                  >
+                    <Trash2 size={18} />
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+            {/* Hint */}
+            <p className="text-center text-neutral-500 text-xs mt-4">
+              Usa ← → para navegar • ESC para cerrar
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
