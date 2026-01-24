@@ -348,16 +348,23 @@ async def get_presets_v41(user_id: str):
 @router.post("/generate")
 async def generate_v41_endpoint(body: dict = Body(...)):
     """
-    Generate v41
+    Generate v41 con soporte para Smart Anchors
     
     Genera imagen usando Gemini con el prompt compilado.
+    Si se usa un preset con anchors, usa la reference_image como guía.
     
     Request:
     {
         "uploadId": "uuid",
         "prompt": "...",
         "config": {seed, temperature, ...},
-        "imageBase64": "..."
+        "imageBase64": "...",
+        "preset": {                         // Opcional: si se usa preset
+            "id": "uuid",
+            "reference_image_url": "...",
+            "anchor_preferences": {background: true, lighting: true, ...},
+            "nano_params": {...}
+        }
     }
     """
     try:
@@ -365,12 +372,48 @@ async def generate_v41_endpoint(body: dict = Body(...)):
         prompt = body.get('prompt')
         config = body.get('config', {})
         image_base64 = body.get('imageBase64')
+        preset = body.get('preset')
         
         if not prompt or not image_base64:
             return {"success": False, "error": "Missing prompt or image"}
         
+        # Si hay preset con Smart Anchors, modificar el prompt
+        if preset and preset.get('anchor_preferences'):
+            anchors = preset.get('anchor_preferences', {})
+            reference_url = preset.get('reference_image_url')
+            
+            # Añadir instrucciones de anclaje al prompt
+            anchor_instructions = []
+            
+            if anchors.get('background') and reference_url:
+                anchor_instructions.append("""
+[SMART ANCHOR: BACKGROUND]
+A reference image is provided showing the desired environment/background.
+PRESERVE the background atmosphere, location, and set design from the reference.
+Integrate the new subject into this existing environment naturally.""")
+            
+            if anchors.get('lighting') and reference_url:
+                anchor_instructions.append("""
+[SMART ANCHOR: LIGHTING]
+A reference image is provided showing the desired lighting setup.
+MATCH the lighting direction, quality, and mood from the reference.
+Apply the same lighting scheme to the new subject.""")
+            
+            if anchors.get('style'):
+                anchor_instructions.append("""
+[SMART ANCHOR: STYLE]
+Maintain the artistic style, color grading, and overall aesthetic from the reference.""")
+            
+            if anchor_instructions:
+                prompt = prompt + "\n\n" + "\n".join(anchor_instructions)
+            
+            # Usar nano_params del preset si existen
+            if preset.get('nano_params'):
+                config.update(preset['nano_params'])
+        
         # Generar con Gemini
         print(f"[Generate v41] Generating with Gemini...")
+        print(f"[Generate v41] Preset mode: {bool(preset)}, Anchors: {preset.get('anchor_preferences') if preset else None}")
         
         result = await gemini_service.generate_image_v41(
             prompt=prompt,
@@ -384,17 +427,18 @@ async def generate_v41_endpoint(body: dict = Body(...)):
                 'upload_id': upload_id,
                 'prompt_used': prompt,
                 'config_used': config,
-                'watermarked_url': result.get('image_base64'),  # Por ahora guardamos base64
+                'watermarked_url': result.get('image_base64'),
                 'is_preview': True,
                 'tokens_spent': 0
             }
             
-            await supabase_db.client.table('generations').insert(gen_data).execute()
+            gen_response = await supabase_db.client.table('generations').insert(gen_data).execute()
             
             return {
                 "success": True,
                 "image_base64": result.get('image_base64'),
-                "upload_id": upload_id
+                "upload_id": upload_id,
+                "generation_id": gen_response.data[0]['id'] if gen_response.data else None
             }
         else:
             return {"success": False, "error": result.get('error', 'Generation failed')}
