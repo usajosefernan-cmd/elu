@@ -281,8 +281,11 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
       lightscaler: {}
     };
     
+    // Get slider values from preset (could be in slider_values or sliders_config)
+    const sliderSource = preset.sliders_config || preset.slider_values || {};
+    
     for (const pillar of ['photoscaler', 'stylescaler', 'lightscaler'] as PillarKey[]) {
-      const presetPillar = preset.slider_values?.[pillar] || {};
+      const presetPillar = sliderSource[pillar] || {};
       // Merge with defaults
       for (const slider of PILLAR_CONFIG[pillar].sliders) {
         newValues[pillar][slider.name] = presetPillar[slider.name] ?? 5;
@@ -292,6 +295,16 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
     setSliderValues(newValues);
     setSelectedPresetId(preset.id);
     setShowUserPresets(false);
+    
+    // 🔒 Load locked sliders from preset
+    const presetLocked = preset.locked_sliders || preset.slider_values?._v40_meta?.locked_sliders || [];
+    setLockedSliders(presetLocked);
+    
+    // 🖼️ Load thumbnail from preset
+    const thumbnail = preset.thumbnail_base64 || preset.slider_values?._v40_meta?.thumbnail_base64;
+    setPresetThumbnail(thumbnail ? `data:image/webp;base64,${thumbnail}` : null);
+    
+    console.log(`[Preset] Loaded "${preset.name}" with ${presetLocked.length} locked sliders`);
   }, []);
 
   // Save current config as user preset
