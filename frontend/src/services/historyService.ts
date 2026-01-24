@@ -17,57 +17,46 @@ export const getGenerations = async (): Promise<GenerationSession[]> => {
     }
 
     try {
-        // v41: Consultar desde uploads + analysis_results + generations
-        let query = supabase
+        // v41: Consultar desde uploads con joins correctos
+        const { data, error } = await supabase
             .from('uploads')
-            .select(`
-                id,
-                user_id,
-                original_width,
-                original_height,
-                biopsy_urls,
-                status,
-                created_at,
-                analysis_results (
-                    cat_code,
-                    detected_defects,
-                    visual_summary,
-                    severity_score,
-                    auto_settings
-                ),
-                generations (
-                    id,
-                    prompt_used,
-                    config_used,
-                    watermarked_url,
-                    final_url,
-                    is_preview,
-                    created_at
-                )
-            `)
+            .select('*')
             .eq('user_id', user.id)
             .order('created_at', { ascending: false });
         
-        const { data, error } = await query;
-        
         if (error) {
-            console.error("Error fetching v41 history:", error);
+            console.error("Error fetching uploads:", error);
             return [];
         }
         
         if (!data || data.length === 0) {
-            console.log("[History] No uploads found for user");
+            console.log("[History v41] No uploads found");
             return [];
         }
         
-        // Transformar a formato legacy para compatibilidad con UI
-        const sessions: GenerationSession[] = data
-            .filter(upload => upload.generations && upload.generations.length > 0)
-            .map(upload => {
-                const analysis = Array.isArray(upload.analysis_results) ? upload.analysis_results[0] : upload.analysis_results;
-                const generations = Array.isArray(upload.generations) ? upload.generations : [upload.generations];
+        // Para cada upload, obtener analysis y generations
+        const sessions: GenerationSession[] = [];
+        
+        for (const upload of data) {
+            try {
+                // Obtener analysis
+                const { data: analysisData } = await supabase
+                    .from('analysis_results')
+                    .select('*')
+                    .eq('upload_id', upload.id)
+                    .single();
                 
-                return {
+                // Obtener generations
+                const { data: genData } = await supabase
+                    .from('generations')
+                    .select('*')
+                    .eq('upload_id', upload.id)
+                    .order('created_at', { ascending: false });
+                
+                if (!genData || genData.length === 0) continue;
+                
+                // Construir session
+                sessions.push({
                     id: upload.id,
                     user_id: upload.user_id,
                     created_at: upload.created_at,
@@ -77,23 +66,29 @@ export const getGenerations = async (): Promise<GenerationSession[]> => {
                     original_image_thumbnail: upload.biopsy_urls?.thumbnail_base64 
                         ? `data:image/jpeg;base64,${upload.biopsy_urls.thumbnail_base64}`
                         : '',
-                    category: analysis?.cat_code || 'UNKNOWN',
-                    visual_summary: analysis?.visual_summary || '',
-                    variations: generations.map((gen: any) => ({
+                    category: analysisData?.cat_code || 'UNKNOWN',
+                    visual_summary: analysisData?.visual_summary || '',
+                    variations: genData.map(gen => ({
                         id: gen.id,
                         generation_id: upload.id,
                         type: gen.is_preview ? 'preview' : 'final',
                         url: gen.watermarked_url 
-                            ? `data:image/jpeg;base64,${gen.watermarked_url}`
-                            : (gen.final_url || ''),
+                            ? (gen.watermarked_url.startsWith('data:') 
+                                ? gen.watermarked_url 
+                                : `data:image/jpeg;base64,${gen.watermarked_url}`)
+                            : '',
                         created_at: gen.created_at,
                         luxmixer_values: gen.config_used || {},
                         prompt_used: gen.prompt_used || ''
                     }))
-                };
-            });
+                });
+                
+            } catch (err) {
+                console.error(`[History v41] Error processing upload ${upload.id}:`, err);
+            }
+        }
         
-        console.log(`[History v41] Loaded ${sessions.length} sessions with ${sessions.reduce((acc, s) => acc + s.variations.length, 0)} variations`);
+        console.log(`[History v41] Loaded ${sessions.length} sessions`);
         
         return sessions;
         
