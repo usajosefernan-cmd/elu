@@ -51,12 +51,14 @@ async def save_style_v40(body: dict = Body(...)):
     - Sliders bloqueados (locked_sliders) - valores fijos que no se pueden cambiar
     - Sliders libres - el usuario puede ajustar
     - Thumbnail de la foto original (max 1024px, webp 80%)
+    - Descripción del preset
     - The Dictator Prompt para consistencia estilística
     
     Request body:
     {
         "user_id": "uuid",
         "name": "Cyberpunk Night",
+        "description": "Estilo futurista con luces neón...",
         "seed": 847291023,
         "temperature": 0.75,
         "sliders_config": {
@@ -64,20 +66,21 @@ async def save_style_v40(body: dict = Body(...)):
             "stylescaler": {...},
             "lightscaler": {...}
         },
-        "locked_sliders": ["styling_ropa", "limpieza_entorno", "key_light"],  // Sliders que NO se pueden tocar
-        "source_image": "https://... or data:image/..."  // Imagen para thumbnail
+        "locked_sliders": ["styling_ropa", "limpieza_entorno", "key_light"],
+        "source_image": "https://... or data:image/..."
     }
     """
     try:
         user_id = body.get('user_id')
         name = body.get('name', 'Mi Estilo')
+        description = body.get('description', '')  # Nueva: descripción del preset
         seed = body.get('seed', random.randint(100000000, 999999999))
         temperature = body.get('temperature', 0.75)
         top_k = body.get('top_k', 40)
         top_p = body.get('top_p', 0.9)
         sliders_config = body.get('sliders_config', {})
-        locked_sliders = body.get('locked_sliders', [])  # Lista de slider keys que están bloqueados
-        source_image = body.get('source_image')  # URL o base64 de la imagen original
+        locked_sliders = body.get('locked_sliders', [])
+        source_image = body.get('source_image')
         
         # ============================================================
         # 🖼️ GENERAR THUMBNAIL (max 1024px, webp 80%)
@@ -124,6 +127,7 @@ async def save_style_v40(body: dict = Body(...)):
                 "temperature": temperature,
                 "top_k": top_k,
                 "top_p": top_p,
+                "description": description,  # 📝 Descripción del preset
                 "style_lock_prompt": style_lock_prompt,
                 "dominant_sliders": dominant_sliders,
                 "locked_sliders": locked_sliders,  # 🔒 Sliders que NO se pueden editar
@@ -214,6 +218,8 @@ async def get_user_presets_v40(user_id: str):
                 'temperature': v40_meta.get('temperature'),
                 'top_k': v40_meta.get('top_k', 40),
                 'top_p': v40_meta.get('top_p', 0.9),
+                # 📝 Description
+                'description': v40_meta.get('description', ''),
                 # 🔒 Locked sliders (NO se pueden editar)
                 'locked_sliders': v40_meta.get('locked_sliders', []),
                 # Style lock
@@ -226,6 +232,7 @@ async def get_user_presets_v40(user_id: str):
                     'has_style_lock': v40_meta.get('style_lock_prompt') is not None,
                     'locked_count': len(v40_meta.get('locked_sliders', [])),
                     'has_thumbnail': v40_meta.get('thumbnail_base64') is not None,
+                    'has_description': bool(v40_meta.get('description')),
                     'mode': v40_meta.get('mode', 'SHOWMAN'),
                     'version': v40_meta.get('version', 'legacy')
                 }
