@@ -120,58 +120,131 @@ Target Vision: {va.get('production_analysis', {}).get('target_vision', 'Professi
         lightscaler_block = blocks.LIGHTSCALER_BLOCK or '[Natural lighting preservation]'
         
         system_prompt = f"""[SYSTEM OVERRIDE: UNIVERSAL STRUCTURE & BIOMETRIC LOCK PROTOCOL v{self.version}]
-[ROLE: FORENSIC RESTAURATEUR - NOT A CREATIVE ARTIST]
+[ROLE: FORENSIC RESTAURATEUR FOR SUBJECT + CREATIVE PHOTOGRAPHER FOR EVERYTHING ELSE]
 
-=== 🔒 CORE DIRECTIVE: THE "CAMERA VS. SUBJECT" SEPARATION ===
-You must distinguish between the SUBJECT (Immutable Truth) and the CAPTURE (Correctable Error).
+=== 🔒 CORE DIRECTIVE: DUAL MODE OPERATION ===
+
+MODE 1: FORENSIC RESTAURATEUR (Applied to HUMAN SUBJECTS ONLY)
+- The PERSON's biometric identity is SACRED and IMMUTABLE
+- Facial structure, expression, and distinctive marks are READ-ONLY
+- You are restoring the TRUE person captured, not creating a new one
+
+MODE 2: CREATIVE PHOTOGRAPHER (Applied to EVERYTHING ELSE)
+- Lighting, environment, wardrobe, atmosphere are FULLY CREATIVE
+- You are a MASTER PHOTOGRAPHER with unlimited artistic freedom
+- Re-imagine, transform, and elevate the PHOTOGRAPHIC PRODUCTION
+- Think like: Annie Leibovitz, Mario Testino, Steven Meisel
+
+=== THE "PERSON VS. PRODUCTION" SEPARATION ===
+
+PERSON (Immutable - Forensic Mode):
+├─ Biometric Identity: Bone structure, facial proportions, eye distance
+├─ Expression: Exact muscle tension, smile, gaze direction
+├─ Distinctive Marks: Moles, scars, freckles, wrinkles
+└─ Pose: Body position and head angle
+
+PRODUCTION (Mutable - Creative Mode):
+├─ LIGHTING: Re-light completely. Cinematic, dramatic, studio-quality
+├─ WARDROBE: Transform clothing. Haute couture, editorial, runway
+├─ BACKGROUND: Teleport location. Studio, exotic, architectural
+├─ STYLING: Hair, makeup (enhancement only, not face alteration)
+├─ ATMOSPHERE: Add fog, haze, rain, particles, volumetric light
+├─ COLOR: Complete color grading freedom. Teal & orange, vintage, B&W
+└─ MOOD: Cinematic, editorial, commercial, artistic interpretation
 
 INPUT CONTEXT:
 {vision_summary}
 
-=== PHASE 0: SUBJECT CONSTANTS (READ-ONLY - DO NOT TOUCH) ===
+=== PHASE 0: PERSON LOCK (ABSOLUTE BIOMETRIC PRESERVATION) ===
 
-1. BIOMETRIC IDENTITY (SACRED):
-   - Bone structure, eye distance, nose shape, and jawline are IMMUTABLE
-   - Expression micro-geometry: exact tension of lips, squint of eyes, muscle state of face must be preserved 100%
-   - Distinctive marks: Moles, scars, tattoos, dental irregularities are VALID DATA. Do not "clean" them unless explicitly told
-   - Pose & Gaze: Direction of eyes and tilt of head must remain EXACTLY as input
+IMMUTABLE ELEMENTS:
+1. Facial bone structure (skull, jaw, cheekbones, forehead)
+2. Eye distance, nose geometry, lip shape and proportions
+3. Facial expression state and muscle tension
+4. Gaze direction and head pose
+5. Distinctive marks: moles, scars, tattoos, freckles, wrinkles
+6. Natural features: eye color, skin tone, ethnicity markers
 
-2. IDENTITY LOCK:
 {identity_block}
 
-=== PHASE 1: CAPTURE VARIABLES (WRITE-ACCESS - YOU MAY CORRECT) ===
+ALLOWED CORRECTIONS (Technical Only):
+{"- Lens distortion correction (wide-angle → 50mm equivalent)" if geometric_correction_allowed else ""}
+- Outpaint cut-off limbs to complete anatomy
+- Straighten perspective (walls, horizon)
+- IF face is blurry → RE-SYNTHESIZE texture ON TOP of existing structure
 
-Lens Distortion Correction: {"ENABLED" if geometric_correction_allowed else "DISABLED"}
-{"- If input has 'Selfie Arm' or 'Fish-Eye' distortion (big nose, receding ears), project face onto flat 50mm-85mm focal plane" if geometric_correction_allowed else "- Preserve original lens perspective"}
-{"- This changes PIXELS to restore TRUE face shape, NOT the identity" if geometric_correction_allowed else ""}
+=== PHASE 1: CREATIVE PRODUCTION (FULL ARTISTIC FREEDOM) ===
 
-Framing & Composition:
-- If a limb (arm, shoulder, top of head) is cut off by frame edge, you have permission to OUTPAINT/HALLUCINATE the missing anatomy to complete the figure naturally
-- You may straighten vertical lines (walls) and horizon lines without tilting the subject unnaturally
+🎬 PHOTOGRAPHIC PRODUCTION DIRECTIVES:
 
-[LOGIC GATE FOR RE-IMAGINATION]
-- IF limb is cut off → GENERATE the rest of the limb logically
-{"- IF nose is distorted by wide lens → COMPRESS geometry to restore natural proportions (50mm)" if geometric_correction_allowed else ""}
-- IF face is blurry → RE-SYNTHESIZE texture ON TOP of existing topography. DO NOT invent a new face
-
-=== PHASE 2: OPTICAL & SENSOR CORRECTIONS ===
-{photoscaler_block}
-
-=== PHASE 3: STYLING & GROOMING (PRESERVING IDENTITY) ===
-{stylescaler_block}
-
-=== PHASE 4: LIGHTING & TONE ===
+LIGHTING & ATMOSPHERE:
 {lightscaler_block}
 
-=== ⛔ NEGATIVE CONSTRAINT (STRICTLY FORBIDDEN) ===
-changing face, face swap, changing expression, changing ethnicity, plastic surgery effect, changing age, shifting gaze, makeup alteration (unless requested), removing glasses, morphing bone structure, different pose, AI hallucinations, shifting eyes, changing facial features.
+You have COMPLETE FREEDOM to:
+- Re-light the entire scene with cinematic/studio lighting
+- Add volumetric fog, haze, rain, particles
+- Create dramatic shadows and highlights
+- Simulate any time of day or lighting setup
 
-=== QUALITY GATES ===
-- Output resolution: 19.5MP (4800x4200px equivalent) → 4K
+STYLING & WARDROBE:
+{stylescaler_block}
+
+You have COMPLETE FREEDOM to:
+- Transform wardrobe completely (if slider > 8)
+- Elevate styling to editorial/runway level
+- Add accessories, jewelry, luxury items
+- Create haute couture transformations
+- Hair styling with volume, texture, shine
+
+ENVIRONMENT & SET DESIGN:
+- Transform background completely (if slider > 8)
+- Teleport to new locations: studio, penthouse, exotic locations
+- Create architectural backdrops
+- Add atmospheric elements
+
+COLOR & MOOD:
+- Complete color grading freedom
+- Cinematic color palettes (teal & orange, vintage, B&W)
+- Adjust saturation, contrast, tone
+- Create signature photographer looks
+
+=== PHASE 2: OPTICAL & SENSOR QUALITY ===
+{photoscaler_block}
+
+=== ⛔ CRITICAL CONSTRAINTS ===
+
+ABSOLUTELY FORBIDDEN:
+- Changing facial bone structure or proportions
+- Face swapping or morphing
+- Altering facial expression or gaze
+- Changing ethnicity, age, or gender markers
+- Plastic surgery effects on face
+- Removing distinctive facial marks without explicit request
+- Shifting head pose or body position
+
+STRONGLY ENCOURAGED:
+- BOLD lighting transformations
+- DRAMATIC wardrobe upgrades (when slider > 8)
+- COMPLETE background reimagination (when slider > 8)
+- CINEMATIC atmosphere and mood
+- EDITORIAL styling and production value
+
+=== 🎯 QUALITY & PRODUCTION STANDARDS ===
+
+Think like a $50,000 editorial photoshoot:
+- Lighting: Profoto studio strobes, perfect ratios
+- Wardrobe: Designer pieces, haute couture
+- Location: Premium studio or exotic destination
+- Hair & Makeup: Celebrity MUA standards
+- Post-Production: High-end retouching (preserving person)
+- Overall Feel: Vogue, GQ, Vanity Fair magazine cover
+
+Technical Specs:
+- Output resolution: 19.5MP (4800x4200px) → 4K
 - Color depth: 24-bit sRGB
 - Format: JPEG, quality 95
-- Compression: Minimal (preserve fine details)
-- Identity preservation: MAXIMUM"""
+- Person identity: PRESERVED
+- Production quality: MAXIMUM"""
         
         return system_prompt
     
