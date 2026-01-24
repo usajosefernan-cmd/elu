@@ -2,7 +2,7 @@ from fastapi import APIRouter, HTTPException, Body
 from services.supabase_service import supabase_db
 from services.vision_orchestrator_v41 import vision_orchestrator
 from services.prompt_compiler_v41 import prompt_compiler_v41
-from services.gemini_service import gemini_service
+from services.laozhang_service import laozhang_service
 import uuid
 
 router = APIRouter(prefix="/v41", tags=["v41"])
@@ -406,7 +406,9 @@ async def generate_v41_endpoint(body: dict = Body(...)):
         if not prompt or not image_base64:
             return {"success": False, "error": "Missing prompt or image"}
         
-        # Si hay preset con Smart Anchors, modificar el prompt
+        # Si hay preset con Smart Anchors, modificar el prompt y añadir reference images
+        reference_images = []
+        
         if preset and preset.get('anchor_preferences'):
             anchors = preset.get('anchor_preferences', {})
             reference_url = preset.get('reference_image_url')
@@ -420,6 +422,9 @@ async def generate_v41_endpoint(body: dict = Body(...)):
 A reference image is provided showing the desired environment/background.
 PRESERVE the background atmosphere, location, and set design from the reference.
 Integrate the new subject into this existing environment naturally.""")
+                # Añadir imagen de referencia para procesamiento multi-imagen
+                if reference_url and reference_url.startswith('data:image'):
+                    reference_images.append(reference_url.split(',')[1])
             
             if anchors.get('lighting') and reference_url:
                 anchor_instructions.append("""
@@ -440,14 +445,21 @@ Maintain the artistic style, color grading, and overall aesthetic from the refer
             if preset.get('nano_params'):
                 config.update(preset['nano_params'])
         
-        # Generar con Gemini
-        print(f"[Generate v41] Generating with Gemini...")
+        # Generar con LaoZhang Nano Banana Pro
+        print(f"[Generate v41] Generating with LaoZhang Nano Banana Pro...")
         print(f"[Generate v41] Preset mode: {bool(preset)}, Anchors: {preset.get('anchor_preferences') if preset else None}")
         
-        result = await gemini_service.generate_image_v41(
+        # Configurar para LaoZhang
+        laozhang_config = {
+            'image_size': '4K',  # 4K por defecto
+            'aspect_ratio': config.get('aspect_ratio', '1:1'),
+            'reference_images': reference_images if reference_images else None
+        }
+        
+        result = await laozhang_service.generate_with_nano_banana_pro(
             prompt=prompt,
             image_base64=image_base64,
-            config=config
+            config=laozhang_config
         )
         
         if result.get('success'):
