@@ -96,6 +96,7 @@ Return strictly this JSON (no markdown):
         1. Clasifica con Gemini Vision
         2. Ensambla auto_settings desde taxonomy + diagnosis
         3. Guarda en analysis_results
+        4. Si tier AUTO: Ejecuta batch processing asíncrono
         """
         try:
             # Cargar definiciones
@@ -110,7 +111,6 @@ Return strictly this JSON (no markdown):
             # Llamar a Gemini Vision
             print(f"[VisionOrchestrator] Calling Gemini Vision...")
             
-            # Usar gemini-2.5-flash para vision
             vision_result = await gemini_service.analyze_with_vision(
                 image_base64,
                 system_prompt,
@@ -126,28 +126,23 @@ Return strictly this JSON (no markdown):
             # Ensamblar auto_settings desde taxonomy + diagnosis
             final_sliders = {}
             
-            # Aplicar config de taxonomy
             cat_code = vision_result.get('cat_code')
             cat_rule = next((t for t in taxonomies if t['code'] == cat_code), None)
             
             if cat_rule and cat_rule.get('slider_config'):
                 final_sliders.update(cat_rule['slider_config'])
             
-            # Aplicar configs de diagnosis
             detected_defects = vision_result.get('detected_defects', [])
             for defect_code in detected_defects:
                 diag_rule = next((d for d in diagnosis_list if d['code'] == defect_code), None)
                 if diag_rule and diag_rule.get('slider_config'):
-                    # Merge (el último gana si hay conflicto)
                     final_sliders.update(diag_rule['slider_config'])
             
-            # Severity boost
             severity = vision_result.get('severity_score', 5)
             if severity > 7:
                 final_sliders['force_reimagine'] = True
                 final_sliders['p6'] = 'FORCE'
             
-            # OCR lock
             if vision_result.get('has_text_or_logo'):
                 final_sliders['ocr_lock'] = True
                 final_sliders['l6'] = 'FORCE'
@@ -159,6 +154,12 @@ Return strictly this JSON (no markdown):
                 'detected_defects': detected_defects,
                 'ocr_data': vision_result.get('ocr_data'),
                 'visual_summary': vision_result.get('visual_summary'),
+
+
+
+# Singleton actualizado con batch processing
+vision_orchestrator = VisionOrchestratorService()
+
                 'severity_score': severity,
                 'auto_settings': final_sliders
             }
@@ -177,6 +178,175 @@ Return strictly this JSON (no markdown):
             
         except Exception as e:
             print(f"[VisionOrchestrator] Error: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"error": str(e)}
+    
+    async def execute_batch_processing(
+        self,
+        upload_id: str,
+        user_id: str,
+        analysis: Dict,
+        auto_settings: Dict,
+        biopsy_urls: Dict
+    ) -> Dict:
+        """
+        Ejecuta batch processing asíncrono ("Shoot, Pocket, Review").
+        
+        1. Lee user_upload_workflows
+        2. Genera múltiples variantes con Smart Staggering
+        3. Diferentes seeds y temperatures para variedad
+        """
+        try:
+            # Cargar workflow del usuario
+            workflow_response = supabase_db.client.table('user_upload_workflows')\
+                .select('*')\
+                .eq('user_id', user_id)\
+                .execute()
+            
+            workflow = workflow_response.data[0] if workflow_response.data else None
+            
+            # Batch config por defecto
+            batch_config = [
+                {'type': 'AUTO', 'variant': 'FORENSIC'},
+                {'type': 'AUTO', 'variant': 'CREATIVE'}
+            ]
+            
+            if workflow and workflow.get('batch_config'):
+                batch_config = workflow['batch_config']
+                max_previews = workflow.get('max_previews', 3)
+                batch_config = batch_config[:max_previews]
+            
+            print(f"[BatchProcessing] Starting {len(batch_config)} variations with Smart Staggering")
+            
+            from services.prompt_compiler_v41 import prompt_compiler_v41
+            from services.laozhang_service import laozhang_service
+            import random
+            import asyncio
+            
+            # Jobs para procesamiento
+            results = []
+            
+            for index, item in enumerate(batch_config):
+                try:
+                    # A. Configurar variedad
+                    specific_settings = {**auto_settings}
+                    temp_override = 0.4
+                    seed_override = random.randint(100000, 999999)
+                    preset_data = None
+                    
+                    if item.get('type') == 'PRESET':
+                        # Cargar preset
+                        preset_response = supabase_db.client.table('user_presets_v41')\
+                            .select('*')\
+                            .eq('id', item.get('preset_id'))\
+                            .single()\
+                            .execute()
+                        
+                        if preset_response.data:
+                            preset = preset_response.data
+                            specific_settings = preset.get('sliders_config', specific_settings)
+                            temp_override = preset.get('nano_params', {}).get('strength', 0.65)
+                            preset_data = preset
+                    
+                    elif item.get('type') == 'AUTO':
+                        variant = item.get('variant', 'BALANCED')
+                        if variant == 'FORENSIC':
+                            temp_override = 0.1
+                            seed_override = 42  # Seed fija para forensic
+                        elif variant == 'CREATIVE':
+                            temp_override = 0.8
+                        else:
+                            temp_override = 0.4 + (index * 0.1)
+                    
+                    # B. Compilar prompt
+                    compile_result = await prompt_compiler_v41.compile_from_sliders(
+                        specific_settings,
+                        analysis,
+                        analysis.get('has_person', False)
+                    )
+                    
+                    if not compile_result.get('success'):
+                        print(f"[BatchProcessing] Compilation failed for variant {index}")
+                        continue
+                    
+                    # C. Generar con LaoZhang
+                    gen_config = {
+                        'temperature': temp_override,
+                        'seed': seed_override,
+                        'image_size': '4K'
+                    }
+                    
+                    # Si hay preset con anchors
+                    if preset_data and preset_data.get('anchor_preferences'):
+                        gen_config['preset'] = preset_data
+                    
+                    # Usar center crop o thumbnail
+                    image_data = biopsy_urls.get('center_base64') or biopsy_urls.get('thumbnail_base64')
+                    
+                    gen_result = await laozhang_service.generate_with_nano_banana_pro(
+                        prompt=compile_result['compiled_prompt'],
+                        image_base64=image_data,
+                        config=gen_config
+                    )
+                    
+                    if gen_result.get('success'):
+                        # Guardar en generations
+                        gen_data = {
+                            'upload_id': upload_id,
+                            'prompt_used': compile_result['compiled_prompt'][:1000],
+                            'config_used': {
+                                'seed': seed_override,
+                                'temperature': temp_override,
+                                'variant': item.get('variant'),
+                                'preset_id': preset_data.get('id') if preset_data else None
+                            },
+                            'watermarked_url': gen_result.get('image_base64'),
+                            'is_preview': True,
+                            'tokens_spent': 0
+                        }
+                        
+                        gen_response = await supabase_db.client.table('generations').insert(gen_data).execute()
+                        
+                        results.append({
+                            'index': index,
+                            'variant': item.get('variant'),
+                            'success': True,
+                            'generation_id': gen_response.data[0]['id'] if gen_response.data else None
+                        })
+                        
+                        print(f"[BatchProcessing] ✅ Variant {index+1}/{len(batch_config)} completed")
+                    
+                    # D. HEARTBEAT DELAY (Smart Staggering)
+                    if index < len(batch_config) - 1:
+                        print(f"[BatchProcessing] ⏱️ Heartbeat delay 1.5s...")
+                        await asyncio.sleep(1.5)
+                
+                except Exception as e:
+                    print(f"[BatchProcessing] Error in variant {index}: {e}")
+                    results.append({
+                        'index': index,
+                        'success': False,
+                        'error': str(e)
+                    })
+            
+            # Actualizar upload status
+            await supabase_db.client.table('uploads')\
+                .update({'status': 'completed'})\
+                .eq('id', upload_id)\
+                .execute()
+            
+            print(f"[BatchProcessing] 🎉 Batch completed: {len(results)} variations")
+            
+            return {
+                'success': True,
+                'count': len(results),
+                'results': results,
+                'message': 'Generations queued in background. You can close the app.'
+            }
+            
+        except Exception as e:
+            print(f"[BatchProcessing] Error: {e}")
             import traceback
             traceback.print_exc()
             return {"error": str(e)}
