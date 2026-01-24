@@ -811,7 +811,7 @@ const MotorSection: React.FC<{
 
 
 // ========== MAIN HERO GALLERY COMPONENT ==========
-export const HeroGallery: React.FC<HeroGalleryProps> = ({ onCtaClick, onMotorClick, previewThemes }) => {
+export const HeroGallery: React.FC<HeroGalleryProps> = ({ onCtaClick, onBatchClick, onMotorClick, previewThemes }) => {
     const { t } = useTranslation();
 
     // Default Motors Configuration (Moved inside to use t)
