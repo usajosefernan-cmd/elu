@@ -13,6 +13,13 @@ from services.dna_anchor_generator import dna_anchor_generator, DNAAnchor
 from services.multimodal_prompt_injector import multimodal_prompt_injector
 from services.context_cache_manager import context_cache_manager
 
+# Mantener block_injector para compatibilidad
+try:
+    from services.block_injector import block_injector, CompilerBlockOutput
+except ImportError:
+    CompilerBlockOutput = None
+    print("[PromptCompiler] block_injector not available, using SQL Builder only")
+
 
 @dataclass
 class CompilerInput:
