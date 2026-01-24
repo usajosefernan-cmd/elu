@@ -89,28 +89,39 @@ export const getUserPresets = async (userId: string): Promise<SmartPreset[]> => 
   }
 };
 
-// Save user preset
+// Save user preset V40 with Dictator Prompt & Thumbnail
 export const saveUserPreset = async (
   userId: string,
   name: string,
   sliderValues: SmartPreset['slider_values'],
   lockedPillars: string[] = [],
-  narrativeAnchor?: string
+  narrativeAnchor?: string,
+  sourceImage?: string // Base64 or URL of original image for thumbnail
 ): Promise<SmartPreset | null> => {
   try {
-    const response = await fetch(`${BACKEND_URL}/api/presets/user/${userId}`, {
+    // Flatten slider values to config format
+    const sliders_config = {
+      photoscaler: sliderValues.photoscaler || {},
+      stylescaler: sliderValues.stylescaler || {},
+      lightscaler: sliderValues.lightscaler || {}
+    };
+    
+    // Use v40 endpoint with Dictator Prompt
+    const response = await fetch(`${BACKEND_URL}/api/presets/v40/save-style`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
+        user_id: userId,
         name,
-        slider_values: sliderValues,
-        locked_pillars: lockedPillars,
-        narrative_anchor: narrativeAnchor
+        sliders_config,
+        source_image: sourceImage,  // For thumbnail generation
+        seed: Math.floor(Math.random() * 1000000000),
+        temperature: 0.75
       })
     });
     
     const data = await response.json();
-    if (data.success) {
+    if (data.success && data.preset) {
       return data.preset;
     }
     return null;
