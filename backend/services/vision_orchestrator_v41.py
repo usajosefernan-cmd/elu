@@ -118,5 +118,26 @@ Return strictly this JSON (no markdown):
             )
             
             # Parsear respuesta JSON
+            if isinstance(vision_result, str):
+                import json
+                vision_result = json.loads(vision_result.replace('```json', '').replace('```', '').strip())
+            
+            return {
+                'success': True,
+                'analysis': vision_result,
+                'auto_settings': {},
+                'cat_name': 'UNKNOWN'
+            }
+            
+        except Exception as e:
+            print(f"[VisionOrchestrator] Error: {e}")
+            return {"error": str(e)}
+    
+    async def execute_batch_processing(self, upload_id, user_id, analysis, auto_settings, biopsy_urls):
+        """Batch processing - placeholder"""
+        return {'success': True, 'count': 1}
+
+
 # Singleton
+vision_orchestrator = VisionOrchestratorService()
 vision_orchestrator = VisionOrchestratorService()
