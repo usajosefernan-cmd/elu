@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 
 interface HeroGalleryProps {
     onCtaClick?: () => void;
+    onBatchClick?: () => void;  // NEW: Batch upload
     onMotorClick?: (motorId: string) => void;
     previewThemes?: Record<string, any>;
 }
