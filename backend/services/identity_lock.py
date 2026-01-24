@@ -30,6 +30,7 @@ class IdentityLockService:
     ) -> str:
         """
         Genera el bloque de Identity Lock según el contexto.
+        SIEMPRE aplica BIOMETRIC LOCK estricto por defecto.
         
         Args:
             context: IdentityLockContext con la información del análisis
@@ -37,27 +38,62 @@ class IdentityLockService:
         Returns:
             Texto del bloque Identity Lock
         """
-        # Si no hay cara o no requiere preservación estructural
-        if not context.has_face or not context.requires_structural_preservation:
-            return "Standard processing. No identity constraints."
+        # Si no hay cara, lock básico
+        if not context.has_face:
+            return """[IDENTITY LOCK: BASIC]
+Preserve overall composition and subject matter.
+Do not invent new elements unless explicitly requested."""
         
-        # Determinar el tipo de bloqueo
+        # BIOMETRIC LOCK ESTRICTO (por defecto SIEMPRE)
         if context.geometric_changes_enabled:
-            base_block = """ALLOW structural changes for geometry correction (lens distortion, perspective).
-HOWEVER: Facial identity must be preserved. Bone structure, proportions, character marks are sacred.
-Changes allowed: Lens distortion correction, perspective fixing.
-Changes FORBIDDEN: Changing face shape, proportions, identity markers."""
+            # Solo permitir correcciones geométricas técnicas
+            base_block = """[BIOMETRIC LOCK: STRICT WITH GEOMETRIC CORRECTION]
+
+ALLOWED CORRECTIONS:
+- Lens distortion correction (wide-angle → 50mm equivalent)
+- Perspective correction (straighten walls, horizon)
+- Outpaint cut-off limbs to complete anatomy
+
+ABSOLUTELY FORBIDDEN:
+- Changing bone structure (cheekbones, jaw, forehead)
+- Altering eye distance, nose shape, lip proportions
+- Shifting facial expression or gaze direction
+- Changing ethnicity, age, gender markers
+- Face swapping or morphing
+- Plastic surgery effects
+- Altering distinctive marks (moles, scars, wrinkles)
+- Removing or adding facial features"""
         else:
-            base_block = """CRITICAL: IDENTITY LOCK ACTIVE - MAXIMUM CONSTRAINT.
-DO NOT MOVE PIXELS related to face/body structure.
-Structure must match overlay 100%.
-Allowed changes: Color correction, tone mapping, lighting simulation.
-Forbidden changes: Any structural pixel movement, facial morphing, identity alteration."""
+            # LOCK MÁXIMO - Solo mejoras de calidad
+            base_block = """[BIOMETRIC LOCK: MAXIMUM]
+
+THIS IS A FORENSIC RESTORATION, NOT ARTISTIC CREATION.
+
+READ-ONLY ELEMENTS (DO NOT MODIFY):
+- ALL facial bone structure (skull, jaw, cheekbones, forehead)
+- Eye distance, nose geometry, lip shape and size
+- Facial expression state (smile intensity, eye squint, muscle tension)
+- Gaze direction and head pose angle
+- Distinctive marks: moles, scars, freckles, wrinkles, tattoos
+- Dental features visible in expression
+- Hair texture and pattern (natural vs styled)
+
+WRITE-ACCESS ONLY FOR:
+- Sensor noise removal and sharpness restoration
+- Color grading and exposure correction
+- Lighting enhancement (without changing shadows that define structure)
+- Texture detail restoration (pores, fine lines) ON TOP of existing topology
+
+CRITICAL: If the face is blurry, RE-SYNTHESIZE detail FOLLOWING the existing structure.
+DO NOT invent a new face or "improve" features."""
         
-        # Añadir preservación de marcas faciales
+        # Añadir preservación de marcas faciales específicas
         marks_preservation = ""
         if context.facial_marks and len(context.facial_marks) > 0:
-            marks_preservation = f"\nFacial marks to preserve identically: {', '.join(context.facial_marks)}"
+            marks_preservation = f"""
+
+SPECIFIC MARKS TO PRESERVE IDENTICALLY:
+{', '.join(context.facial_marks)}"""
         
         # Añadir referencia al DNA Anchor si existe
         dna_anchor_block = ""
@@ -65,9 +101,9 @@ Forbidden changes: Any structural pixel movement, facial morphing, identity alte
             dna_anchor_block = """
 
 [DNA ANCHOR REFERENCE ACTIVE]
-A biometric face crop has been provided as secondary image reference.
-Use the DNA Anchor as ABSOLUTE GROUND TRUTH for facial structure.
-Any deviation from the DNA Anchor facial geometry is FORBIDDEN."""
+A biometric face crop is provided as ABSOLUTE GROUND TRUTH for facial structure.
+ANY deviation from the DNA Anchor facial geometry is STRICTLY FORBIDDEN.
+Use it to verify bone structure accuracy in your output."""
         
         return f"{base_block}{marks_preservation}{dna_anchor_block}"
     
