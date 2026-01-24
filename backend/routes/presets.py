@@ -178,7 +178,12 @@ async def save_style_v40(body: dict = Body(...)):
 
 @router.get("/v40/user/{user_id}")
 async def get_user_presets_v40(user_id: str):
-    """Obtiene los presets v40 de un usuario con info del Dictator Prompt."""
+    """
+    Obtiene los presets v40 de un usuario con:
+    - locked_sliders: sliders que NO se pueden editar
+    - thumbnail: miniatura de la foto original
+    - Dictator Prompt info
+    """
     try:
         response = supabase_db.client.table("smart_presets")\
             .select("*")\
@@ -188,21 +193,39 @@ async def get_user_presets_v40(user_id: str):
         
         presets = response.data or []
         
-        # Extract v40 data from slider_values and add dictator info
+        # Extract v40 data and format response
         processed_presets = []
         for preset in presets:
             slider_values = preset.get('slider_values', {})
             v40_meta = slider_values.get('_v40_meta', {})
             
+            # Get slider config without meta
+            sliders_config = {k: v for k, v in slider_values.items() if k != '_v40_meta'}
+            
             processed_preset = {
-                **preset,
+                'id': preset.get('id'),
+                'name': preset.get('name'),
+                'created_at': preset.get('created_at'),
+                'user_id': preset.get('user_id'),
+                # Slider values
+                'sliders_config': sliders_config,
+                # Generation config
                 'seed': v40_meta.get('seed'),
                 'temperature': v40_meta.get('temperature'),
+                'top_k': v40_meta.get('top_k', 40),
+                'top_p': v40_meta.get('top_p', 0.9),
+                # 🔒 Locked sliders (NO se pueden editar)
+                'locked_sliders': v40_meta.get('locked_sliders', []),
+                # Style lock
                 'style_lock_prompt': v40_meta.get('style_lock_prompt'),
                 'mode': v40_meta.get('mode', 'SHOWMAN'),
-                'dictator_info': {
+                # 🖼️ Thumbnail
+                'thumbnail_base64': v40_meta.get('thumbnail_base64'),
+                # Info
+                'preset_info': {
                     'has_style_lock': v40_meta.get('style_lock_prompt') is not None,
-                    'dominant_count': len(v40_meta.get('dominant_sliders', []) or []),
+                    'locked_count': len(v40_meta.get('locked_sliders', [])),
+                    'has_thumbnail': v40_meta.get('thumbnail_base64') is not None,
                     'mode': v40_meta.get('mode', 'SHOWMAN'),
                     'version': v40_meta.get('version', 'legacy')
                 }
