@@ -14,7 +14,15 @@ interface AdminLayoutProps {
     standAloneMode?: boolean;
 }
 
-export const AdminLayout: React.FC<AdminLayoutProps> = ({ currentTab, onTabChange, children, userEmail, onLogout, standAloneMode = false }) => {
+export const AdminLayout: React.FC<AdminLayoutProps> = ({ 
+    currentTab, 
+    onTabChange, 
+    children, 
+    userEmail, 
+    onLogout, 
+    standAloneMode = false,
+    onExit
+}) => {
     const [isMobileOpen, setIsMobileOpen] = useState(false);
     const [isCollapsed, setIsCollapsed] = useState(() => {
         if (typeof window !== 'undefined') {
