@@ -264,12 +264,12 @@ const handleUpload = async () => {
 
 ### 2.1 Los 4 Perfiles y sus Componentes
 
-| **Perfil** | **Tier en DB** | **Componente Principal** | **Control de Sliders** | **Estado en DB** |
-| --- | --- | --- | --- | --- |
-| **AUTO** | `AUTO` | Ninguno (autopilot) | Vision lo decide automáticamente | Pausa: `BATCH_PROCESSING` |
-| **USER** | `USER` | `<SimplePillarControl />` | 3 Macros (cada uno 9 sliders) | Pausa: `REVIEW_REQUIRED` |
-| **PRO** | `PRO` | `<MacroSliderGallery />` | 9 Macros temáticos (cada uno 3-4 sliders) | Pausa: `REVIEW_REQUIRED` |
-| **PRO_LUX** | `PRO_LUX` | `<MicroSliderGrid />` | 27 Sliders individuales | Pausa: `REVIEW_REQUIRED` |
+| **Perfil**  | **Tier en DB** | **Componente Principal**  | **Control de Sliders**                    | **Estado en DB**          |
+|:----------- |:-------------- |:------------------------- |:----------------------------------------- |:------------------------- |
+| **AUTO**    | `AUTO`         | Ninguno (autopilot)       | Vision lo decide automáticamente          | Pausa: `BATCH_PROCESSING` |
+| **USER**    | `USER`         | `<SimplePillarControl />` | 3 Macros (cada uno 9 sliders)             | Pausa: `REVIEW_REQUIRED`  |
+| **PRO**     | `PRO`          | `<MacroSliderGallery />`  | 9 Macros temáticos (cada uno 3-4 sliders) | Pausa: `REVIEW_REQUIRED`  |
+| **PRO_LUX** | `PRO_LUX`      | `<MicroSliderGrid />`     | 27 Sliders individuales                   | Pausa: `REVIEW_REQUIRED`  |
 
 ---
 
@@ -686,6 +686,35 @@ export const useImageStore = create<ImageState>((set) => ({
 
 ---
 
+### 2.6 Gestión de Presets y Workflows ("Pocket Mode")
+
+Esta sección define cómo el usuario crea sus herramientas (Presets) y cómo automatiza su uso (Workflows).
+
+#### A. Modal de Guardado: `<SavePresetModal />` (Smart Anchors)
+
+**Trigger:** Botón "Guardar Estilo" en una imagen generada que gustó al usuario.
+**Concepto:** No solo guarda sliders, sino "intenciones" (Fondo, Luz, Estilo).
+
+**Lógica de UI:**
+
+1. Mostrar formulario con nombre.
+2. Mostrar Checkboxes de **"Smart Anchors"**:
+   - `[ ] Anclar Fondo/Ambiente` (Usa la imagen como referencia estructural).
+   - `[ ] Anclar Iluminación` (Usa la imagen como referencia de luz).
+   - `[ ] Anclar Estilo` (Usa la imagen como referencia de vibe).
+3. Al guardar, enviar a `/api/save-preset`.
+
+#### B. Configurador de Flujo: `<WorkflowConfigurator />`
+
+**Concepto:** Panel donde el usuario define qué sucede automáticamente al subir una foto (Flujo "Shoot & Pocket").
+**Ubicación:** Perfil de Usuario / Configuración.
+
+**Estado Local (Ejemplo):**
+
+```typescript
+
+```
+
 ## 3. API REFERENCE & CONTRACTS
 
 ### 3.1 POST /vision-orchestrator
@@ -849,6 +878,7 @@ export const useImageStore = create<ImageState>((set) => ({
 - **`generations_private`** bucket: Imagen limpia (sin watermark, disponible solo para propietario)
   
   - Path: `{uploadId}/clean_{variationIndex}_{timestamp}.jpg`
+
 - **`generations_public`** bucket: Imagen con watermark (preview público)
   
   - Path: `{uploadId}/preview_{variationIndex}_{timestamp}.jpg`
@@ -874,58 +904,60 @@ export const useImageStore = create<ImageState>((set) => ({
 **Process Flow:**
 
 1. **Validar Tier & Tokens:**
-  
-  - Leer `profiles.tier` y `tier_config`
-  - Verificar `can_upscale_8k`
-  - Calcular costo: `baseUnlockCost + (wants8k ? upscale8kCost : 0)`
-  - Verificar `token_balance`
+   
+   - Leer `profiles.tier` y `tier_config`
+   - Verificar `can_upscale_8k`
+   - Calcular costo: `baseUnlockCost + (wants8k ? upscale8kCost : 0)`
+   - Verificar `token_balance`
+
 2. **Recuperar Imagen Limpia:**
-  
-  - Descargar desde `generations_private` bucket
-  - Esta es la imagen sin watermark del paso anterior
+   
+   - Descargar desde `generations_private` bucket
+   - Esta es la imagen sin watermark del paso anterior
+
 3. **Cola de Ediciones (Si Existen):**
-  
-  - Si `userRefinePrompt` no es vacío → Laozhang Edit (inpainting/refinement)
-  - Si hay `ocr_data` en `analysis_results` → Para cada texto OCR, Laozhang Edit para "render" el texto con precisión
-  
-  ```json
-  {
-    "prompt": "Render the text 'ACME' clearly on the building facade. High resolution typography.",
-    "strength": 0.95,
-    "mask_box": [100, 200, 300, 250],
-    "text": "ACME",
-    "surface_material": "concrete"
-  }
-  ```
-  
+   
+   - Si `userRefinePrompt` no es vacío → Laozhang Edit (inpainting/refinement)
+   - Si hay `ocr_data` en `analysis_results` → Para cada texto OCR, Laozhang Edit para "render" el texto con precisión
+   
+   ```json
+   {
+     "prompt": "Render the text 'ACME' clearly on the building facade. High resolution typography.",
+     "strength": 0.95,
+     "mask_box": [100, 200, 300, 250],
+     "text": "ACME",
+     "surface_material": "concrete"
+   }
+   ```
+
 4. **Upscale (Replicate):**
-  
-  - Si `targetResolution === "8K"` → 32 megapixels
-  - Si `targetResolution === "4K"` → 8 megapixels
-  
-  ```typescript
-  const upscaleRes = await fetch('https://api.replicate.com/v1/predictions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Token ${REPLICATE_API_TOKEN}`
-    },
-    body: JSON.stringify({
-      version: UPSCALER_MODEL,
-      input: {
-        image: imageBase64,
-        megapixels: targetResolution === '8K' ? 32 : 8
-      }
-    })
-  });
-  ```
-  
+   
+   - Si `targetResolution === "8K"` → 32 megapixels
+   - Si `targetResolution === "4K"` → 8 megapixels
+   
+   ```typescript
+   const upscaleRes = await fetch('https://api.replicate.com/v1/predictions', {
+     method: 'POST',
+     headers: {
+       'Content-Type': 'application/json',
+       'Authorization': `Token ${REPLICATE_API_TOKEN}`
+     },
+     body: JSON.stringify({
+       version: UPSCALER_MODEL,
+       input: {
+         image: imageBase64,
+         megapixels: targetResolution === '8K' ? 32 : 8
+       }
+     })
+   });
+   ```
+
 5. **Guardar Final:**
-  
-  - Subir a `generations_public` bucket
-  - Path: `{uploadId}/final_{timestamp}_{resolution}.jpg`
-  - Actualizar `generations` tabla: set `final_url`, `is_preview=false`, `tokens_spent`
-  - Restar tokens de `profiles.token_balance`
+   
+   - Subir a `generations_public` bucket
+   - Path: `{uploadId}/final_{timestamp}_{resolution}.jpg`
+   - Actualizar `generations` tabla: set `final_url`, `is_preview=false`, `tokens_spent`
+   - Restar tokens de `profiles.token_balance`
 
 **Response:**
 
@@ -938,7 +970,68 @@ export const useImageStore = create<ImageState>((set) => ({
 }
 ```
 
----
+### 3.5 POST /save-preset (Crear Herramienta)
+
+```
+
+
+**Purpose:** Guardar configuración actual + Imagen de referencia (Smart Anchor)
+
+**Request:**
+```json
+{
+  "userId": "uuid-user...",
+  "uploadId": "uuid-upload-source...",
+  "presetName": "Restaurante Lujoso",
+  "currentSliders": { "p1": 5, "s3": 8, "l1": 6 },
+  "userAnchors": {
+    "background": true,
+    "lighting": true,
+    "style": false
+  }
+}
+```
+
+**Response:**
+
+JSON
+
+```
+{
+  "success": true,
+  "presetId": "new-preset-uuid"
+}
+```
+
+### 3.6 POST /user/workflow (Configurar "Pocket Mode")
+
+**Purpose:** Definir la receta de generación automática para subidas futuras.
+
+**Request:**
+
+JSON
+
+```
+{
+  "userId": "uuid-user...",
+  "isAsyncEnabled": true,
+  "batchConfig": [
+    { "type": "AUTO", "variant": "FORENSIC" },
+    { "type": "PRESET", "preset_id": "uuid-preset-123" }
+  ]
+}
+```
+
+**Response:**
+
+JSON
+
+```
+{
+  "success": true,
+  "message": "Workflow updated. New uploads will generate 2 variations automatically."
+}
+```
 
 ## 4. INFRAESTRUCTURA Y DESPLIEGUE
 
@@ -1054,17 +1147,17 @@ supabase functions list
 
 ### 5.1 Matriz de Errores y Respuestas
 
-| **Escenario** | **Error** | **Causa** | **Respuesta al Usuario** | **Acción Backend** |
-| --- | --- | --- | --- | --- |
-| Biopsia no generada | `Biopsy generation failed` | Archivo corrupto o muy grande | "Try a different image" | Log error, alert |
-| Gemini Vision falla | `AI Vision Failed: API limit exceeded` | Quota de Gemini agotado | "Service temporarily unavailable. Try later." | Retry con backoff exponencial |
-| Imagen muy pequeña | `Image too small` | < 512x512 (limite práctico) | "Image must be at least 512x512" | Rechazar en frontend |
-| Imagen muy grande | `Image exceeds 19.5MP limit` | > 19.5 MP | "Use LuxScaler Pro for larger files" | Rechazar en frontend |
-| Insuficientes tokens | `Insufficient tokens` | `token_balance < cost` | "Not enough tokens. Upgrade or buy tokens." | Rechazar generación |
-| Tier no permite 8K | `Tier does not allow 8K Upscale` | Usuario intenta upscale sin permiso | "Your plan doesn't support 8K. Upgrade to PRO_LUX." | Rechazar solicitud |
-| Nano Banana falla | `Nano Banana failed: ...` | Error en API externa | "Generation failed. Please try again." | Log error, retry con seed diferente |
-| Replicate upscaler falla | `Replicate upscaler failed: ...` | Error en upscaling | "Upscale failed. Refund tokens." | Revertir token deduction, alertar al usuario |
-| Laozhang inpaint falla | `Laozhang edit failed: ...` | Error en refinamiento OCR | "Text rendering failed. Imagen disponible sin refinamiento." | Saltar ese paso, continuar |
+| **Escenario**            | **Error**                              | **Causa**                           | **Respuesta al Usuario**                                     | **Acción Backend**                           |
+|:------------------------ |:-------------------------------------- |:----------------------------------- |:------------------------------------------------------------ |:-------------------------------------------- |
+| Biopsia no generada      | `Biopsy generation failed`             | Archivo corrupto o muy grande       | "Try a different image"                                      | Log error, alert                             |
+| Gemini Vision falla      | `AI Vision Failed: API limit exceeded` | Quota de Gemini agotado             | "Service temporarily unavailable. Try later."                | Retry con backoff exponencial                |
+| Imagen muy pequeña       | `Image too small`                      | < 512x512 (limite práctico)         | "Image must be at least 512x512"                             | Rechazar en frontend                         |
+| Imagen muy grande        | `Image exceeds 19.5MP limit`           | > 19.5 MP                           | "Use LuxScaler Pro for larger files"                         | Rechazar en frontend                         |
+| Insuficientes tokens     | `Insufficient tokens`                  | `token_balance < cost`              | "Not enough tokens. Upgrade or buy tokens."                  | Rechazar generación                          |
+| Tier no permite 8K       | `Tier does not allow 8K Upscale`       | Usuario intenta upscale sin permiso | "Your plan doesn't support 8K. Upgrade to PRO_LUX."          | Rechazar solicitud                           |
+| Nano Banana falla        | `Nano Banana failed: ...`              | Error en API externa                | "Generation failed. Please try again."                       | Log error, retry con seed diferente          |
+| Replicate upscaler falla | `Replicate upscaler failed: ...`       | Error en upscaling                  | "Upscale failed. Refund tokens."                             | Revertir token deduction, alertar al usuario |
+| Laozhang inpaint falla   | `Laozhang edit failed: ...`            | Error en refinamiento OCR           | "Text rendering failed. Imagen disponible sin refinamiento." | Saltar ese paso, continuar                   |
 
 ### 5.2 Estrategia de Fallback (Vision)
 

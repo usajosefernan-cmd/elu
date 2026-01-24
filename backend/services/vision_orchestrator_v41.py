@@ -154,15 +154,30 @@ Return strictly this JSON (no markdown):
                 'detected_defects': detected_defects,
                 'ocr_data': vision_result.get('ocr_data'),
                 'visual_summary': vision_result.get('visual_summary'),
-
-
-
-# Singleton actualizado con batch processing
-vision_orchestrator = VisionOrchestratorService()
-
                 'severity_score': severity,
                 'auto_settings': final_sliders
             }
+            
+            await supabase_db.client.table('analysis_results').upsert(analysis_data).execute()
+            
+            print(f"[VisionOrchestrator] Analysis saved")
+            
+            return {
+                'success': True,
+                'analysis': vision_result,
+                'auto_settings': final_sliders,
+                'cat_name': cat_rule.get('category_name') if cat_rule else 'UNKNOWN',
+                'strategy': cat_rule.get('strategy') if cat_rule else ''
+            }
+            
+        except Exception as e:
+            print(f"[VisionOrchestrator] Error: {e}")
+            return {"error": str(e)}
+
+
+# Singleton
+vision_orchestrator = VisionOrchestratorService()
+
             
             await supabase_db.client.table('analysis_results').upsert(analysis_data).execute()
             

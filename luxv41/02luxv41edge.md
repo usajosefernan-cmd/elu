@@ -292,6 +292,7 @@ Return strictly this JSON (no markdown):
     });
   }
 });
+
 ```
 
 ---
@@ -414,6 +415,18 @@ Follow the slider directives precisely while preserving the core identity, compo
     });
   }
 });
+// En prompt-compiler
+if (variant === 'CREATIVE') {
+   // Inyectar palabras clave de azar controlado
+   const vibes = ["Cinematic lighting", "Dramatic atmosphere", "Soft bokeh", "High contrast"];
+   const randomVibe = vibes[Math.floor(Math.random() * vibes.length)];
+   finalPrompt += ` \nSTYLE: ${randomVibe}.`;
+   temperature = 0.8;
+} 
+else if (variant === 'FORENSIC') {
+   finalPrompt += ` \nSTYLE: Neutral, Objective, Documentary, Clinical Sharpness.`;
+   temperature = 0.1;
+}
 ```
 
 ---
