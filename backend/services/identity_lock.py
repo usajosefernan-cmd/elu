@@ -29,83 +29,82 @@ class IdentityLockService:
         context: IdentityLockContext
     ) -> str:
         """
-        Genera el bloque de Identity Lock según el contexto.
-        SIEMPRE aplica BIOMETRIC LOCK estricto por defecto.
-        
-        Args:
-            context: IdentityLockContext con la información del análisis
-        
-        Returns:
-            Texto del bloque Identity Lock
+        Genera el bloque de Identity Lock SOLO si hay rostro.
+        Si no hay rostro, permite procesamiento normal.
         """
-        # Si no hay cara, lock básico
+        # Si NO hay cara, no aplicar lock
         if not context.has_face:
-            return """[IDENTITY LOCK: BASIC]
-Preserve overall composition and subject matter.
-Do not invent new elements unless explicitly requested."""
+            return """[NO FACE DETECTED]
+Process the image according to slider instructions.
+Preserve original subject matter and composition unless sliders indicate otherwise."""
         
-        # BIOMETRIC LOCK ESTRICTO (por defecto SIEMPRE)
+        # Si HAY cara, aplicar BIOMETRIC LOCK
+        base_block = """[BIOMETRIC LOCK ACTIVE - HUMAN FACE DETECTED]
+
+ABSOLUTE RULES FOR FACIAL PRESERVATION:
+1. Facial bone structure is IMMUTABLE
+   - Skull shape, jaw line, cheekbones, forehead
+   - Eye sockets, nose bridge, chin projection
+   
+2. Facial proportions are FIXED
+   - Distance between eyes
+   - Eye-to-nose-to-mouth ratios
+   - Face width-to-height ratio
+   
+3. Expression is FROZEN
+   - Lip tension and curve (smile, frown, neutral)
+   - Eye openness and squint
+   - Eyebrow position and arch
+   - Muscle state of face
+   
+4. Gaze and pose are LOCKED
+   - Eye direction (left, right, camera)
+   - Head tilt and rotation angle
+   - Neck position
+   
+5. Distinctive marks are PRESERVED
+   - Moles, beauty marks, freckles
+   - Scars, birthmarks
+   - Wrinkles, laugh lines
+   - Skin texture and pores
+   
+6. Natural features are PROTECTED
+   - Eye color
+   - Skin tone base
+   - Ethnicity markers
+   - Age indicators"""
+        
+        # Si hay permiso para correcciones geométricas
         if context.geometric_changes_enabled:
-            # Solo permitir correcciones geométricas técnicas
-            base_block = """[BIOMETRIC LOCK: STRICT WITH GEOMETRIC CORRECTION]
+            geometric_note = """
 
-ALLOWED CORRECTIONS:
-- Lens distortion correction (wide-angle → 50mm equivalent)
-- Perspective correction (straighten walls, horizon)
-- Outpaint cut-off limbs to complete anatomy
-
-ABSOLUTELY FORBIDDEN:
-- Changing bone structure (cheekbones, jaw, forehead)
-- Altering eye distance, nose shape, lip proportions
-- Shifting facial expression or gaze direction
-- Changing ethnicity, age, gender markers
-- Face swapping or morphing
-- Plastic surgery effects
-- Altering distinctive marks (moles, scars, wrinkles)
-- Removing or adding facial features"""
+GEOMETRIC CORRECTIONS ALLOWED (Technical Only):
+- Correct wide-angle lens distortion (project to 50mm equivalent)
+- Straighten perspective (walls, horizon)
+- BUT: These corrections must NOT alter the person's actual facial structure
+- The face geometry correction is about fixing CAMERA distortion, not changing the PERSON"""
         else:
-            # LOCK MÁXIMO - Solo mejoras de calidad
-            base_block = """[BIOMETRIC LOCK: MAXIMUM]
-
-THIS IS A FORENSIC RESTORATION, NOT ARTISTIC CREATION.
-
-READ-ONLY ELEMENTS (DO NOT MODIFY):
-- ALL facial bone structure (skull, jaw, cheekbones, forehead)
-- Eye distance, nose geometry, lip shape and size
-- Facial expression state (smile intensity, eye squint, muscle tension)
-- Gaze direction and head pose angle
-- Distinctive marks: moles, scars, freckles, wrinkles, tattoos
-- Dental features visible in expression
-- Hair texture and pattern (natural vs styled)
-
-WRITE-ACCESS ONLY FOR:
-- Sensor noise removal and sharpness restoration
-- Color grading and exposure correction
-- Lighting enhancement (without changing shadows that define structure)
-- Texture detail restoration (pores, fine lines) ON TOP of existing topology
-
-CRITICAL: If the face is blurry, RE-SYNTHESIZE detail FOLLOWING the existing structure.
-DO NOT invent a new face or "improve" features."""
+            geometric_note = ""
         
-        # Añadir preservación de marcas faciales específicas
-        marks_preservation = ""
+        # Añadir marcas específicas si existen
+        marks_note = ""
         if context.facial_marks and len(context.facial_marks) > 0:
-            marks_preservation = f"""
+            marks_note = f"""
 
-SPECIFIC MARKS TO PRESERVE IDENTICALLY:
-{', '.join(context.facial_marks)}"""
+SPECIFIC MARKS TO PRESERVE:
+{', '.join(context.facial_marks)}
+These marks are IDENTIFYING FEATURES - do not remove or alter."""
         
-        # Añadir referencia al DNA Anchor si existe
-        dna_anchor_block = ""
+        # DNA Anchor si existe
+        dna_note = ""
         if context.face_crop_url:
-            dna_anchor_block = """
+            dna_note = """
 
-[DNA ANCHOR REFERENCE ACTIVE]
-A biometric face crop is provided as ABSOLUTE GROUND TRUTH for facial structure.
-ANY deviation from the DNA Anchor facial geometry is STRICTLY FORBIDDEN.
-Use it to verify bone structure accuracy in your output."""
+[DNA ANCHOR REFERENCE PROVIDED]
+A biometric face crop is available as GROUND TRUTH for facial structure.
+Use it to verify that bone structure and proportions remain identical."""
         
-        return f"{base_block}{marks_preservation}{dna_anchor_block}"
+        return f"{base_block}{geometric_note}{marks_note}{dna_note}"
     
     def generate_from_sliders(
         self,
