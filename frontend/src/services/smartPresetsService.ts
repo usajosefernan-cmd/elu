@@ -80,8 +80,23 @@ export const getUserPresets = async (userId: string): Promise<SmartPreset[]> => 
     const response = await fetch(`${BACKEND_URL}/api/presets/v40/user/${userId}`);
     const data = await response.json();
     
-    if (data.success) {
-      return data.presets;
+    if (data.success && data.presets) {
+      // Transform v40 format to SmartPreset format
+      return data.presets.map((p: any) => ({
+        id: p.id,
+        name: p.name,
+        created_at: p.created_at,
+        user_id: p.user_id,
+        slider_values: p.sliders_config,
+        sliders_config: p.sliders_config,
+        locked_sliders: p.locked_sliders || [],
+        thumbnail_base64: p.thumbnail_base64,
+        style_lock_prompt: p.style_lock_prompt,
+        seed: p.seed,
+        temperature: p.temperature,
+        locked_pillars: [],
+        is_system: false
+      }));
     }
     return [];
   } catch (error) {
