@@ -150,6 +150,169 @@ async def prompt_compiler_endpoint(body: dict = Body(...)):
         # Compilar prompt
         result = await prompt_compiler_v41.compile_from_sliders(
             slider_config,
+
+
+
+@router.post("/save-preset")
+async def save_preset_v41(body: dict = Body(...)):
+    """
+    Save Preset v41 con Smart Anchors
+    
+    Guarda no solo los sliders, sino la "esencia visual" de una generación exitosa.
+    
+    Request:
+    {
+        "userId": "uuid",
+        "uploadId": "uuid",
+        "presetName": "Restaurante Lujoso",
+        "description": "Iluminación dramática para interiores",
+        "userAnchors": {
+            "background": true,     // Anclar fondo/ambiente
+            "lighting": true,       // Anclar iluminación
+            "clothes": false,       // No anclar ropa
+            "pose": false          // No anclar pose
+        },
+        "currentSliders": {p1: 5, p3: 9, s1: 7, ...}
+    }
+    
+    Response:
+    {
+        "success": true,
+        "presetId": "uuid",
+        "message": "Preset Anchored Successfully"
+    }
+    """
+    try:
+        user_id = body.get('userId')
+        upload_id = body.get('uploadId')
+        preset_name = body.get('presetName')
+        description = body.get('description', '')
+        user_anchors = body.get('userAnchors', {})
+        current_sliders = body.get('currentSliders', {})
+        
+        if not user_id or not preset_name:
+            return {"success": False, "error": "Missing userId or presetName"}
+        
+        # 1. Recuperar datos de la generación mágica
+        if upload_id:
+            gen_response = supabase_db.client.table('generations')\
+                .select('prompt_used, config_used, clean_url, watermarked_url')\
+                .eq('upload_id', upload_id)\
+                .order('created_at', desc=True)\
+                .limit(1)\
+                .execute()
+            
+            gen_data = gen_response.data[0] if gen_response.data else {}
+        else:
+            gen_data = {}
+        
+        # 2. Detector de intención (Forense vs Showman)
+        creative_triggers = [
+            current_sliders.get('s3', 0),  # Ropa
+            current_sliders.get('s5', 0),  # Fondo
+            current_sliders.get('s8', 0),  # Color Cine
+            current_sliders.get('l1', 0)   # Luz Key
+        ]
+        
+        is_creative_mode = any(val > 5 for val in creative_triggers)
+        
+        # Parámetros de Nano Banana
+        seed = gen_data.get('config_used', {}).get('seed') if gen_data else None
+        if not seed:
+            import random
+            seed = random.randint(100000, 999999)
+        
+        nano_params = {
+            'strength': 0.85 if is_creative_mode else 0.45,
+            'guidance_scale': 4.0 if is_creative_mode else 7.5,
+            'sampler': 'Euler a',
+            'seed': seed,
+            'temperature': 0.75 if is_creative_mode else 0.1
+        }
+        
+        # 3. Lógica de anclaje visual (Smart Anchors)
+        reference_url = None
+        
+        if user_anchors.get('background') or user_anchors.get('lighting') or user_anchors.get('style'):
+            # Usar la imagen generada como referencia
+            reference_url = gen_data.get('watermarked_url') or gen_data.get('clean_url')
+        
+        # 4. Guardar preset en DB
+        preset_data = {
+            'user_id': user_id,
+            'name': preset_name,
+            'description': description,
+            'sliders_config': current_sliders,
+            'nano_params': nano_params,
+            'anchor_preferences': user_anchors,
+            'reference_image_url': reference_url,
+            'prompt_text': gen_data.get('prompt_used', ''),
+            'thumbnail_base64': body.get('thumbnailBase64'),  # Si se envía desde frontend
+            'is_global': False,
+            'is_active': True
+        }
+        
+        response = supabase_db.client.table('user_presets_v41').insert(preset_data).execute()
+        
+        if response.data:
+            saved_preset = response.data[0]
+            print(f"[SavePreset v41] Saved '{preset_name}' with anchors: {user_anchors}")
+            
+            return {
+                "success": True,
+                "presetId": saved_preset.get('id'),
+                "message": "Preset Anchored Successfully",
+                "preset": saved_preset
+            }
+        else:
+            return {"success": False, "error": "Failed to save preset"}
+        
+    except Exception as e:
+        print(f"[SavePreset v41] Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
+
+
+@router.get("/presets/{user_id}")
+async def get_presets_v41(user_id: str):
+    """
+    Obtiene los presets del usuario con Smart Anchors.
+    
+    Response:
+    {
+        "success": true,
+        "presets": [
+            {
+                "id": "uuid",
+                "name": "Restaurante Lujoso",
+                "description": "...",
+                "sliders_config": {...},
+                "nano_params": {...},
+                "anchor_preferences": {background: true, lighting: true, ...},
+                "reference_image_url": "...",
+                "thumbnail_base64": "..."
+            }
+        ]
+    }
+    """
+    try:
+        response = supabase_db.client.table('user_presets_v41')\
+            .select('*')\
+            .eq('user_id', user_id)\
+            .eq('is_active', True)\
+            .order('created_at', desc=True)\
+            .execute()
+        
+        return {
+            "success": True,
+            "presets": response.data or []
+        }
+        
+    except Exception as e:
+        print(f"[GetPresets v41] Error: {e}")
+        return {"success": False, "error": str(e)}
+
             vision_result,
             has_person
         )
