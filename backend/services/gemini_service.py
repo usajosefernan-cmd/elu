@@ -153,4 +153,101 @@ class GeminiService:
         
         return {"error": "Failed to generate content after retries."}
 
+
+    async def analyze_with_vision(self, image_base64: str, system_prompt: str, model: str = "gemini-2.5-flash") -> dict:
+        """
+        Analiza imagen con Gemini Vision para clasificación.
+        Usado por Vision Orchestrator v41.
+        """
+        try:
+            api_key = key_manager.get_next_key()
+            client = genai.Client(api_key=api_key)
+            
+            # Preparar imagen
+            if image_base64.startswith('data:image'):
+                image_base64 = image_base64.split(',')[1]
+            
+            # Llamar a Gemini Vision
+            response = client.models.generate_content(
+                model=model,
+                contents=[
+                    types.Part.from_text(system_prompt),
+                    types.Part.from_bytes(
+                        data=base64.b64decode(image_base64),
+                        mime_type="image/jpeg"
+                    )
+                ],
+                config=types.GenerateContentConfig(
+                    temperature=0.0,
+                    response_mime_type="application/json"
+                )
+            )
+            
+            return response.text
+            
+        except Exception as e:
+            print(f"[GeminiService] Vision analysis error: {e}")
+            return {"error": str(e)}
+    
+    async def generate_image_v41(self, prompt: str, image_base64: str, config: dict) -> dict:
+        """
+        Genera imagen usando Gemini 3 Pro Image Preview.
+        Para sistema v41.
+        """
+        try:
+            api_key = key_manager.get_next_key()
+            client = genai.Client(api_key=api_key)
+            
+            # Preparar imagen
+            if image_base64.startswith('data:image'):
+                image_base64 = image_base64.split(',')[1]
+            
+            # Configuración
+            temperature = config.get('temperature', 0.4)
+            seed = config.get('seed')
+            
+            generation_config = {
+                'temperature': temperature,
+                'top_k': config.get('top_k', 40),
+                'top_p': config.get('top_p', 0.9),
+                'response_mime_type': 'image/jpeg'
+            }
+            
+            if seed:
+                generation_config['seed'] = seed
+            
+            # Generar
+            response = client.models.generate_content(
+                model="gemini-3-pro-image-preview",
+                contents=[
+                    types.Part.from_text(prompt),
+                    types.Part.from_bytes(
+                        data=base64.b64decode(image_base64),
+                        mime_type="image/jpeg"
+                    )
+                ],
+                config=types.GenerateContentConfig(**generation_config)
+            )
+            
+            # Extraer imagen
+            if hasattr(response, 'candidates') and len(response.candidates) > 0:
+                candidate = response.candidates[0]
+                if hasattr(candidate, 'content') and hasattr(candidate.content, 'parts'):
+                    for part in candidate.content.parts:
+                        if hasattr(part, 'inline_data'):
+                            image_data = part.inline_data.data
+                            return {
+                                "success": True,
+                                "image_base64": base64.b64encode(image_data).decode('utf-8'),
+                                "model": "gemini-3-pro-image-preview"
+                            }
+            
+            return {"success": False, "error": "No image in response"}
+            
+        except Exception as e:
+            print(f"[GeminiService] Generation error: {e}")
+            import traceback
+            traceback.print_exc()
+            return {"success": False, "error": str(e)}
+
 gemini_service = GeminiService()
