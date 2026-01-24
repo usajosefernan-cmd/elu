@@ -50,15 +50,34 @@ async def vision_orchestrator_endpoint(body: dict = Body(...)):
         if not result.get('success'):
             return {"success": False, "error": result.get('error', 'Vision analysis failed')}
         
+        # Determinar respuesta según tier
         if tier_code == 'AUTO':
-            return {
-                "status": "BATCH_PROCESSING",
-                "uploadId": upload_id,
-                "count": tier_config.get('batch_size_limit', 1),
-                "analysis": result['analysis'],
-                "auto_settings": result['auto_settings']
-            }
+            # AUTO: Ejecutar batch processing asíncrono
+            print(f"[VisionOrchestrator] AUTO tier - Starting batch processing")
+            
+            batch_result = await vision_orchestrator.execute_batch_processing(
+                upload_id,
+                user_id,
+                result['analysis'],
+                result['auto_settings'],
+                biopsy_urls
+            )
+            
+            if batch_result.get('success'):
+                return {
+                    "status": "BATCH_PROCESSING",
+                    "uploadId": upload_id,
+                    "count": batch_result.get('count', 0),
+                    "analysis": result['analysis'],
+                    "message": "Generations queued. You can close the app."
+                }
+            else:
+                return {
+                    "status": "BATCH_FAILED",
+                    "error": batch_result.get('error')
+                }
         else:
+            # USER/PRO/PRO_LUX: Review manual
             return {
                 "status": "REVIEW_REQUIRED",
                 "uploadId": upload_id,
