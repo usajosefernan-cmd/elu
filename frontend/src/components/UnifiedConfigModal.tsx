@@ -369,6 +369,9 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
     }));
     // Clear preset selection when manually changing
     setSelectedPresetId(null);
+    // Clear locked sliders when user modifies manually
+    setLockedSliders([]);
+    setPresetThumbnail(null);
   };
 
   // Build final config
