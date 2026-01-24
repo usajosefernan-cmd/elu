@@ -144,7 +144,7 @@ CREATE TABLE user_presets_v41 (
 );
 
 -- 11. USER UPLOAD WORKFLOWS
-DROP TABLE IF NOT EXISTS user_upload_workflows CASCADE;
+DROP TABLE IF EXISTS user_upload_workflows CASCADE;
 CREATE TABLE user_upload_workflows (
     user_id UUID PRIMARY KEY REFERENCES auth.users(id) ON DELETE CASCADE,
     is_async_enabled BOOLEAN DEFAULT true,
