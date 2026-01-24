@@ -407,16 +407,51 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
         
         {/* Header */}
         <div className="flex items-center gap-3 px-4 py-3 border-b border-neutral-800 bg-neutral-900/50">
-          <img src={imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover ring-1 ring-white/10" />
+          {batchMode && batchPreviews.length > 0 ? (
+            // Batch mode: Show multiple thumbnails
+            <div className="flex -space-x-2">
+              {batchPreviews.slice(0, 4).map((url, idx) => (
+                <img 
+                  key={idx} 
+                  src={url} 
+                  alt="" 
+                  className="w-10 h-10 rounded-lg object-cover ring-2 ring-neutral-900 border border-purple-500/50" 
+                />
+              ))}
+              {batchFiles.length > 4 && (
+                <div className="w-10 h-10 rounded-lg bg-purple-600/30 border border-purple-500/50 flex items-center justify-center ring-2 ring-neutral-900">
+                  <span className="text-xs font-bold text-purple-300">+{batchFiles.length - 4}</span>
+                </div>
+              )}
+            </div>
+          ) : (
+            // Single mode: Show single image
+            <img src={imageUrl} alt="" className="w-12 h-12 rounded-lg object-cover ring-1 ring-white/10" />
+          )}
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-white">{category}</span>
-              {tech?.has_person && <span className="text-[9px] px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">Persona</span>}
+              {batchMode ? (
+                <>
+                  <span className="text-xs font-semibold text-purple-400">MODO LOTE</span>
+                  <span className="text-[9px] px-1.5 py-0.5 bg-purple-500/20 text-purple-300 rounded">{batchFiles.length} fotos</span>
+                </>
+              ) : (
+                <>
+                  <span className="text-xs font-semibold text-white">{category}</span>
+                  {tech?.has_person && <span className="text-[9px] px-1.5 py-0.5 bg-blue-500/20 text-blue-400 rounded">Persona</span>}
+                </>
+              )}
             </div>
             <div className="flex items-center gap-3 mt-0.5 text-[10px] text-neutral-500">
-              <span>R:{tech?.noise_level ?? '?'}</span>
-              <span>B:{tech?.blur_level ?? '?'}</span>
-              {tech?.face_count && <span>Caras:{tech.face_count}</span>}
+              {batchMode ? (
+                <span>El mismo estilo se aplicará a todas las fotos</span>
+              ) : (
+                <>
+                  <span>R:{tech?.noise_level ?? '?'}</span>
+                  <span>B:{tech?.blur_level ?? '?'}</span>
+                  {tech?.face_count && <span>Caras:{tech.face_count}</span>}
+                </>
+              )}
             </div>
           </div>
           <button onClick={onCancel} className="p-2 hover:bg-neutral-800 rounded-lg transition-colors">
