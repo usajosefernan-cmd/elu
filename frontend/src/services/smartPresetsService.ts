@@ -120,7 +120,7 @@ export const saveUserPreset = async (
   name: string,
   sliderValues: SmartPreset['slider_values'],
   lockedPillars: string[] = [],
-  narrativeAnchor?: string,
+  description?: string, // Description of the preset
   sourceImage?: string // Base64 or URL of original image for thumbnail
 ): Promise<SmartPreset | null> => {
   try {
@@ -138,6 +138,7 @@ export const saveUserPreset = async (
       body: JSON.stringify({
         user_id: userId,
         name,
+        description,  // Send description
         sliders_config,
         source_image: sourceImage,  // For thumbnail generation
         seed: Math.floor(Math.random() * 1000000000),
