@@ -715,13 +715,14 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
                     .filter(s => visibleSliders.includes(s.name))
                     .map(slider => {
                       const value = sliderValues[activePillar]?.[slider.name] ?? 5;
+                      const isLocked = lockedSliders.includes(slider.name);
                       
                       return (
                         <CompactSlider
                           key={slider.name}
                           label={slider.label}
                           value={value}
-                          locked={false}
+                          locked={isLocked}
                           color={PILLAR_CONFIG[activePillar].color}
                           onChange={(v) => updateSlider(activePillar, slider.name, v)}
                         />
