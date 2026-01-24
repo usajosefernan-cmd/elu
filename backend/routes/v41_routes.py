@@ -150,7 +150,36 @@ async def prompt_compiler_endpoint(body: dict = Body(...)):
         # Compilar prompt
         result = await prompt_compiler_v41.compile_from_sliders(
             slider_config,
-
+            vision_result,
+            has_person
+        )
+        
+        if not result.get('success'):
+            return {"success": False, "error": result.get('error', 'Compilation failed')}
+        
+        # Configuración de generación
+        temperature = saved_preset.get('temperature', 0.4)
+        seed = saved_preset.get('seed', None)
+        
+        generation_config = {
+            'seed': seed if seed else None,
+            'temperature': temperature,
+            'top_k': 40,
+            'top_p': 0.9
+        }
+        
+        return {
+            "success": True,
+            "compiled_prompt": result['compiled_prompt'],
+            "generation_config": generation_config,
+            "metadata": result['metadata']
+        }
+        
+    except Exception as e:
+        print(f"[PromptCompiler Endpoint] Error: {e}")
+        import traceback
+        traceback.print_exc()
+        return {"success": False, "error": str(e)}
 
 
 @router.post("/save-preset")
