@@ -47,10 +47,11 @@ async def save_user_preset(user_id: str, body: dict):
 @router.post("/v40/save-style")
 async def save_style_v40(body: dict = Body(...)):
     """
-    Guarda un preset v40.1 con "The Dictator Prompt" para consistencia estilística.
-    
-    NOTA: Usa la tabla smart_presets existente, guardando los datos v40
-    en el campo slider_values como JSONB extendido.
+    Guarda un preset v40.1 con:
+    - Sliders bloqueados (locked_sliders) - valores fijos que no se pueden cambiar
+    - Sliders libres - el usuario puede ajustar
+    - Thumbnail de la foto original (max 1024px, webp 80%)
+    - The Dictator Prompt para consistencia estilística
     
     Request body:
     {
@@ -58,15 +59,13 @@ async def save_style_v40(body: dict = Body(...)):
         "name": "Cyberpunk Night",
         "seed": 847291023,
         "temperature": 0.75,
-        "top_k": 40,
-        "top_p": 0.9,
         "sliders_config": {
             "photoscaler": {...},
             "stylescaler": {...},
             "lightscaler": {...}
         },
-        "thumbnail_url": "optional",
-        "source_image_url": "optional"
+        "locked_sliders": ["styling_ropa", "limpieza_entorno", "key_light"],  // Sliders que NO se pueden tocar
+        "source_image": "https://... or data:image/..."  // Imagen para thumbnail
     }
     """
     try:
@@ -77,8 +76,37 @@ async def save_style_v40(body: dict = Body(...)):
         top_k = body.get('top_k', 40)
         top_p = body.get('top_p', 0.9)
         sliders_config = body.get('sliders_config', {})
-        thumbnail_url = body.get('thumbnail_url')
-        source_image_url = body.get('source_image_url')
+        locked_sliders = body.get('locked_sliders', [])  # Lista de slider keys que están bloqueados
+        source_image = body.get('source_image')  # URL o base64 de la imagen original
+        
+        # ============================================================
+        # 🖼️ GENERAR THUMBNAIL (max 1024px, webp 80%)
+        # ============================================================
+        thumbnail_base64 = None
+        if source_image:
+            if source_image.startswith('data:image'):
+                # Base64 image
+                thumb_data, _ = thumbnail_service.create_thumbnail_from_base64(source_image)
+                thumbnail_base64 = thumb_data
+            elif source_image.startswith('http'):
+                # URL image
+                thumb_data, _ = await thumbnail_service.create_thumbnail_from_url(source_image)
+                thumbnail_base64 = thumb_data
+            
+            if thumbnail_base64:
+                print(f"[SaveStyle v40] Thumbnail created: {len(thumbnail_base64)//1024}KB")
+        
+        # ============================================================
+        # 🔒 DETECTAR SLIDERS BLOQUEADOS
+        # Si no se especifican, bloquear los que tienen valor > 8 (dominantes)
+        # ============================================================
+        if not locked_sliders:
+            # Auto-detectar sliders dominantes como bloqueados
+            for pilar, sliders in sliders_config.items():
+                if isinstance(sliders, dict):
+                    for key, value in sliders.items():
+                        if isinstance(value, (int, float)) and value > 8:
+                            locked_sliders.append(key)
         
         # 🔥 BUILD THE DICTATOR PROMPT
         style_lock_prompt, dominant_sliders = build_dictator_prompt(sliders_config, threshold=8)
@@ -86,8 +114,7 @@ async def save_style_v40(body: dict = Body(...)):
         # Determine mode based on dominant sliders
         mode = get_preset_mode(sliders_config)
         
-        # Prepare extended slider_values (compatible with existing smart_presets table)
-        # This embeds v40 data inside the existing JSONB column
+        # Prepare extended slider_values con locked_sliders
         extended_slider_values = {
             # Original slider values
             **sliders_config,
@@ -99,21 +126,21 @@ async def save_style_v40(body: dict = Body(...)):
                 "top_p": top_p,
                 "style_lock_prompt": style_lock_prompt,
                 "dominant_sliders": dominant_sliders,
+                "locked_sliders": locked_sliders,  # 🔒 Sliders que NO se pueden editar
                 "mode": mode,
-                "thumbnail_url": thumbnail_url,
-                "source_image_url": source_image_url,
-                "version": "v40.1"
+                "thumbnail_base64": thumbnail_base64,  # 🖼️ Thumbnail en base64 webp
+                "version": "v40.2"
             }
         }
         
-        # Determine locked_pillars based on dominant sliders
+        # Determine locked_pillars based on locked sliders
         locked_pillars = []
         for ds in dominant_sliders:
             pilar = ds.get('pilar', '').upper()
             if pilar and pilar not in locked_pillars:
                 locked_pillars.append(pilar)
         
-        # Insert into smart_presets table (existing structure)
+        # Insert into smart_presets table
         preset_data = {
             'user_id': user_id,
             'name': name,
@@ -127,14 +154,16 @@ async def save_style_v40(body: dict = Body(...)):
         
         if response.data:
             saved_preset = response.data[0]
-            print(f"[SaveStyle v40] Saved '{name}' with {len(dominant_sliders)} dominant sliders, mode={mode}")
+            print(f"[SaveStyle v40] Saved '{name}' with {len(locked_sliders)} locked sliders, mode={mode}")
             return {
                 "success": True,
                 "preset": saved_preset,
-                "dictator_info": {
+                "preset_info": {
+                    "id": saved_preset.get('id'),
+                    "name": name,
                     "mode": mode,
-                    "dominant_sliders": dominant_sliders,
-                    "has_style_lock": style_lock_prompt is not None,
+                    "locked_sliders": locked_sliders,
+                    "has_thumbnail": thumbnail_base64 is not None,
                     "seed": seed,
                     "temperature": temperature
                 }
