@@ -229,6 +229,26 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
     loadPresets();
   }, [userId, isVisible]); // Also reload when modal opens
 
+  // Generate batch previews
+  useEffect(() => {
+    if (batchMode && batchFiles.length > 0) {
+      const generatePreviews = async () => {
+        const previews: string[] = [];
+        for (const file of batchFiles.slice(0, 6)) { // Max 6 previews
+          const url = URL.createObjectURL(file);
+          previews.push(url);
+        }
+        setBatchPreviews(previews);
+      };
+      generatePreviews();
+      
+      // Cleanup
+      return () => {
+        batchPreviews.forEach(url => URL.revokeObjectURL(url));
+      };
+    }
+  }, [batchMode, batchFiles]);
+
   // Initialize slider values
   useEffect(() => {
     if (analysis?.auto_settings) {
