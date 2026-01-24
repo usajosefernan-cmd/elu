@@ -318,7 +318,8 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
         newPresetName.trim(),
         sliderValues as SmartPreset['slider_values'],
         [],
-        undefined
+        undefined,
+        imageUrl  // Pass the original image for thumbnail generation
       );
       
       if (result) {
