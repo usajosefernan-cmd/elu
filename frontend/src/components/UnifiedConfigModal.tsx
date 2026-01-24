@@ -204,6 +204,10 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
     lightscaler: {}
   });
   
+  // 🔒 Locked sliders state - sliders que NO se pueden editar cuando hay preset cargado
+  const [lockedSliders, setLockedSliders] = useState<string[]>([]);
+  const [presetThumbnail, setPresetThumbnail] = useState<string | null>(null);
+  
   // Presets state
   const [systemPresets, setSystemPresets] = useState<SmartPreset[]>([]);
   const [userPresets, setUserPresets] = useState<SmartPreset[]>([]);
