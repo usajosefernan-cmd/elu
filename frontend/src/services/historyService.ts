@@ -16,38 +16,92 @@ export const getGenerations = async (): Promise<GenerationSession[]> => {
         return [];
     }
 
-    // Check if user is admin to allow "Rescue Mode" (Seeing all data)
-    const { data: profile } = await supabase
-        .from('user_profiles')
-        .select('is_admin')
-        .eq('id', user.id)
-        .single();
-
-    let query = supabase
-        .from('generations')
-        .select(`
-            *,
-            variations (
-                *
-            )
-        `)
-        .order('created_at', { ascending: false });
-
-    // FILTER LOGIC:
-    // If Admin: Fetch ALL (Rescue mode for lost synthetic accounts)
-    // If User: Fetch ONLY own data
-    if (!profile?.is_admin) {
-        query = query.eq('user_id', user.id);
-    }
-    
-    const { data, error } = await query;
-
-    if (error) {
-        console.error("Error fetching history:", JSON.stringify(error, null, 2));
+    try {
+        // v41: Consultar desde uploads + analysis_results + generations
+        let query = supabase
+            .from('uploads')
+            .select(`
+                id,
+                user_id,
+                original_width,
+                original_height,
+                biopsy_urls,
+                status,
+                created_at,
+                analysis_results (
+                    cat_code,
+                    detected_defects,
+                    visual_summary,
+                    severity_score,
+                    auto_settings
+                ),
+                generations (
+                    id,
+                    prompt_used,
+                    config_used,
+                    watermarked_url,
+                    final_url,
+                    is_preview,
+                    created_at
+                )
+            `)
+            .eq('user_id', user.id)
+            .order('created_at', { ascending: false });
+        
+        const { data, error } = await query;
+        
+        if (error) {
+            console.error("Error fetching v41 history:", error);
+            return [];
+        }
+        
+        if (!data || data.length === 0) {
+            console.log("[History] No uploads found for user");
+            return [];
+        }
+        
+        // Transformar a formato legacy para compatibilidad con UI
+        const sessions: GenerationSession[] = data
+            .filter(upload => upload.generations && upload.generations.length > 0)
+            .map(upload => {
+                const analysis = Array.isArray(upload.analysis_results) ? upload.analysis_results[0] : upload.analysis_results;
+                const generations = Array.isArray(upload.generations) ? upload.generations : [upload.generations];
+                
+                return {
+                    id: upload.id,
+                    user_id: upload.user_id,
+                    created_at: upload.created_at,
+                    original_image_path: upload.biopsy_urls?.thumbnail_base64 
+                        ? `data:image/jpeg;base64,${upload.biopsy_urls.thumbnail_base64}`
+                        : '',
+                    original_image_thumbnail: upload.biopsy_urls?.thumbnail_base64 
+                        ? `data:image/jpeg;base64,${upload.biopsy_urls.thumbnail_base64}`
+                        : '',
+                    category: analysis?.cat_code || 'UNKNOWN',
+                    visual_summary: analysis?.visual_summary || '',
+                    variations: generations.map((gen: any) => ({
+                        id: gen.id,
+                        generation_id: upload.id,
+                        type: gen.is_preview ? 'preview' : 'final',
+                        url: gen.watermarked_url 
+                            ? `data:image/jpeg;base64,${gen.watermarked_url}`
+                            : (gen.final_url || ''),
+                        created_at: gen.created_at,
+                        luxmixer_values: gen.config_used || {},
+                        prompt_used: gen.prompt_used || ''
+                    }))
+                };
+            });
+        
+        console.log(`[History v41] Loaded ${sessions.length} sessions with ${sessions.reduce((acc, s) => acc + s.variations.length, 0)} variations`);
+        
+        return sessions;
+        
+    } catch (error) {
+        console.error("[History v41] Exception:", error);
         return [];
     }
-
-    if (!data) return [];
+};
 
     // Map DB types to Frontend types
     return data.map((gen: any) => ({
