@@ -189,12 +189,15 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
   onCancel,
   tokensRequired,
   userTokens,
+  batchMode = false,
+  batchFiles = [],
 }) => {
   // State
   const [activeProfile, setActiveProfile] = useState<'auto' | 'user' | 'pro' | 'prolux'>(userProfile);
   const [intensity, setIntensity] = useState(2);
   const [selectedPresetId, setSelectedPresetId] = useState<string | null>(null);
   const [activePillar, setActivePillar] = useState<PillarKey>('photoscaler');
+  const [batchPreviews, setBatchPreviews] = useState<string[]>([]);
   const [sliderValues, setSliderValues] = useState<Record<string, Record<string, number>>>({
     photoscaler: {},
     stylescaler: {},
