@@ -81,6 +81,95 @@ class PromptCompilerService:
         
         return flat
     
+    def _build_dynamic_system_prompt_v41(
+        self,
+        input_data: CompilerInput,
+        sql_blocks: Dict,
+        modified_sliders: Dict[str, int],
+        identity_block: str
+    ) -> str:
+        """
+        Construye el System Prompt v41 usando bloques de Supabase.
+        Controlado 100% por sliders, NO hardcodea comportamientos.
+        """
+        # Formatear análisis de visión
+        vision_summary = ""
+        has_person = False
+        if input_data.vision_analysis:
+            va = input_data.vision_analysis
+            tech = va.get('technical_diagnosis', {})
+            has_person = tech.get('has_person', False)
+            
+            vision_summary = f"""Category: {va.get('category', 'UNKNOWN')}
+Technical Score: Noise={tech.get('noise_level', 'N/A')}, Blur={tech.get('blur_level', 'N/A')}
+Has Person: {has_person}
+Target Vision: {va.get('production_analysis', {}).get('target_vision', 'Professional enhancement')}"""
+        
+        # Obtener bloques desde SQL
+        photoscaler_block = sql_blocks['photoscaler_block']
+        stylescaler_block = sql_blocks['stylescaler_block']
+        lightscaler_block = sql_blocks['lightscaler_block']
+        
+        system_prompt = f"""[SYSTEM OVERRIDE: LUXSCALER UNIVERSAL IMAGE ENHANCEMENT PROTOCOL v41.0]
+[ROLE: PROFESSIONAL IMAGE PROCESSOR - SLIDER-CONTROLLED OPERATIONS]
+
+=== INPUT ANALYSIS ===
+{vision_summary}
+
+=== 🔒 CRITICAL RULE: STRUCTURAL PRESERVATION ===
+
+{identity_block}
+
+=== OUTPAINT & REFRAME RULES ===
+
+When filling missing areas or reframing:
+1. NEVER distort or move existing structures (ESPECIALLY FACES)
+2. Generate new content that CONTINUES the existing scene logically
+3. Match lighting, perspective, and style of original
+4. If a face is partially visible, DO NOT complete it unless you can preserve exact proportions
+
+=== SLIDER-CONTROLLED OPERATIONS (From Supabase Rules) ===
+
+The following operations are controlled by sliders.
+ONLY apply what the sliders indicate:
+
+PHOTOSCALER OPERATIONS (Optical & Sensor):
+{photoscaler_block}
+
+STYLESCALER OPERATIONS (Subject & Styling):
+{stylescaler_block}
+
+LIGHTSCALER OPERATIONS (Lighting & Tone):
+{lightscaler_block}
+
+=== NEGATIVE CONSTRAINTS (ALWAYS FORBIDDEN) ===
+
+When processing images with people:
+- Changing facial bone structure or proportions
+- Face swapping or morphing
+- Altering facial expression or gaze direction
+- Changing ethnicity, age, or gender markers
+- Moving facial features during reframe/outpaint
+- Plastic surgery effects
+- Removing distinctive marks without explicit instruction
+
+When processing any image:
+- Adding elements not requested by sliders
+- Changing subject matter without slider instruction
+- Distorting structures during geometric corrections
+- Inventing content beyond logical continuation
+
+=== QUALITY STANDARDS ===
+- Output resolution: 19.5MP (4800x4200px equivalent) → 4K
+- Color depth: 24-bit sRGB
+- Format: JPEG, quality 95
+- Structural integrity: MAXIMUM
+- Follow slider instructions: PRECISELY
+- Guidance Scale: {sql_blocks['guidance_scale']}
+- Hallucination Density: {sql_blocks['hallucination_density']}"""
+        
+        return system_prompt
+    
     def _build_dynamic_system_prompt(
         self,
         input_data: CompilerInput,
