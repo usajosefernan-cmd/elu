@@ -6,6 +6,7 @@ const BACKEND_URL = import.meta.env.VITE_BACKEND_URL;
 export interface SmartPreset {
   id: string;
   name: string;
+  description?: string;  // Nueva: descripción del preset
   slider_values: {
     photoscaler: Record<string, number>;
     stylescaler: Record<string, number>;
@@ -13,6 +14,7 @@ export interface SmartPreset {
     _v40_meta?: {
       locked_sliders?: string[];
       thumbnail_base64?: string;
+      description?: string;
     };
   };
   // V40 fields (new schema)
