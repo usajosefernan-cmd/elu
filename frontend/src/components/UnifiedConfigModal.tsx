@@ -601,6 +601,8 @@ export const UnifiedConfigModal: React.FC<UnifiedConfigModalProps> = ({
                     <button
                       onClick={() => {
                         setSelectedPresetId(null);
+                        setLockedSliders([]);
+                        setPresetThumbnail(null);
                         // Reset to defaults
                         const defaults: Record<string, Record<string, number>> = { photoscaler: {}, stylescaler: {}, lightscaler: {} };
                         for (const [pillar, config] of Object.entries(PILLAR_CONFIG)) {
