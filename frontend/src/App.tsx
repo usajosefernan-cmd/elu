@@ -1177,18 +1177,32 @@ const App: React.FC = () => {
             setAgentMsg({ text: "¡Procesamiento completado!", type: 'success' });
             addSystemLog(`Tokens utilizados: ${generateResult.metadata?.tokens_charged ?? 0}`);
             
-            // Reset para permitir nueva generación inmediata
-            setStagedImageUrl(null);
-            setStagedMasterImageUrl(null);
-            masterUploadPromiseRef.current = null;
-            setInputImageUrl(null);
-            setVisionAnalysis(null);
+            // Success - Ir directamente a Archives
+            setShowProcessingOverlay(false);
+            setStatus(AgentStatus.DONE);
+            
+            // Navegar a archives automáticamente
+            console.log('[LuxScaler] ✅ Generation complete - Navigating to Archives');
+            navigate('/archives');
+            
+            // Reset para permitir nueva generación
+            setTimeout(() => {
+                setStagedImageUrl(null);
+                setStagedMasterImageUrl(null);
+                masterUploadPromiseRef.current = null;
+                setInputImageUrl(null);
+                setVisionAnalysis(null);
+            }, 1000);
 
         } catch (error: any) {
             console.error("Brain pipeline processing error:", error);
             setShowProcessingOverlay(false);
+            setShowUnifiedConfigModal(false);
             setAgentMsg({ text: `Error: ${error.message}`, type: 'error' });
             setStatus(AgentStatus.ERROR);
+            
+            // Mostrar alert y permitir retry
+            alert(`Error generando imagen: ${error.message || 'Intenta de nuevo'}`);
         }
     };
 
