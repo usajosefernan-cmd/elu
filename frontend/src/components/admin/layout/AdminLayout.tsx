@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { AdminSidebar } from './AdminSidebar';
 import { AdminHeader } from './AdminHeader';
 import { getSupabaseClient } from '../../../services/authService';
+import { useEffect } from 'react';
 
 type TabView = 'RESUMEN' | 'USUARIOS' | 'MARKETING' | 'INFRAESTRUCTURA' | 'LISTA_ESPERA' | 'REGISTRO_DATOS' | 'CONFIG_VIVA' | 'ALMACENAMIENTO' | 'LABORATORIO' | 'LUXSCALER' | 'THEME_DESIGNER' | 'STRIPE';
 
@@ -12,6 +13,7 @@ interface AdminLayoutProps {
     userEmail?: string;
     onLogout: () => void;
     standAloneMode?: boolean;
+    onExit?: () => void;
 }
 
 export const AdminLayout: React.FC<AdminLayoutProps> = ({ 
@@ -78,6 +80,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                 onLogout={onLogout}
                 isCollapsed={isCollapsed}
                 onToggleCollapse={toggleCollapse}
+                onExit={onExit}
             />
 
             {/* Main Content Wrapper */}
@@ -88,6 +91,7 @@ export const AdminLayout: React.FC<AdminLayoutProps> = ({
                     title={getTitle(currentTab)}
                     userEmail={userEmail}
                     onMenuClick={() => setIsMobileOpen(true)}
+                    onExit={onExit}
                 />
 
                 {/* Content Area - Scrollable */}

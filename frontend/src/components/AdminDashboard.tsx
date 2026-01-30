@@ -1403,13 +1403,25 @@ FASE 4: REILUMINACIÓN VOLUMÉTRICA`);
     };
 
     return (
-        <AdminLayout
-            currentTab={currentTab}
-            onTabChange={handleTabNavigation}
-            userEmail={userEmail}
-            onLogout={handleLogout}
-            standAloneMode={standAloneMode}
-        >
+        <>
+            {/* EXIT BUTTON - Siempre visible */}
+            <button
+                onClick={onBack}
+                className="fixed top-4 left-4 z-[9999] p-3 bg-red-500 hover:bg-red-600 text-white rounded-full shadow-2xl transition-all flex items-center gap-2 font-bold"
+                title="Salir"
+            >
+                <ArrowLeft size={20} />
+                <span className="hidden md:inline">Salir</span>
+            </button>
+            
+            <AdminLayout
+                currentTab={currentTab}
+                onTabChange={handleTabNavigation}
+                userEmail={userEmail}
+                onLogout={handleLogout}
+                standAloneMode={standAloneMode}
+                onExit={onBack}
+            >
             <ImageInspectorModal
                 isOpen={isInspectorOpen}
                 onClose={() => setIsInspectorOpen(false)}
@@ -1449,7 +1461,7 @@ FASE 4: REILUMINACIÓN VOLUMÉTRICA`);
                 {currentTab === 'USUARIOS' && <AdminUserManagement />}
 
                 {/* --- TAB: INFRAESTRUCTURA --- */}
-                {currentTab === 'INFRAESTRUCTURA' && <AdminInfrastructure />}
+                {currentTab === 'INFRAESTRUCTURA' && <AdminInfrastructure onNavigateHome={onBack} />}
 
                 {/* --- TAB: STRIPE --- */}
                 {currentTab === 'STRIPE' && <AdminStripe />}
@@ -2933,5 +2945,6 @@ FASE 4: REILUMINACIÓN VOLUMÉTRICA`);
                 </span>
             </div >
         </AdminLayout >
+        </>
     );
 };

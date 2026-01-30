@@ -1,18 +1,30 @@
 import React from 'react';
-import { Bell, Search, Menu, User, Shield } from 'lucide-react';
+import { Bell, Search, Menu, User, Shield, X, ArrowLeft } from 'lucide-react';
 
 interface AdminHeaderProps {
     onMenuClick: () => void;
     userEmail: string | undefined;
     title: string;
+    onExit?: () => void;
 }
 
-export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick, userEmail, title }) => {
+export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuClick, userEmail, title, onExit }) => {
     return (
         <header className="h-16 flex items-center justify-between px-4 lg:px-8 border-b border-white/5 bg-[#050505]/80 backdrop-blur-md sticky top-0 z-30">
 
             {/* Left: Menu & Breadcrumb */}
             <div className="flex items-center gap-4">
+                {/* Exit button */}
+                {onExit && (
+                    <button
+                        onClick={onExit}
+                        className="p-2 text-red-400 hover:text-red-300 hover:bg-red-500/10 rounded-lg transition-colors"
+                        title="Salir"
+                    >
+                        <ArrowLeft className="w-5 h-5" />
+                    </button>
+                )}
+                
                 <button
                     onClick={onMenuClick}
                     className="p-2 -ml-2 text-gray-400 hover:text-white lg:hidden"

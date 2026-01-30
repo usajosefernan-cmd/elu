@@ -167,6 +167,48 @@ export const MobileCameraView: React.FC = () => {
 
     return (
         <div className="w-full h-screen bg-black text-white overflow-hidden relative font-sans flex flex-col select-none">
+            
+            {/* BOTÓN DE SALIDA FORZADO - RECARGA COMPLETA */}
+            <div 
+                onClick={() => {
+                    console.log('FORZANDO RECARGA COMPLETA');
+                    // Limpiar todo y recargar
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.replace('/');
+                }}
+                style={{
+                    position: 'fixed',
+                    top: '10px',
+                    right: '10px',
+                    zIndex: 9999999,
+                    width: '120px',
+                    height: '120px',
+                    backgroundColor: '#dc2626',
+                    color: 'white',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    borderRadius: '50%',
+                    cursor: 'pointer',
+                    fontSize: '20px',
+                    fontWeight: 'bold',
+                    boxShadow: '0 0 100px rgba(220, 38, 38, 1)',
+                    border: '5px solid white',
+                    animation: 'pulse 2s infinite'
+                }}
+            >
+                <div style={{ fontSize: '40px' }}>✕</div>
+                <div style={{ fontSize: '14px' }}>SALIR</div>
+            </div>
+            
+            <style>{`
+                @keyframes pulse {
+                    0%, 100% { transform: scale(1); }
+                    50% { transform: scale(1.05); }
+                }
+            `}</style>
 
             {/* === GLOBAL STATUS BAR === */}
             <div className="w-full px-6 py-4 flex justify-between items-center z-50 bg-black border-b border-white/5 h-16 relative">
