@@ -11,16 +11,22 @@ class KeyManager:
 
     def _load_keys(self):
         env_vars = dict(os.environ)
-        # FIX 3: Cargar SOLO las keys que NO están leaked
-        # SKIP GOOGLE_API_KEY (leaked - AIzaSyAM1iSrdG5FS1twfl7WPckl5ea6VNHXEtw)
+        # CRITICAL FIX: Solo cargar keys NO leaked
+        # key_1 (GOOGLE_API_KEY) está reportada como leaked - NO CARGAR
         
         if "GOOGLE_API_KEY_2" in env_vars:
             self.keys.append({"id": "key_2", "key": env_vars["GOOGLE_API_KEY_2"], "last_error": 0, "error_count": 0})
+            print(f"KeyManager: Loaded key_2 (AIzaSyBA...)")
+            
         if "GOOGLE_API_KEY_3" in env_vars:
             self.keys.append({"id": "key_3", "key": env_vars["GOOGLE_API_KEY_3"], "last_error": 0, "error_count": 0})
-        # NO cargar GOOGLE_API_KEY (leaked)
+            print(f"KeyManager: Loaded key_3 (AIzaSyD3...)")
+        
+        # SKIP GOOGLE_API_KEY - está reportada como leaked
+        if len(self.keys) == 0:
+            print("⚠️ WARNING: No API keys loaded! Check .env file")
             
-        print(f"KeyManager: Loaded {len(self.keys)} API Keys (skipped leaked key_1).")
+        print(f"KeyManager: Total {len(self.keys)} API Keys loaded (skipped leaked key_1).")
 
     def get_next_key(self):
         if not self.keys: return None
