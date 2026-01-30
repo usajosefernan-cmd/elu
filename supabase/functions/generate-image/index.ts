@@ -1,196 +1,152 @@
-// LuxScaler v28 - Image Generation Edge Function
-// Generates enhanced images using Gemini 3 Pro Image
-
-import { serve } from "https://deno.land/std@0.177.0/http/server.ts";
-import { GoogleGenerativeAI } from "npm:@google/generative-ai";
+import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-// Model selection by user mode
-const MODEL_BY_MODE: Record<string, string> = {
-  auto: "gemini-2.0-flash-exp", // Fast preview
-  user: "gemini-2.0-flash-exp",
-  pro: "gemini-2.0-flash-exp", // Will be gemini-3-pro when available
-  prolux: "gemini-2.0-flash-exp", // + Code Execution for PROLUX
-};
+const supabase = createClient(
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+);
 
-serve(async (req: Request) => {
-  if (req.method === "OPTIONS") {
-    return new Response("ok", { headers: corsHeaders });
-  }
+const NANO_BANANA_ENDPOINT = Deno.env.get("NANO_BANANA_ENDPOINT") || "https://api.replicate.com/v1/predictions"; // Fallback/Placeholder
+const NANO_BANANA_API_KEY = Deno.env.get("NANO_BANANA_API_KEY") || "NONE";
+
+serve(async (req) => {
+  if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const { 
-      imageUrl, 
-      imageBase64, 
-      compiledPrompt, 
-      userMode = "auto",
-      userId,
-      jobId,
-      outputType = "preview_watermark" // preview_watermark, preview_clean, master_4k, master_8k
-    } = await req.json();
+    const body = await req.json();
+    const {
+      prompt,
+      config,
+      uploadId,
+      imageBase64,
+      variationIndex,
+      preset,
+    } = body;
 
-    if (!imageUrl && !imageBase64) {
-      return new Response(
-        JSON.stringify({ success: false, error: "No image provided" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
-      );
+    // 1. Preparar payload para Nano Banana Pro (con Smart Anchors)
+    const nanoParams = preset?.nano_params || config || {};
+    const anchorPreferences = preset?.anchor_preferences || {};
+    const referenceImageUrl = preset?.reference_image_url || null;
+
+    const apiPayload: any = {
+      prompt,
+      seed: nanoParams.seed ?? Math.floor(Math.random() * 1_000_000),
+      strength: nanoParams.strength ?? 0.65,
+      guidance_scale: nanoParams.guidance_scale ?? 7.0,
+      sampler: nanoParams.sampler ?? "Euler a",
+      input_image_base64: imageBase64,
+    };
+
+    // Smart Anchors: si el preset tiene referencia y el usuario activó fondo/lighting/style
+    if (referenceImageUrl && (anchorPreferences.background || anchorPreferences.lighting || anchorPreferences.style)) {
+      apiPayload.reference_image_url = referenceImageUrl;
+      apiPayload.anchor_background = !!anchorPreferences.background;
+      apiPayload.anchor_lighting = !!anchorPreferences.lighting;
+      apiPayload.anchor_style = !!anchorPreferences.style;
     }
 
-    if (!compiledPrompt) {
-      return new Response(
-        JSON.stringify({ success: false, error: "No compiled prompt provided" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
-      );
+    // Call Mock or Real Endpoint
+    // For now, if no API Key, return mock
+    let cleanFileName = "";
+    let previewPublicUrl = "";
+
+    if (NANO_BANANA_API_KEY === "NONE") {
+      // MOCK GENERATION
+      console.log("Mocking generation for", uploadId);
+      const mockImage = imageBase64; // Return same image for test
+      cleanFileName = `${uploadId}/clean_${variationIndex || 0}_${Date.now()}.jpg`;
+      // Upload mock
+      const cleanBuffer = Uint8Array.from(atob(mockImage), (c) => c.charCodeAt(0));
+      await supabase.storage
+        .from("generations_private")
+        .upload(cleanFileName, cleanBuffer, { contentType: "image/jpeg" });
+
+      const previewFileName = `${uploadId}/preview_${variationIndex || 0}_${Date.now()}.jpg`;
+      await supabase.storage
+        .from("generations_public")
+        .upload(previewFileName, cleanBuffer, { contentType: "image/jpeg" });
+
+      previewPublicUrl = supabase.storage
+        .from("generations_public")
+        .getPublicUrl(previewFileName).data.publicUrl;
+
+    } else {
+      const nanoRes = await fetch(NANO_BANANA_ENDPOINT, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${NANO_BANANA_API_KEY}`,
+        },
+        body: JSON.stringify(apiPayload),
+      });
+
+      if (!nanoRes.ok) {
+        const errorText = await nanoRes.text();
+        throw new Error("Nano Banana failed: " + errorText);
+      }
+
+      const nanoData = await nanoRes.json();
+      // Assuming response has image_base64
+      const cleanBuffer = Uint8Array.from(atob(nanoData.image_base64), (c) => c.charCodeAt(0));
+
+      cleanFileName = `${uploadId}/clean_${variationIndex || 0}_${Date.now()}.jpg`;
+      await supabase.storage
+        .from("generations_private")
+        .upload(cleanFileName, cleanBuffer, { contentType: "image/jpeg" });
+
+      const watermarkedBuffer = await applyWatermark(cleanBuffer.buffer);
+
+      const previewFileName = `${uploadId}/preview_${variationIndex || 0}_${Date.now()}.jpg`;
+      await supabase.storage
+        .from("generations_public")
+        .upload(previewFileName, watermarkedBuffer, { contentType: "image/jpeg" });
+
+      previewPublicUrl = supabase.storage
+        .from("generations_public")
+        .getPublicUrl(previewFileName).data.publicUrl;
     }
 
-    const GOOGLE_API_KEY = Deno.env.get("GOOGLE_API_KEY");
-    if (!GOOGLE_API_KEY) {
-      return new Response(
-        JSON.stringify({ success: false, error: "API key not configured" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-      );
-    }
-
-    // Initialize Supabase for job tracking
-    const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-    const supabase = createClient(supabaseUrl, supabaseKey);
-
-    // Update job status to PROCESSING
-    if (jobId) {
-      await supabase
-        .from("processing_jobs")
-        .update({ status: "processing", started_at: new Date().toISOString() })
-        .eq("id", jobId);
-    }
-
-    // Select model based on user mode
-    const modelName = MODEL_BY_MODE[userMode] || MODEL_BY_MODE.auto;
-    
-    const genAI = new GoogleGenerativeAI(GOOGLE_API_KEY);
-    const model = genAI.getGenerativeModel({ 
-      model: modelName,
-      generationConfig: {
-        // For image generation models
-        responseModalities: ["TEXT", "IMAGE"],
+    await supabase.from("generations").insert({
+      upload_id: uploadId,
+      prompt_used: prompt,
+      config_used: {
+        seed: apiPayload.seed,
+        strength: apiPayload.strength,
+        guidance: apiPayload.guidance_scale,
+        preset_id: preset?.id || null,
       },
+      clean_url: cleanFileName,
+      watermarked_url: previewPublicUrl,
+      is_preview: true,
+      tokens_spent: 0,
     });
 
-    // Prepare image part
-    let imagePart;
-    if (imageBase64) {
-      const base64Data = imageBase64.includes(",") 
-        ? imageBase64.split(",")[1] 
-        : imageBase64;
-      imagePart = {
-        inlineData: {
-          data: base64Data,
-          mimeType: "image/jpeg",
-        },
-      };
-    } else {
-      const imageResponse = await fetch(imageUrl);
-      const imageBlob = await imageResponse.blob();
-      const arrayBuffer = await imageBlob.arrayBuffer();
-      const base64 = btoa(String.fromCharCode(...new Uint8Array(arrayBuffer)));
-      imagePart = {
-        inlineData: {
-          data: base64,
-          mimeType: imageResponse.headers.get("content-type") || "image/jpeg",
-        },
-      };
-    }
-
-    // Generate with Gemini
-    const result = await model.generateContent([compiledPrompt, imagePart]);
-    const response = result.response;
-
-    // Extract generated image if present
-    let generatedImageBase64 = null;
-    let responseText = "";
-
-    // Check for inline image data in response
-    for (const candidate of response.candidates || []) {
-      for (const part of candidate.content?.parts || []) {
-        if (part.text) {
-          responseText += part.text;
-        }
-        if (part.inlineData) {
-          generatedImageBase64 = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-        }
-      }
-    }
-
-    // Calculate tokens used
-    const tokensUsed = response.usageMetadata?.totalTokenCount || 1000;
-
-    // Determine token cost based on output type
-    const TOKEN_COSTS: Record<string, number> = {
-      preview_watermark: 10,
-      preview_clean: 15,
-      master_4k: 50,
-      master_8k: 100,
-    };
-    const tokenCost = TOKEN_COSTS[outputType] || 10;
-
-    // Deduct tokens from user (if authenticated)
-    if (userId && userMode !== "prolux") { // PROLUX has unlimited
-      const { data: profile } = await supabase
-        .from("user_profiles")
-        .select("tokens_balance, user_mode")
-        .eq("id", userId)
-        .single();
-
-      if (profile && profile.user_mode !== "prolux") {
-        const newBalance = Math.max(0, (profile.tokens_balance || 0) - tokenCost);
-        await supabase
-          .from("user_profiles")
-          .update({ tokens_balance: newBalance })
-          .eq("id", userId);
-      }
-    }
-
-    // Update job status to COMPLETED
-    if (jobId) {
-      await supabase
-        .from("processing_jobs")
-        .update({ 
-          status: "completed", 
-          completed_at: new Date().toISOString(),
-          tokens_spent: tokenCost,
-          output_type: outputType,
-        })
-        .eq("id", jobId);
-    }
-
     return new Response(
-      JSON.stringify({
-        success: true,
-        output: {
-          text: responseText,
-          image: generatedImageBase64,
-          hasWatermark: outputType === "preview_watermark",
-        },
-        metadata: {
-          model_used: modelName,
-          tokens_consumed: tokensUsed,
-          tokens_charged: tokenCost,
-          output_type: outputType,
-        },
-      }),
+      JSON.stringify({ success: true, url: previewPublicUrl, clean_path: cleanFileName }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
-
-  } catch (error) {
-    console.error("Image Generation Error:", error);
-    return new Response(
-      JSON.stringify({ success: false, error: error.message }),
-      { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
-    );
+  } catch (error: any) {
+    console.error("generate-image error", error);
+    return new Response(JSON.stringify({ error: error.message }), {
+      status: 500,
+      headers: corsHeaders,
+    });
   }
 });
+
+// Watermark helper (simplificado)
+async function applyWatermark(imageBuffer: ArrayBuffer): Promise<Uint8Array> {
+  try {
+    // Aquí podrías usar ImageScript o similar. De momento, recodificamos tal cual.
+    return new Uint8Array(imageBuffer);
+  } catch (e) {
+    console.warn("Watermark failed, returning original", e);
+    return new Uint8Array(imageBuffer);
+  }
+}

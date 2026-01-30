@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite --host --port 3000",
-    "start": "vite --host --port 3000",
+    "dev": "vite --host --port 8081",
+    "start": "vite --host --port 8081",
     "build": "vite build",
     "preview": "vite preview",
     "deploy": "tsc -b && vite build && firebase deploy",
@@ -45,7 +45,8 @@
     "react-markdown": "^10.1.0",
     "react-router-dom": "^7.12.0",
     "reactflow": "^11.11.4",
-    "tailwind-merge": "^3.4.0"
+    "tailwind-merge": "^3.4.0",
+    "zustand": "^5.0.10"
   },
   "devDependencies": {
     "@capacitor/cli": "^6.0.0",

@@ -42,7 +42,7 @@ import LuxV41Page from './pages/LuxV41Page';
 import { CookieBanner } from './components/CookieBanner';
 import { AgentStatus, AgentMessage, LuxConfig, UserProfile, ArchivedVariation, SemanticAnalysis } from './types';
 import { compressAndResizeImage, uploadImageToStorage, generatePreviewGrid, analyzeImage, generateMaster } from './services/geminiService';
-import { analyzeImageWithVision, analyzeImageV41, compilePrompt, generateEnhancedImage, generateImageV41, batchGenerateImages } from './services/edgeFunctionsService';
+import { analyzeImageWithVision, analyzeImageBase64WithVision, compilePrompt, generateEnhancedImage, generateImageWithSliders, batchGenerateImages } from './services/edgeFunctionsService';
 import { getCurrentUserProfile, signOutUser } from './services/authService';
 import { spendLumens, getBalance } from './services/paymentService';
 import { getDisplayUrl, getMasterUrl, getThumbnailUrl } from './utils/imageUtils';
@@ -170,7 +170,6 @@ const App: React.FC = () => {
 
     const [inputImageUrl, setInputImageUrl] = useState<string | null>(null);
     const [processedImageUrl, setProcessedImageUrl] = useState<string | null>(null);
-    const [currentUploadId, setCurrentUploadId] = useState<string | null>(null); // v41: Tracks upload ID from DB
 
     // UX overlay (upload/generate progress)
     const [showProcessingOverlay, setShowProcessingOverlay] = useState(false);
@@ -619,18 +618,12 @@ const App: React.FC = () => {
             setPhaseProgress(40);
             setPhaseLabel('Enviando a Gemini 2.5 Flash...');
 
-            // Llamar al backend (v41: Uses analyzeImageV41 which inserts to DB + calls Edge Function)
-            const visionResult = await analyzeImageV41(visionBase64, { width: 0, height: 0 });
+            // Llamar al backend
+            const visionResult = await analyzeImageBase64WithVision(visionBase64, userProfile?.id);
             setPhaseProgress(90);
 
             if (!visionResult.success) {
                 throw new Error(visionResult.error || "Análisis de visión falló");
-            }
-
-            // v41: Capture uploadId for generation phase
-            if (visionResult.uploadId) {
-                setCurrentUploadId(visionResult.uploadId);
-                console.log('[LuxScaler] v41 Analysis Complete. UploadID:', visionResult.uploadId);
             }
 
             setVisionAnalysis(visionResult.analysis);
@@ -1064,22 +1057,17 @@ const App: React.FC = () => {
             setPhaseLabel('Generando imagen — puedes cerrar esta ventana');
 
             setAgentMsg({ text: "Ensamblando prompt v37.0 y generando imagen...", type: 'info' });
-            addSystemLog(`Enviando ${Object.values(sliderConfig).reduce((acc: any, p: any) => acc + (p?.sliders?.length || 0), 0)} sliders al Universal Prompt Assembler v37.0`);
+            addSystemLog(`Enviando ${Object.values(sliderConfig).reduce((acc, p) => acc + (p?.sliders?.length || 0), 0)} sliders al Universal Prompt Assembler v37.0`);
 
             // Generate directly with sliders (uses Universal Prompt Assembler v37.0)
-            // v41: Use generateImageV41 with uploadId
-            if (!currentUploadId) {
-                // Should have been set during vision analysis, but if skipped (manual upload without analysis?),
-                // we might need to create an upload record here.
-                // For now, assume flow: Upload -> Vision -> Generate.
-                // If direct generation, we need to handle that case.
-                console.warn("Missing uploadId for generation. This might fail if DB requires it.");
-            }
-
-            const generateResult = await generateImageV41(
-                currentUploadId || 'manual_override', // Fallback if flow skipped vision
+            const generateResult = await generateImageWithSliders(
+                imageUrl,
                 sliderConfig,
-                userProfile?.profile_type || 'auto'
+                {
+                    userMode: userProfile?.profile_type || 'auto',
+                    userId: userProfile?.id,
+                    includeDebug: true, // Get debug info for Archives
+                }
             );
             setPhaseProgress(100);
 

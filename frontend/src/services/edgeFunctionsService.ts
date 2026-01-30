@@ -272,7 +272,7 @@ const convertSliderConfigToFlat = (config: SliderConfig): Record<string, Record<
     stylescaler: {},
     lightscaler: {}
   };
-  
+
   if (config.photoscaler?.sliders) {
     for (const slider of config.photoscaler.sliders) {
       result.photoscaler[slider.name] = slider.value;
@@ -288,7 +288,7 @@ const convertSliderConfigToFlat = (config: SliderConfig): Record<string, Record<
       result.lightscaler[slider.name] = slider.value;
     }
   }
-  
+
   return result;
 };
 
@@ -305,7 +305,7 @@ export const generateImageWithSliders = async (
   } = {}
 ): Promise<GenerateImageResult & { debug?: any; meta?: { used_seed: number; used_temp: number } }> => {
   const flatConfig = convertSliderConfigToFlat(sliderConfig);
-  
+
   // Step 1: Compile prompt using Supabase Edge Function prompt-compiler v40.0
   console.log(`[EdgeFunctions] Calling prompt-compiler v40.0 (mode: ${options.mode || 'AUTO'})...`);
   const promptResult = await callEdgeFunction<{
@@ -452,10 +452,10 @@ export const processImageComplete = async (
         includeDebug: true, // Always include for Archives
       }
     );
-    
+
     return generateResult;
   }
-  
+
   // Legacy path: Compile prompt first, then generate
   const promptResult = await compilePrompt(
     config,
@@ -533,7 +533,7 @@ export const batchGenerateImages = async (
 
   // Convert File objects to base64 URLs if needed
   const processedImages: { url: string; id: string }[] = [];
-  
+
   for (const img of images) {
     if (img.file) {
       // Convert file to base64
@@ -551,10 +551,10 @@ export const batchGenerateImages = async (
   // If sequential mode with progress callback, process one by one locally
   if (sequential && onProgress) {
     const results: BatchResult[] = [];
-    
+
     for (let i = 0; i < processedImages.length; i++) {
       const img = processedImages[i];
-      
+
       try {
         // Call single image batch endpoint
         const response = await fetch(`${BACKEND_URL}/api/process/batch-generate`, {
@@ -626,6 +626,106 @@ export const batchGenerateImages = async (
   }
 };
 
+
+
+// =====================================================
+// V41 SPECIFIC FUNCTIONS (PURE SUPABASE)
+// =====================================================
+
+import { getSupabaseClient } from './authService';
+
+export const analyzeImageV41 = async (
+  imageBase64: string,
+  params: { width?: number; height?: number } = {}
+): Promise<{ success: boolean; uploadId?: string; analysis?: any; error?: string }> => {
+  const supabase = getSupabaseClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  try {
+    // 1. Insert Upload
+    const { data: uploadData, error: upErr } = await supabase
+      .from('uploads')
+      .insert({
+        user_id: user?.id,
+        original_width: params.width || 0,
+        original_height: params.height || 0,
+        biopsy_urls: {
+          center: imageBase64.substring(0, 50) + "..." // Log placeholder
+        },
+        status: 'biopsy_ready', // Triggers nothing, just marks state
+      })
+      .select()
+      .single();
+
+    if (upErr) throw new Error(`Upload DB Error: ${upErr.message}`);
+
+    // 2. Call Vision Orchestrator
+    const { data: funcData, error: funcErr } = await supabase.functions.invoke('vision-orchestrator', {
+      body: {
+        uploadId: uploadData.id,
+        biopsy: {
+          thumbnail: imageBase64, // Send full image as thumbnail/center for single-shot analysis
+          center: imageBase64,
+          shadow: null,
+          detail: null
+        },
+      },
+    });
+
+    if (funcErr) throw new Error(`Vision Function Error: ${funcErr.message}`);
+
+    return {
+      success: true,
+      uploadId: uploadData.id,
+      analysis: funcData.analysis,
+    };
+  } catch (e: any) {
+    console.error('analyzeImageV41 error:', e);
+    return { success: false, error: e.message };
+  }
+};
+
+export const generateImageV41 = async (
+  uploadId: string,
+  sliderConfig: SliderConfig,
+  profileString: string
+): Promise<GenerateImageResult & { clean_url?: string }> => {
+  const supabase = getSupabaseClient();
+
+  try {
+    const { data, error } = await supabase.functions.invoke('generate-image', {
+      body: {
+        uploadId,
+        sliderConfig,
+        profile: profileString
+      }
+    });
+
+    if (error) throw new Error(error.message);
+
+    return {
+      success: true,
+      output: {
+        text: data.prompt || '',
+        image: data.image_url,
+        hasWatermark: true
+      },
+      metadata: {
+        model_used: 'flux-pro-v41', // dynamic
+        tokens_consumed: 0,
+        tokens_charged: 0,
+        output_type: 'preview'
+      },
+      clean_url: data.clean_url
+    };
+  } catch (e: any) {
+    console.error('generateImageV41 error:', e);
+    return { success: false, error: e.message };
+  }
+};
+
 export default {
   analyzeImageWithVision,
   analyzeImageBase64WithVision,
@@ -634,4 +734,6 @@ export default {
   generateImageWithSliders,
   processImageComplete,
   batchGenerateImages,
+  analyzeImageV41,
+  generateImageV41,
 };
